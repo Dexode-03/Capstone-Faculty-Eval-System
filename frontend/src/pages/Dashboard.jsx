@@ -463,7 +463,7 @@ const Dashboard = () => {
     fetchStats();
   }, [user?.role]);
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-5 h-5 border-2 border-psu-border border-t-psu-primary rounded-full animate-spin" />
