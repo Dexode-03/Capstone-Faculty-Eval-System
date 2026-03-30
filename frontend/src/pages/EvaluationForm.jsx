@@ -57,7 +57,7 @@ const EvaluationForm = () => {
           facultyService.getAll(studentDept),
           evaluationService.getQuestions(),
         ]);
-        setFaculty([...facultyRes.data.faculty].sort((a, b) => a.name.localeCompare(b.name)));
+        setFaculty([...(facultyRes.data.faculty || [])].sort((a, b) => a.name.localeCompare(b.name)));
         setQuestions(questionsRes.data.grouped);
         setQuestionList(questionsRes.data.questions);
       } catch {

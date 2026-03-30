@@ -39,7 +39,7 @@ const StudentDashboard = ({ user }) => {
     fetch();
   }, []);
 
-  const sorted    = [...instructors].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted    = [...(instructors || [])].sort((a, b) => a.name.localeCompare(b.name));
   const pending   = sorted.filter(i => !i.evaluated);
   const completed = sorted.filter(i => i.evaluated);
 

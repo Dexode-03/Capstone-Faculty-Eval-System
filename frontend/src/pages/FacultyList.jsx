@@ -27,7 +27,7 @@ const FacultyList = () => {
     fetchFaculty();
   }, []);
 
-  const filteredFaculty = faculty
+  const filteredFaculty = (faculty || [])
   .filter(
     (f) =>
       f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
