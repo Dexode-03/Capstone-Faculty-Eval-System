@@ -39,7 +39,7 @@ const StudentDashboard = ({ user }) => {
     fetch();
   }, []);
 
-  const sorted    = [...(instructors || [])].sort((a, b) => a.name.localeCompare(b.name));
+  const sorted    = [...instructors].sort((a, b) => a.name.localeCompare(b.name));
   const pending   = sorted.filter(i => !i.evaluated);
   const completed = sorted.filter(i => i.evaluated);
 
@@ -220,8 +220,8 @@ const FacultyDashboard = ({ user }) => {
     );
   }
 
-  const totalBlocks   = (data.subjects || []).reduce((acc, s) => acc + (s.blocks || []).length, 0);
-  const totalStudents = (data.subjects || []).reduce((acc, s) => (s.blocks || []).reduce((a, b) => a + b.students, acc), 0);
+  const totalBlocks   = data.subjects.reduce((acc, s) => acc + s.blocks.length, 0);
+  const totalStudents = data.subjects.reduce((acc, s) => s.blocks.reduce((a, b) => a + b.students, acc), 0);
 
   return (
     <div>
@@ -319,7 +319,7 @@ const AdminDashboard = ({ user, stats }) => {
           <p className="text-[12px] font-medium text-white/60 uppercase tracking-wider mb-1">
             Admin Overview
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-3xl font-bold text-white tracking-tight">
             Welcome back, {user?.name?.split(' ')[0]}
           </h1>
           <p className="text-[14px] text-white/70 mt-2">
@@ -463,7 +463,7 @@ const Dashboard = () => {
     fetchStats();
   }, [user?.role]);
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-5 h-5 border-2 border-psu-border border-t-psu-primary rounded-full animate-spin" />
