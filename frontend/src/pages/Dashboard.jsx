@@ -220,8 +220,8 @@ const FacultyDashboard = ({ user }) => {
     );
   }
 
-  const totalBlocks   = data.subjects.reduce((acc, s) => acc + s.blocks.length, 0);
-  const totalStudents = data.subjects.reduce((acc, s) => s.blocks.reduce((a, b) => a + b.students, acc), 0);
+  const totalBlocks   = (data.subjects || []).reduce((acc, s) => acc + (s.blocks || []).length, 0);
+  const totalStudents = (data.subjects || []).reduce((acc, s) => (s.blocks || []).reduce((a, b) => a + b.students, acc), 0);
 
   return (
     <div>

@@ -21,7 +21,7 @@ const Navbar = () => {
     { to: '/reports', label: 'Reports' },
   ];
 
-  const filteredLinks = navLinks.filter(
+  const filteredLinks = (navLinks || []).filter(
     (link) => !link.roles || link.roles.includes(user?.role)
   );
 
