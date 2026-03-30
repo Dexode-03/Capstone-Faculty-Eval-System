@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-psu-primary: #0B3D91;
+  --color-psu-secondary: #1428A0;
+  --color-psu-gold: #FFC72C;
+  --color-psu-background: #FAFAFA;
+  --color-psu-surface: #FFFFFF;
+  --color-psu-border: #E5E5E5;
+  --color-psu-text: #171717;
+  --color-psu-muted: #737373;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-psu-background);
+  color: var(--color-psu-text);
+}
+
+::selection {
+  background-color: #0B3D91;
+  color: white;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}
