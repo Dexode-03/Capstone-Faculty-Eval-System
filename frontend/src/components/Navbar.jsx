@@ -16,16 +16,15 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard' },
-    { to: '/faculty', label: 'Faculty', roles: ['admin'] },
-    { to: '/evaluation', label: 'Evaluate', roles: ['student'] },
-    { to: '/reports', label: 'Reports' },
+    { to: '/faculty',   label: 'Faculty',  roles: ['admin'] },
+    { to: '/reports',   label: 'Reports',  roles: ['admin', 'faculty'] },
   ];
 
   const filteredLinks = (navLinks || []).filter(
-    (link) => !link.roles || link.roles.includes(user?.role)
+    link => !link.roles || link.roles.includes(user?.role)
   );
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = path => location.pathname === path;
 
   return (
     <nav className="bg-white border-b border-psu-border">
@@ -36,7 +35,7 @@ const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center space-x-1">
-            {filteredLinks.map((link) => (
+            {filteredLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}
@@ -53,7 +52,7 @@ const Navbar = () => {
 
           <div className="hidden md:flex items-center space-x-4">
             <div className="text-right max-w-[160px]">
-             <p className="text-[13px] font-medium text-psu-text leading-tight truncate">{user?.name}</p>
+              <p className="text-[13px] font-medium text-psu-text leading-tight truncate">{user?.name}</p>
               <Link
                 to="/change-password"
                 className="text-[11px] text-psu-muted capitalize tracking-wide hover:text-psu-primary transition-colors"
@@ -80,7 +79,7 @@ const Navbar = () => {
 
         {menuOpen && (
           <div className="md:hidden py-3 border-t border-psu-border space-y-1">
-            {filteredLinks.map((link) => (
+            {filteredLinks.map(link => (
               <Link
                 key={link.to}
                 to={link.to}

@@ -8,10 +8,13 @@ import {
   HiOutlineDocumentText,
   HiOutlineChartBar,
   HiCheckCircle,
+  HiOutlineTrash,
+  HiOutlineExclamation,
 } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import dashboardService from '../services/dashboardService';
 import evaluationService from '../services/evaluationService';
+
 
 // ── Student view ──────────────────────────────────────────────────
 const StudentDashboard = ({ user }) => {
@@ -24,14 +27,7 @@ const StudentDashboard = ({ user }) => {
         const res = await evaluationService.getEnrolledInstructors();
         setInstructors(res.data.instructors);
       } catch {
-        // Mock data — remove when backend is ready
-        setInstructors([
-          { id: 1, name: 'Dr. Maria Santos',    subject: 'Computer Programming 1', department: 'Computer Science',       evaluated: false },
-          { id: 2, name: 'Prof. Juan Dela Cruz', subject: 'Data Structures',        department: 'Information Technology', evaluated: true  },
-          { id: 3, name: 'Dr. Ana Reyes',        subject: 'Discrete Mathematics',   department: 'Mathematics',            evaluated: false },
-          { id: 4, name: 'Prof. Carlo Mendoza',  subject: 'Physics for Engineers',  department: 'Engineering',            evaluated: false },
-          { id: 5, name: 'Dr. Lisa Garcia',      subject: 'Technical Writing',      department: 'Computer Science',       evaluated: true  },
-        ]);
+        setInstructors([]);
       } finally {
         setLoading(false);
       }
@@ -68,7 +64,7 @@ const StudentDashboard = ({ user }) => {
         </p>
       </div>
 
-      {/* Pending */}
+      {/* Pending — entire row is a link */}
       {pending.length > 0 && (
         <div className="mb-8">
           <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">
@@ -76,9 +72,10 @@ const StudentDashboard = ({ user }) => {
           </p>
           <div className="border border-psu-border divide-y divide-psu-border bg-white">
             {pending.map(instructor => (
-              <div
+              <Link
                 key={instructor.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-6 py-4 gap-3 hover:bg-gray-50 transition-colors"
+                to={`/evaluation?faculty=${instructor.id}`}
+                className="flex items-center justify-between px-6 py-4 gap-3 hover:bg-psu-primary/5 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-psu-primary/10 border border-psu-border flex items-center justify-center flex-shrink-0">
@@ -93,14 +90,8 @@ const StudentDashboard = ({ user }) => {
                     </p>
                   </div>
                 </div>
-                <Link
-                  to={`/evaluation?faculty=${instructor.id}`}
-                  className="flex items-center gap-1.5 bg-psu-primary text-white text-[12px] font-semibold px-4 py-2 rounded-lg hover:bg-psu-secondary transition-colors self-start sm:self-auto"
-                >
-                  Evaluate
-                  <HiArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
+                <HiArrowRight className="h-4 w-4 text-psu-primary flex-shrink-0" />
+              </Link>
             ))}
           </div>
         </div>
@@ -177,33 +168,9 @@ const FacultyDashboard = ({ user }) => {
         setData(res.data);
       } catch {
         setData({
-          overallRating: 4.2,
-          totalEvaluations: 106,
-          subjects: [
-            {
-              id: 1,
-              name: 'Computer Programming 1',
-              blocks: [
-                { id: 1, name: 'BSCS 1-A', students: 35, evaluated: 28 },
-                { id: 2, name: 'BSCS 1-B', students: 32, evaluated: 20 },
-              ],
-            },
-            {
-              id: 2,
-              name: 'Data Structures and Algorithms',
-              blocks: [
-                { id: 3, name: 'BSCS 2-A', students: 30, evaluated: 15 },
-              ],
-            },
-            {
-              id: 3,
-              name: 'Object Oriented Programming',
-              blocks: [
-                { id: 4, name: 'BSIT 2-A', students: 33, evaluated: 33 },
-                { id: 5, name: 'BSIT 2-B', students: 31, evaluated: 10 },
-              ],
-            },
-          ],
+          overallRating: 0,
+          totalEvaluations: 0,
+          subjects: [],
         });
       } finally {
         setLoading(false);
@@ -238,9 +205,9 @@ const FacultyDashboard = ({ user }) => {
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
         {[
-          { label: 'Subjects',    value: data.subjects.length   },
-          { label: 'Blocks',      value: totalBlocks             },
-          { label: 'Students',    value: totalStudents           },
+          { label: 'Subjects', value: data.subjects.length },
+          { label: 'Blocks',   value: totalBlocks          },
+          { label: 'Students', value: totalStudents         },
         ].map(item => (
           <div key={item.label} className="bg-white border border-psu-border rounded-xl px-5 py-4 text-center">
             <p className="text-3xl font-bold text-psu-primary tabular-nums">{item.value}</p>
@@ -259,13 +226,10 @@ const FacultyDashboard = ({ user }) => {
           </div>
           <p className="text-[12px] text-psu-muted mt-1">Based on {data.totalEvaluations} evaluation{data.totalEvaluations !== 1 ? 's' : ''}</p>
         </div>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map(star => (
-            <HiCheckCircle
-              key={star}
-              className={`h-6 w-6 ${star <= Math.round(data.overallRating) ? 'text-psu-primary' : 'text-gray-200'}`}
-            />
-          ))}
+        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-psu-primary/10 border border-psu-border">
+          <span className="text-2xl font-bold text-psu-primary tabular-nums">
+            {data.overallRating.toFixed(1)}
+          </span>
         </div>
       </div>
 
@@ -291,7 +255,7 @@ const FacultyDashboard = ({ user }) => {
                         ? 'bg-green-50 text-green-600 border-green-100'
                         : 'bg-psu-primary/5 text-psu-primary border-psu-border'
                     }`}>
-                     {block.evaluated}/{block.students} evaluated
+                      {block.evaluated}/{block.students} evaluated
                     </span>
                   </div>
                 </div>
@@ -304,10 +268,38 @@ const FacultyDashboard = ({ user }) => {
   );
 };
 
-// ── Admin / Faculty view ──────────────────────────────────────────
-const AdminDashboard = ({ user, stats }) => {
+// ── Admin view ────────────────────────────────────────────────────
+const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
   const total = stats.sentimentOverview.positive + stats.sentimentOverview.neutral + stats.sentimentOverview.negative;
   const pct   = v => total === 0 ? 0 : Math.round((v / total) * 100);
+
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [confirmText, setConfirmText]       = useState('');
+  const [resetting, setResetting]           = useState(false);
+  const [resetResult, setResetResult]       = useState(null); // { success, message }
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      const res = await evaluationService.clearAllEvaluations();
+      setResetResult({ success: true, message: res.data.message });
+      // Refresh parent stats
+      if (onStatsRefresh) onStatsRefresh();
+    } catch (err) {
+      setResetResult({
+        success: false,
+        message: err.response?.data?.message || 'Failed to clear evaluation data.',
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowResetModal(false);
+    setConfirmText('');
+    setResetResult(null);
+  };
 
   return (
     <div>
@@ -409,13 +401,12 @@ const AdminDashboard = ({ user, stats }) => {
       </div>
 
       {/* Quick links */}
-      <div>
+      <div className="mb-10">
         <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Quick Links</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Faculty',  desc: 'View all members',  to: '/faculty',    icon: HiOutlineUserGroup,      accent: 'bg-psu-primary/10 text-psu-primary group-hover:bg-psu-primary group-hover:text-white'   },
-            { label: 'Evaluate', desc: 'Submit feedback',   to: '/evaluation', icon: HiOutlineClipboardCheck, accent: 'bg-psu-gold/15 text-amber-600 group-hover:bg-amber-500 group-hover:text-white'          },
-            { label: 'Reports',  desc: 'View analytics',    to: '/reports',    icon: HiOutlineChartBar,       accent: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'        },
+            { label: 'Faculty', desc: 'View all members', to: '/faculty', icon: HiOutlineUserGroup, accent: 'bg-psu-primary/10 text-psu-primary group-hover:bg-psu-primary group-hover:text-white'  },
+            { label: 'Reports', desc: 'View analytics',   to: '/reports', icon: HiOutlineChartBar,  accent: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'       },
           ].map(item => (
             <Link key={item.label} to={item.to} className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center space-x-4 hover:border-slate-300 hover:shadow-md transition-all">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${item.accent}`}>
@@ -430,6 +421,124 @@ const AdminDashboard = ({ user, stats }) => {
           ))}
         </div>
       </div>
+
+      {/* Data Management */}
+      <div>
+        <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Data Management</h2>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start space-x-4">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 bg-red-50 text-red-500">
+                <HiOutlineTrash className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-slate-900">Reset Evaluation Data</p>
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  Permanently delete all evaluations and responses. This cannot be undone.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowResetModal(true)}
+              disabled={stats.totalEvaluations === 0}
+              className="flex-shrink-0 bg-red-50 text-red-600 border border-red-200 rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-red-100 hover:border-red-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Clear All Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Reset confirmation modal ── */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={!resetting ? closeModal : undefined} />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Result state */}
+            {resetResult ? (
+              <div className="px-6 py-10 text-center">
+                {resetResult.success ? (
+                  <>
+                    <HiCheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-slate-900 mb-2">Data Cleared</h3>
+                    <p className="text-[13px] text-slate-500 mb-6">{resetResult.message}</p>
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineExclamation className="h-14 w-14 text-red-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-slate-900 mb-2">Error</h3>
+                    <p className="text-[13px] text-red-500 mb-6">{resetResult.message}</p>
+                  </>
+                )}
+                <button
+                  onClick={closeModal}
+                  className="bg-psu-primary text-white rounded-lg px-6 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Header */}
+                <div className="px-6 pt-6 pb-4 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <HiOutlineExclamation className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Clear All Evaluation Data</h3>
+                    <p className="text-[13px] text-slate-500 mt-1">
+                      This will permanently delete <span className="font-semibold text-red-600">{stats.totalEvaluations}</span> evaluation{stats.totalEvaluations !== 1 ? 's' : ''} and all associated responses. This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Confirm input */}
+                <div className="px-6 py-4">
+                  <label className="block text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-2">
+                    Type <span className="font-bold text-red-600">RESET</span> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmText}
+                    onChange={e => setConfirmText(e.target.value)}
+                    placeholder="RESET"
+                    autoFocus
+                    className="w-full py-2 border-0 border-b-2 border-slate-200 bg-transparent text-[14px] text-slate-900 placeholder-slate-300 focus:border-red-500 transition-colors outline-none"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                  <button
+                    onClick={closeModal}
+                    disabled={resetting}
+                    className="text-[13px] font-medium text-slate-500 hover:text-slate-700 transition-colors px-4 py-2"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleReset}
+                    disabled={confirmText !== 'RESET' || resetting}
+                    className="bg-red-600 text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {resetting ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Clearing...
+                      </>
+                    ) : (
+                      'Clear All Data'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -440,26 +549,27 @@ const Dashboard = () => {
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchStats = async () => {
+    try {
+      const res = await dashboardService.getStats();
+      setStats(res.data);
+    } catch {
+      setStats({
+        totalStudents:     0,
+        totalFaculty:      0,
+        totalEvaluations:  0,
+        sentimentOverview: { positive: 0, neutral: 0, negative: 0 },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user?.role === 'student') {
       setLoading(false);
       return;
     }
-    const fetchStats = async () => {
-      try {
-        const res = await dashboardService.getStats();
-        setStats(res.data);
-      } catch {
-        setStats({
-          totalStudents:     150,
-          totalFaculty:      25,
-          totalEvaluations:  150,
-          sentimentOverview: { positive: 180, neutral: 85, negative: 55 },
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStats();
   }, [user?.role]);
 
@@ -473,8 +583,8 @@ const Dashboard = () => {
 
   if (user?.role === 'student') return <StudentDashboard user={user} />;
   if (user?.role === 'faculty') return <FacultyDashboard user={user} />;
-  if (user?.role === 'admin') return <AdminDashboard user={user} stats={stats} />;
-return null;
+  if (user?.role === 'admin')   return <AdminDashboard user={user} stats={stats} onStatsRefresh={fetchStats} />;
+  return null;
 };
 
 export default Dashboard;

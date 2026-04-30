@@ -1,136 +1,214 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { HiOutlineStar, HiStar, HiCheckCircle } from 'react-icons/hi';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { HiCheckCircle, HiArrowRight, HiX } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import facultyService from '../services/facultyService';
 import evaluationService from '../services/evaluationService';
 
-const StarRating = ({ value, onChange, hoverValue, onHover, onLeave, size = 'h-6 w-6' }) => (
-  <div className="flex items-center space-x-0.5">
-    {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        type="button"
-        onClick={() => onChange(star)}
-        onMouseEnter={() => onHover(star)}
-        onMouseLeave={onLeave}
-        className="p-0.5 transition-colors"
-      >
-        {star <= (hoverValue || value) ? (
-          <HiStar className={`${size} text-psu-gold`} />
-        ) : (
-          <HiOutlineStar className={`${size} text-gray-200 hover:text-gray-300`} />
-        )}
-      </button>
-    ))}
-    {value > 0 && (
-      <span className="ml-2 text-[12px] text-psu-muted tabular-nums">{value}/5</span>
-    )}
+// ── Rating scale definition (matches PSU form) ────────────────────
+const RATING_SCALE = [
+  { value: 5, label: 'Always manifested',       short: '5' },
+  { value: 4, label: 'Often manifested',         short: '4' },
+  { value: 3, label: 'Sometimes manifested',     short: '3' },
+  { value: 2, label: 'Seldom manifested',        short: '2' },
+  { value: 1, label: 'Never/Rarely Manifested',  short: '1' },
+];
+
+// ── Rating scale header table ─────────────────────────────────────
+const RatingScaleTable = () => (
+  <div className="border border-psu-border bg-white rounded-lg overflow-hidden mb-6">
+    <div className="px-6 py-3 bg-gray-50 border-b border-psu-border">
+      <h3 className="text-[12px] font-semibold text-psu-muted uppercase tracking-wider">Rating Scale</h3>
+    </div>
+    <div className="divide-y divide-psu-border">
+      {RATING_SCALE.map(r => (
+        <div key={r.value} className="px-6 py-2.5 flex items-center gap-4">
+          <span className="w-6 h-6 rounded-full bg-psu-primary/10 text-psu-primary text-[12px] font-bold flex items-center justify-center flex-shrink-0">
+            {r.value}
+          </span>
+          <span className="text-[13px] font-medium text-psu-text w-44 flex-shrink-0">{r.label}</span>
+        </div>
+      ))}
+    </div>
   </div>
 );
 
+// ── Radio button row for a single rated question ──────────────────
+const QuestionRow = ({ number, question, value, onChange }) => (
+  <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 border-b border-psu-border last:border-b-0">
+    <p className="text-[13px] text-psu-text leading-relaxed flex-1">
+      <span className="font-medium text-psu-muted mr-1.5">{number}.</span>
+      {question}
+    </p>
+    <div className="flex items-center gap-3 flex-shrink-0">
+      {RATING_SCALE.map(r => (
+        <label key={r.value} className="flex flex-col items-center gap-1 cursor-pointer group">
+          <span className="text-[10px] text-psu-muted group-hover:text-psu-primary transition-colors">{r.value}</span>
+          <input
+            type="radio"
+            name={`question-${question}`}
+            value={r.value}
+            checked={value === r.value}
+            onChange={() => onChange(r.value)}
+            className="w-4 h-4 accent-psu-primary cursor-pointer"
+          />
+        </label>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Confirmation modal ────────────────────────────────────────────
+const ConfirmationModal = ({ faculty, onNextFaculty, onClose, sentimentResult, overallRating }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+    <div className="relative bg-white rounded-2xl border border-psu-border shadow-xl w-full max-w-md p-8 text-center">
+      <button onClick={onClose} className="absolute top-4 right-4 text-gray-300 hover:text-psu-text transition-colors">
+        <HiX className="h-5 w-5" />
+      </button>
+      <HiCheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+      <h2 className="text-xl font-semibold text-psu-text tracking-tight mb-1">Evaluation Submitted</h2>
+      <p className="text-[13px] text-psu-muted mb-5">
+        Your feedback for <span className="font-medium text-psu-text">{faculty?.name}</span> has been recorded.
+      </p>
+      {overallRating > 0 && (
+        <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-4 py-2 mb-3 text-[12px]">
+          <span className="text-psu-muted uppercase tracking-wider font-medium">Overall Rating</span>
+          <span className="font-bold text-psu-primary tabular-nums">{overallRating} / 5</span>
+        </div>
+      )}
+      {sentimentResult && (
+        <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-4 py-2 mb-6 ml-2 text-[12px]">
+          <span className="text-psu-muted uppercase tracking-wider font-medium">Sentiment</span>
+          <span className={`font-semibold capitalize ${
+            sentimentResult.label === 'positive' ? 'text-psu-primary' :
+            sentimentResult.label === 'negative' ? 'text-red-500' : 'text-psu-muted'
+          }`}>
+            {sentimentResult.label}
+          </span>
+        </div>
+      )}
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={onNextFaculty}
+          className="w-full flex items-center justify-center gap-2 bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold hover:bg-psu-secondary transition-colors"
+        >
+          Evaluate Next Faculty
+          <HiArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onClose}
+          className="w-full border border-psu-border text-psu-muted rounded-lg px-6 py-3 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors"
+        >
+          Done for now
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Main component ────────────────────────────────────────────────
 const EvaluationForm = () => {
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const facultyFromUrl = searchParams.get('faculty');
+  const { user }         = useAuth();
+  const navigate         = useNavigate();
+  const [searchParams]   = useSearchParams();
+  const facultyFromUrl   = searchParams.get('faculty');
 
-  const [step, setStep] = useState(1);
-  const [faculty, setFaculty] = useState([]);
-  const [questions, setQuestions] = useState({});
-  const [questionList, setQuestionList] = useState([]);
-  const [selectedFaculty, setSelectedFaculty] = useState('');
-  const [responses, setResponses] = useState({});
-  const [hoverStates, setHoverStates] = useState({});
-  const [overallRating, setOverallRating] = useState(0);
-  const [overallHover, setOverallHover] = useState(0);
-  const [comment, setComment] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sentimentResult, setSentimentResult] = useState(null);
-
+  // Redirect non-students away — admins and faculty cannot submit evaluations
   useEffect(() => {
+    if (user && user.role !== 'student') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
+  // Redirect to dashboard if accessed without a faculty param
+  useEffect(() => {
+    if (!facultyFromUrl) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [facultyFromUrl, navigate]);
+
+  // Steps are now 1 = Rate Questions, 2 = Review & Submit
+  const [step,            setStep]            = useState(1);
+  const [facultyInfo,     setFacultyInfo]     = useState(null);
+  const [grouped,         setGrouped]         = useState({});
+  const [ratedQuestions,  setRatedQuestions]  = useState([]);
+  const [responses,       setResponses]       = useState({});
+  const [strengths,       setStrengths]       = useState('');
+  const [weaknesses,      setWeaknesses]      = useState('');
+  const [error,           setError]           = useState('');
+  const [loading,         setLoading]         = useState(false);
+  const [dataLoading,     setDataLoading]     = useState(true);
+  const [sentimentResult, setSentimentResult] = useState(null);
+  const [computedRating,  setComputedRating]  = useState(0);
+  const [showModal,       setShowModal]       = useState(false);
+
+  // ── Fetch faculty info + questions ──────────────────────────────
+  useEffect(() => {
+    if (!facultyFromUrl) return;
+
     const fetchData = async () => {
       try {
-        const studentDept = user?.department || null;
         const [facultyRes, questionsRes] = await Promise.all([
-          facultyService.getAll(studentDept),
+          facultyService.getById(facultyFromUrl),
           evaluationService.getQuestions(),
         ]);
-        setFaculty([...(facultyRes.data.faculty || [])].sort((a, b) => a.name.localeCompare(b.name)));
-        setQuestions(questionsRes.data.grouped);
-        setQuestionList(questionsRes.data.questions);
-      } catch {
-        const mockFaculty = [
-          { id: 1, name: 'Dr. Maria Santos',    department: 'Computer Science'       },
-          { id: 2, name: 'Prof. Juan Dela Cruz', department: 'Information Technology' },
-          { id: 3, name: 'Dr. Ana Reyes',        department: 'Mathematics'            },
-          { id: 4, name: 'Prof. Carlo Mendoza',  department: 'Engineering'            },
-          { id: 5, name: 'Dr. Lisa Garcia',      department: 'Computer Science'       },
-        ];
-        setFaculty([...mockFaculty].sort((a, b) => a.name.localeCompare(b.name)));
 
-        const fallback = {
-          'Teaching Quality': [
-            { id: 1, question: 'The instructor explains concepts clearly and effectively.' },
-            { id: 2, question: 'The instructor is well-prepared for each class session.' },
-            { id: 3, question: 'The instructor uses relevant examples to illustrate key points.' },
-          ],
-          'Communication': [
-            { id: 4, question: 'The instructor encourages student participation and questions.' },
-            { id: 5, question: 'The instructor is approachable and available for consultation.' },
-            { id: 6, question: 'The instructor provides clear and constructive feedback.' },
-          ],
-          'Course Management': [
-            { id: 7, question: 'The course materials and resources are adequate and helpful.' },
-            { id: 8, question: 'The instructor manages class time effectively.' },
-            { id: 9, question: 'The grading criteria and policies are fair and transparent.' },
-          ],
-          'Professionalism': [
-            { id: 10, question: 'The instructor demonstrates respect for students.' },
-          ],
-        };
-        setQuestions(fallback);
-        setQuestionList(Object.values(fallback).flat());
+        setFacultyInfo(facultyRes.data.faculty);
+
+        const groupedData = questionsRes.data.grouped || {};
+        setGrouped(groupedData);
+
+        // Collect only rating-type questions for progress tracking
+        const rated = [];
+        Object.values(groupedData).forEach(cat => {
+          const qs = Array.isArray(cat) ? cat : (cat.questions || []);
+          qs.forEach(q => {
+            if (q.question_type === 'rating' || !q.question_type) rated.push(q);
+          });
+        });
+        setRatedQuestions(rated);
+      } catch {
+        // Fallback mock
+        setFacultyInfo({ id: facultyFromUrl, name: 'Faculty Member', department: '—' });
+        setGrouped({});
+        setRatedQuestions([]);
+      } finally {
+        setDataLoading(false);
       }
     };
+
     fetchData();
-  }, [user?.department]);
+  }, [facultyFromUrl, user?.department]);
 
-  // Once faculty list loads, if ?faculty= is in the URL,
-  // auto-select that instructor and jump straight to step 2
-  useEffect(() => {
-    if (facultyFromUrl && faculty.length > 0) {
-      setSelectedFaculty(String(facultyFromUrl));
-      setStep(2);
-    }
-  }, [facultyFromUrl, faculty]);
+  // ── Progress ───────────────────────────────────────────────────
+  const totalRated    = ratedQuestions.length;
+  const answeredCount = Object.keys(responses).length;
+  const progressPct   = totalRated > 0 ? Math.round((answeredCount / totalRated) * 100) : 0;
 
-  const totalQuestions    = questionList.length;
-  const answeredQuestions = Object.keys(responses).length;
-  const progressPercent   = totalQuestions > 0 ? Math.round((answeredQuestions / totalQuestions) * 100) : 0;
+  // ── Computed overall rating ────────────────────────────────────
+  const computeOverallRating = (resp) => {
+    const vals = Object.values(resp);
+    if (vals.length === 0) return 0;
+    return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+  };
 
   const handleResponseChange = (questionId, rating) => {
-    setResponses(prev => ({ ...prev, [questionId]: rating }));
+    setResponses(prev => {
+      const updated = { ...prev, [questionId]: rating };
+      setComputedRating(computeOverallRating(updated));
+      return updated;
+    });
   };
 
-  const handleHover = (questionId, star) => {
-    setHoverStates(prev => ({ ...prev, [questionId]: star }));
-  };
+  const canProceedToStep2 = answeredCount === totalRated && totalRated > 0;
+  const canSubmit         = canProceedToStep2;
 
-  const handleLeave = (questionId) => {
-    setHoverStates(prev => ({ ...prev, [questionId]: 0 }));
-  };
-
-  const canProceedToStep2 = selectedFaculty !== '';
-  const canProceedToStep3 = answeredQuestions === totalQuestions;
-  const canSubmit         = overallRating > 0 && comment.trim().length > 0;
-
+  // ── Submit ─────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
     setSentimentResult(null);
 
     const responseArray = Object.entries(responses).map(([question_id, rating]) => ({
@@ -140,14 +218,14 @@ const EvaluationForm = () => {
 
     try {
       const res = await evaluationService.submit({
-        faculty_id: selectedFaculty,
-        rating:     overallRating,
-        comment,
+        faculty_id: facultyFromUrl,
         responses:  responseArray,
+        strengths:  strengths.trim(),
+        weaknesses: weaknesses.trim(),
       });
-      setSuccess(res.data.message);
       setSentimentResult(res.data.sentimentAnalysis);
-      setStep(4);
+      setComputedRating(res.data.overallRating || computeOverallRating(responses));
+      setShowModal(true);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit evaluation.');
     } finally {
@@ -157,30 +235,65 @@ const EvaluationForm = () => {
 
   const resetForm = () => {
     setStep(1);
-    setSelectedFaculty('');
     setResponses({});
-    setHoverStates({});
-    setOverallRating(0);
-    setOverallHover(0);
-    setComment('');
+    setStrengths('');
+    setWeaknesses('');
     setError('');
-    setSuccess('');
     setSentimentResult(null);
+    setComputedRating(0);
+    setShowModal(false);
   };
 
-  const selectedFacultyInfo = faculty.find(f => String(f.id) === String(selectedFaculty));
+  const handleNextFaculty = () => { setShowModal(false); navigate('/dashboard'); };
+  const handleCloseModal  = () => { resetForm(); navigate('/dashboard'); };
+
+  // ── Helpers ────────────────────────────────────────────────────
+  const getCategoryQuestions = (cat) => Array.isArray(cat) ? cat : (cat.questions || []);
+  const getCategoryDesc      = (cat) => Array.isArray(cat) ? null : (cat.description || null);
+
+  const ratingCategories = Object.entries(grouped).filter(([, cat]) => {
+    const qs = getCategoryQuestions(cat);
+    return qs.some(q => q.question_type === 'rating' || !q.question_type);
+  });
+
+  if (dataLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-5 h-5 border-2 border-psu-border border-t-psu-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-0">
-      <div className="mb-10">
-        <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Feedback</p>
-        <h1 className="text-3xl font-semibold text-psu-text tracking-tight">Evaluate Faculty</h1>
-      </div>
+    <>
+      {showModal && (
+        <ConfirmationModal
+          faculty={facultyInfo}
+          sentimentResult={sentimentResult}
+          overallRating={computedRating}
+          onNextFaculty={handleNextFaculty}
+          onClose={handleCloseModal}
+        />
+      )}
 
-      {/* Progress Steps */}
-      {step < 4 && (
+      <div className="max-w-2xl mx-auto px-4 sm:px-0">
+
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Feedback</p>
+          <h1 className="text-3xl font-semibold text-psu-text tracking-tight">Evaluate Faculty</h1>
+          {facultyInfo && (
+            <p className="text-[14px] text-psu-muted mt-1">
+              Evaluating:{' '}
+              <span className="font-medium text-psu-text">{facultyInfo.name}</span>
+              {' '}— {facultyInfo.department}
+            </p>
+          )}
+        </div>
+
+        {/* Step indicators — now 2 steps */}
         <div className="flex items-center mb-10">
-          {['Select Faculty', 'Rate Questions', 'Review & Submit'].map((label, i) => {
+          {['Rate Questions', 'Review & Submit'].map((label, i) => {
             const stepNum     = i + 1;
             const isActive    = step === stepNum;
             const isCompleted = step > stepNum;
@@ -188,9 +301,7 @@ const EvaluationForm = () => {
               <div key={label} className="flex items-center flex-1">
                 <div className="flex items-center space-x-2">
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-semibold transition-colors ${
-                    isCompleted ? 'bg-psu-primary text-white' :
-                    isActive    ? 'bg-psu-primary text-white' :
-                    'bg-gray-100 text-psu-muted'
+                    isCompleted || isActive ? 'bg-psu-primary text-white' : 'bg-gray-100 text-psu-muted'
                   }`}>
                     {isCompleted ? '✓' : stepNum}
                   </div>
@@ -198,241 +309,186 @@ const EvaluationForm = () => {
                     isActive ? 'text-psu-text' : 'text-psu-muted'
                   }`}>{label}</span>
                 </div>
-                {i < 2 && (
+                {i < 1 && (
                   <div className={`flex-1 h-px mx-3 ${step > stepNum ? 'bg-psu-primary' : 'bg-gray-200'}`} />
                 )}
               </div>
             );
           })}
         </div>
-      )}
 
-      {error && (
-        <div className="border border-red-200 bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-6 text-[13px]">
-          {error}
-        </div>
-      )}
-
-      {/* Step 1: Select Faculty — skipped when coming from dashboard */}
-      {step === 1 && (
-        <div className="space-y-6">
-          <div className="border border-psu-border bg-white rounded-lg p-6">
-            <label className="block text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">
-              Select Faculty Member
-            </label>
-            <div className="space-y-2">
-              {faculty.map(f => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => setSelectedFaculty(String(f.id))}
-                  className={`w-full text-left px-4 py-3.5 rounded-lg border transition-all ${
-                    String(selectedFaculty) === String(f.id)
-                      ? 'border-psu-primary bg-psu-primary/5'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <p className={`text-[14px] font-medium ${
-                    String(selectedFaculty) === String(f.id) ? 'text-psu-primary' : 'text-psu-text'
-                  }`}>{f.name}</p>
-                  <p className="text-[12px] text-psu-muted mt-0.5">{f.department}</p>
-                </button>
-              ))}
-            </div>
+        {error && (
+          <div className="border border-red-200 bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-6 text-[13px]">
+            {error}
           </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              disabled={!canProceedToStep2}
-              onClick={() => setStep(2)}
-              className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Step 2: Rate Questions */}
-      {step === 2 && (
-        <div className="space-y-6">
-          <div className="border border-psu-border bg-white rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Progress</span>
-              <span className="text-[12px] text-psu-muted tabular-nums">{answeredQuestions} of {totalQuestions} answered</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-100 rounded-full">
-              <div
-                className="bg-psu-primary h-full rounded-full transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
+        {/* ── Step 1: Rate Questions ── */}
+        {step === 1 && (
+          <div className="space-y-6">
 
-          {selectedFacultyInfo && (
-            <div className="flex items-center space-x-2 text-[13px] text-psu-muted">
-              <span>Evaluating:</span>
-              <span className="font-medium text-psu-text">{selectedFacultyInfo.name}</span>
-              <span>— {selectedFacultyInfo.department}</span>
-            </div>
-          )}
-
-          {Object.entries(questions).map(([category, categoryQuestions]) => (
-            <div key={category} className="border border-psu-border bg-white rounded-lg overflow-hidden">
-              <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
-                <h3 className="text-[13px] font-semibold text-psu-text uppercase tracking-wider">{category}</h3>
+            {/* Progress bar */}
+            <div className="border border-psu-border bg-white rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Progress</span>
+                <span className="text-[12px] text-psu-muted tabular-nums">{answeredCount} of {totalRated} answered</span>
               </div>
-              <div className="divide-y divide-psu-border">
-                {categoryQuestions.map(q => (
-                  <div key={q.id} className="px-6 py-5">
-                    <p className="text-[14px] text-psu-text leading-relaxed mb-3">{q.question}</p>
-                    <StarRating
-                      value={responses[q.id] || 0}
-                      onChange={rating => handleResponseChange(q.id, rating)}
-                      hoverValue={hoverStates[q.id] || 0}
-                      onHover={star => handleHover(q.id, star)}
-                      onLeave={() => handleLeave(q.id)}
-                    />
-                  </div>
-                ))}
+              <div className="w-full h-1.5 bg-gray-100 rounded-full">
+                <div
+                  className="bg-psu-primary h-full rounded-full transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
               </div>
             </div>
-          ))}
 
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="text-[13px] font-medium text-psu-muted hover:text-psu-text transition-colors"
-            >
-              Back
-            </button>
-            <button
-              type="button"
-              disabled={!canProceedToStep3}
-              onClick={() => setStep(3)}
-              className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      )}
+            {/* Rating scale reference */}
+            <RatingScaleTable />
 
-      {/* Step 3: Review & Submit */}
-      {step === 3 && (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {selectedFacultyInfo && (
-            <div className="flex items-center space-x-2 text-[13px] text-psu-muted">
-              <span>Evaluating:</span>
-              <span className="font-medium text-psu-text">{selectedFacultyInfo.name}</span>
-            </div>
-          )}
-
-          <div className="border border-psu-border bg-white rounded-lg overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
-              <h3 className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Question Ratings Summary</h3>
-            </div>
-            <div className="divide-y divide-psu-border">
-              {Object.entries(questions).map(([category, categoryQuestions]) => (
-                <div key={category} className="px-6 py-3">
-                  <p className="text-[12px] font-semibold text-psu-muted uppercase tracking-wider mb-1">{category}</p>
-                  {categoryQuestions.map(q => (
-                    <div key={q.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 gap-1.5">
-                      <p className="text-[13px] text-psu-text sm:pr-4 flex-1">{q.question}</p>
-                      <div className="flex items-center space-x-0.5 flex-shrink-0">
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <HiStar
-                            key={star}
-                            className={`h-4 w-4 ${star <= (responses[q.id] || 0) ? 'text-psu-gold' : 'text-gray-200'}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            {/* Radio header row */}
+            <div className="hidden sm:flex justify-end pr-6 gap-3 mb-[-16px]">
+              {RATING_SCALE.map(r => (
+                <div key={r.value} className="w-8 text-center text-[10px] font-semibold text-psu-muted uppercase">
+                  {r.value}
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="border border-psu-border bg-white rounded-lg p-6">
-            <label className="block text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">
-              Overall Rating
-            </label>
-            <StarRating
-              value={overallRating}
-              onChange={setOverallRating}
-              hoverValue={overallHover}
-              onHover={setOverallHover}
-              onLeave={() => setOverallHover(0)}
-              size="h-8 w-8"
-            />
-          </div>
+            {/* Category sections */}
+            {ratingCategories.map(([category, catData]) => {
+              const qs   = getCategoryQuestions(catData).filter(q => q.question_type === 'rating' || !q.question_type);
+              const desc = getCategoryDesc(catData);
+              return (
+                <div key={category} className="border border-psu-border bg-white rounded-lg overflow-hidden">
+                  <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
+                    <h3 className="text-[13px] font-semibold text-psu-text">{category}</h3>
+                    {desc && (
+                      <p className="text-[12px] text-psu-muted leading-relaxed mt-1.5">{desc}</p>
+                    )}
+                  </div>
+                  {qs.map((q, idx) => (
+                    <QuestionRow
+                      key={q.id}
+                      number={q.sort_order || idx + 1}
+                      question={q.question}
+                      value={responses[q.id] || null}
+                      onChange={rating => handleResponseChange(q.id, rating)}
+                    />
+                  ))}
+                </div>
+              );
+            })}
 
-          <div className="border border-psu-border bg-white rounded-lg p-6">
-            <label className="block text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">
-              Additional Comments & Feedback
-            </label>
-            <textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              rows={5}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-[14px] text-psu-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all resize-none leading-relaxed"
-              placeholder="Share your overall experience with this faculty member. What did they do well? What could be improved?"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="text-[13px] font-medium text-psu-muted hover:text-psu-text transition-colors"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !canSubmit}
-              className="bg-psu-primary text-white rounded-lg px-8 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Submitting...' : 'Submit Evaluation'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Step 4: Success */}
-      {step === 4 && (
-        <div className="border border-psu-border bg-white rounded-lg p-5 sm:p-8 text-center">
-          <HiCheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-psu-text tracking-tight mb-2">Evaluation Submitted</h2>
-          <p className="text-[13px] text-psu-muted mb-6">
-            {success || 'Your feedback has been recorded successfully.'}
-          </p>
-
-          {sentimentResult && (
-            <div className="inline-flex flex-wrap items-center justify-center gap-2 border border-psu-border rounded-lg px-5 py-3 mb-6">
-              <span className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Sentiment</span>
-              <span className={`text-[14px] font-semibold capitalize ${
-                sentimentResult.label === 'positive' ? 'text-psu-primary' :
-                sentimentResult.label === 'negative' ? 'text-red-500' : 'text-psu-muted'
-              }`}>
-                {sentimentResult.label}
-              </span>
-              <span className="text-[12px] text-psu-muted tabular-nums">({sentimentResult.score})</span>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                disabled={!canProceedToStep2}
+                onClick={() => setStep(2)}
+                className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          <button
-            type="button"
-            onClick={resetForm}
-            className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors"
-          >
-            Submit Another Evaluation
-          </button>
-        </div>
-      )}
-    </div>
+        {/* ── Step 2: Open-ended + Review + Submit ── */}
+        {step === 2 && (
+          <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* Computed overall rating preview */}
+            {computedRating > 0 && (
+              <div className="border border-psu-border bg-white rounded-lg p-5 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1">Computed Overall Rating</p>
+                  <p className="text-[12px] text-psu-muted">Average of your {totalRated} rated responses</p>
+                </div>
+                <span className="text-3xl font-bold text-psu-primary tabular-nums">
+                  {computedRating}<span className="text-[16px] text-psu-muted font-normal"> / 5</span>
+                </span>
+              </div>
+            )}
+
+            {/* Ratings summary */}
+            <div className="border border-psu-border bg-white rounded-lg overflow-hidden">
+              <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
+                <h3 className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Ratings Summary</h3>
+              </div>
+              <div className="divide-y divide-psu-border">
+                {ratingCategories.map(([category, catData]) => {
+                  const qs = getCategoryQuestions(catData).filter(q => q.question_type === 'rating' || !q.question_type);
+                  return (
+                    <div key={category} className="px-6 py-3">
+                      <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-2">{category}</p>
+                      {qs.map(q => (
+                        <div key={q.id} className="flex items-center justify-between py-1.5 gap-2">
+                          <p className="text-[13px] text-psu-text flex-1 pr-4">{q.question}</p>
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-psu-primary/10 text-psu-primary text-[12px] font-bold tabular-nums flex-shrink-0">
+                            {responses[q.id] || '—'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Open-ended questions */}
+            <div className="border border-psu-border bg-white rounded-lg overflow-hidden">
+              <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
+                <h3 className="text-[13px] font-semibold text-psu-text">Open-ended Questions</h3>
+                <p className="text-[12px] text-psu-muted mt-1">
+                  Sagutan ang mga sumusunod na tanong. Maging makatuwiran sa pagbibigay ng mga puna.
+                </p>
+              </div>
+              <div className="divide-y divide-psu-border">
+                <div className="px-6 py-5">
+                  <label className="block text-[13px] font-medium text-psu-text mb-2">
+                    1. Strengths of your Instructors / Professors teaching performance:
+                  </label>
+                  <textarea
+                    value={strengths}
+                    onChange={e => setStrengths(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-[14px] text-psu-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all resize-none leading-relaxed"
+                    placeholder="What did this instructor do well?"
+                  />
+                </div>
+                <div className="px-6 py-5">
+                  <label className="block text-[13px] font-medium text-psu-text mb-2">
+                    2. Weaknesses of your Instructors / Professors teaching performance:
+                  </label>
+                  <textarea
+                    value={weaknesses}
+                    onChange={e => setWeaknesses(e.target.value)}
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-[14px] text-psu-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all resize-none leading-relaxed"
+                    placeholder="What could this instructor improve on?"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="text-[13px] font-medium text-psu-muted hover:text-psu-text transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !canSubmit}
+                className="bg-psu-primary text-white rounded-lg px-8 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Submitting...' : 'Submit Evaluation'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </>
   );
 };
 

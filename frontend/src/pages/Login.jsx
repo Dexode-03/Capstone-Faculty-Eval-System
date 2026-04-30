@@ -18,45 +18,26 @@ const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    // if (!formData.email.endsWith('@psu.edu.ph')) {
-    //   setError('Only PSU email addresses (@psu.edu.ph) are allowed.');
-    //   setLoading(false);
-    //   return;
-    // }
-
-    // try {
-    //   const response = await authService.login(formData);
-    //   login(response.data.token, response.data.user);
-    //   navigate('/dashboard');
-    // } catch (err) {
-    //   setError(err.response?.data?.message || 'Login failed. Please try again.');
-    // } finally {
-    //   setLoading(false);
-    // }
-
-    // Mock authentication logic for testing without backend
-    const mockAccounts = {
-      'admin@psu.edu.ph':   { name: 'Test Admin',   role: 'admin',   password: 'Psu@Admin1' },
-      'faculty@psu.edu.ph': { name: 'Test Faculty',  role: 'faculty', password: 'Psu@Faculty1' },
-      'student@psu.edu.ph': { name: 'Test Student',  role: 'student', password: 'Psu@Student1' },
-    };
- 
-    const match = mockAccounts[formData.email];
- 
-    if (match && match.password === formData.password) {
-      login('mock-token', { name: match.name, role: match.role, email: formData.email });
-      setLoading(false);
-      navigate('/dashboard');
-      return;
-    }
- 
-    setError('Invalid email or password.');
+  if (!formData.email.endsWith('@psu.edu.ph')) {
+    setError('Only PSU email addresses (@psu.edu.ph) are allowed.');
     setLoading(false);
-  };
+    return;
+  }
+
+  try {
+    const response = await authService.login(formData);
+    login(response.data.token, response.data.user);
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.response?.data?.message || 'Login failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
@@ -135,6 +116,11 @@ const Login = () => {
           </button>
         </form>
       </div>
+
+      {/* Background note */}
+      <p className="absolute bottom-6 left-6 text-sm text-white font-medium tracking-wide drop-shadow-md">
+        Capstone Project Group 6: Web-based Faculty Evaluation with Sentiments and Prescriptive Analysis
+      </p>
     </div>
   );
 };

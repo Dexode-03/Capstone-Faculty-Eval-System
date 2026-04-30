@@ -2,22 +2,31 @@ const Evaluation = require('../models/Evaluation');
 const EvaluationQuestion = require('../models/EvaluationQuestion');
 const EvaluationResponse = require('../models/EvaluationResponse');
 const Faculty = require('../models/Faculty');
-const { analyzeSentiment, generateRecommendations } = require('../utils/sentimentAnalyzer');
+const {
+  analyzeSentiment,
+  generateRecommendations,
+  generateSystemRecommendations,
+  SHORT_CATEGORY,
+} = require('../utils/sentimentAnalyzer');
 
 /**
  * GET /api/evaluation/questions
- * Get all active evaluation questions
+ * Returns flat list + grouped object with category_description per group
  */
 const getQuestions = async (req, res) => {
   try {
     const questions = await EvaluationQuestion.findAllActive();
 
-    // Group by category
-    const grouped = questions.reduce((acc, q) => {
-      if (!acc[q.category]) acc[q.category] = [];
-      acc[q.category].push(q);
-      return acc;
-    }, {});
+    const grouped = {};
+    questions.forEach(q => {
+      if (!grouped[q.category]) {
+        grouped[q.category] = {
+          description: q.category_description || null,
+          questions:   [],
+        };
+      }
+      grouped[q.category].questions.push(q);
+    });
 
     res.json({ questions, grouped });
   } catch (error) {
@@ -28,67 +37,105 @@ const getQuestions = async (req, res) => {
 
 /**
  * POST /api/evaluation/submit
- * Submit a faculty evaluation with per-question ratings
+ *
+ * Expected body:
+ * {
+ *   faculty_id: number,
+ *   responses:  [{ question_id, rating } | { question_id, text_response }],
+ *   strengths:  string,
+ *   weaknesses: string,
+ * }
  */
 const submitEvaluation = async (req, res) => {
   try {
-    const { faculty_id, rating, comment, responses } = req.body;
+    const { faculty_id, responses, strengths, weaknesses } = req.body;
     const student_id = req.user.id;
 
-    // Validation
-    if (!faculty_id || !rating || !comment) {
-      return res.status(400).json({ message: 'Faculty, overall rating, and comment are required.' });
+    if (!faculty_id) {
+      return res.status(400).json({ message: 'Faculty is required.' });
+    }
+    if (!responses || !Array.isArray(responses) || responses.length === 0) {
+      return res.status(400).json({ message: 'Evaluation responses are required.' });
     }
 
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5.' });
-    }
-
-    // Check if faculty exists
     const faculty = await Faculty.findById(faculty_id);
     if (!faculty) {
       return res.status(404).json({ message: 'Faculty member not found.' });
     }
 
-    // Validate question responses if provided
-    if (responses && Array.isArray(responses)) {
-      for (const r of responses) {
-        if (!r.question_id || !r.rating || r.rating < 1 || r.rating > 5) {
-          return res.status(400).json({ message: 'All evaluation questions must be rated between 1 and 5.' });
-        }
+    const ratedResponses = responses.filter(r => r.rating !== undefined);
+    for (const r of ratedResponses) {
+      if (!r.question_id || r.rating < 1 || r.rating > 5) {
+        return res.status(400).json({
+          message: 'All rated questions must have a rating between 1 and 5.',
+        });
       }
     }
+    if (ratedResponses.length === 0) {
+      return res.status(400).json({ message: 'At least one rated response is required.' });
+    }
 
-    // Analyze sentiment of the comment
-    const sentimentResult = analyzeSentiment(comment);
+    // Compute overall rating from average of rated responses
+    const avgRating     = ratedResponses.reduce((sum, r) => sum + r.rating, 0) / ratedResponses.length;
+    const overallRating = Math.round(avgRating * 10) / 10;
 
-    // Create evaluation
+    // Run sentiment on strengths and weaknesses SEPARATELY
+    // Combining them would cancel out (positive + negative = neutral always)
+    const strengthsSentiment  = strengths  ? analyzeSentiment(strengths)  : null;
+    const weaknessesSentiment = weaknesses ? analyzeSentiment(weaknesses) : null;
+
+    // Determine overall sentiment from both fields
+    let sentimentResult;
+    if (strengthsSentiment && weaknessesSentiment) {
+      // Both fields present — weigh by confidence
+      const posScore = (strengthsSentiment.label === 'positive' ? strengthsSentiment.confidence : 0)
+                     + (weaknessesSentiment.label === 'positive' ? weaknessesSentiment.confidence : 0);
+      const negScore = (strengthsSentiment.label === 'negative' ? strengthsSentiment.confidence : 0)
+                     + (weaknessesSentiment.label === 'negative' ? weaknessesSentiment.confidence : 0);
+
+      if (posScore > negScore)      sentimentResult = strengthsSentiment;
+      else if (negScore > posScore) sentimentResult = weaknessesSentiment;
+      else                          sentimentResult = { label: 'neutral', score: 0, confidence: 0.5 };
+    } else {
+      // Only one field present — use whichever exists
+      sentimentResult = strengthsSentiment || weaknessesSentiment
+                     || analyzeSentiment('No comments provided.');
+    }
+
+    // Store combined text as the comment for display
+    const commentForSentiment = [strengths || '', weaknesses || ''].filter(Boolean).join(' ')
+                             || 'No comments provided.';
+
     const result = await Evaluation.create({
       student_id,
       faculty_id,
-      rating: parseInt(rating),
-      comment,
-      sentiment: sentimentResult.label,
+      rating:          Math.round(overallRating),
+      comment:         commentForSentiment,
+      sentiment:       sentimentResult.label,
       sentiment_score: sentimentResult.score,
     });
 
     const evaluationId = result.insertId;
 
-    // Save per-question responses
-    if (responses && Array.isArray(responses) && responses.length > 0) {
-      await EvaluationResponse.createBulk(evaluationId, responses);
+    // Attach open-ended responses if not already in responses[]
+    const allResponses = [...responses];
+    const hasTextInResponses = responses.some(r => r.text_response !== undefined);
+    if (!hasTextInResponses) {
+      const allQuestions = await EvaluationQuestion.findAllActive();
+      const openEndedQs  = allQuestions.filter(q => q.question_type === 'text');
+      if (openEndedQs.length >= 1 && strengths !== undefined) {
+        allResponses.push({ question_id: openEndedQs[0].id, text_response: strengths || '' });
+      }
+      if (openEndedQs.length >= 2 && weaknesses !== undefined) {
+        allResponses.push({ question_id: openEndedQs[1].id, text_response: weaknesses || '' });
+      }
     }
 
+    await EvaluationResponse.createBulk(evaluationId, allResponses);
+
     res.status(201).json({
-      message: 'Evaluation submitted successfully.',
-      evaluation: {
-        id: evaluationId,
-        faculty_id,
-        rating,
-        comment,
-        sentiment: sentimentResult.label,
-        sentiment_score: sentimentResult.score,
-      },
+      message:          'Evaluation submitted successfully.',
+      overallRating,
       sentimentAnalysis: sentimentResult,
     });
   } catch (error) {
@@ -99,7 +146,8 @@ const submitEvaluation = async (req, res) => {
 
 /**
  * GET /api/evaluation/faculty/:id
- * Get evaluations for a specific faculty member
+ * Returns data shaped for FacultyReport.jsx
+ * Category names are shortened for display using SHORT_CATEGORY map.
  */
 const getFacultyEvaluations = async (req, res) => {
   try {
@@ -110,19 +158,49 @@ const getFacultyEvaluations = async (req, res) => {
       return res.status(404).json({ message: 'Faculty member not found.' });
     }
 
-    const evaluations = await Evaluation.findByFacultyId(id);
-    const avgRating = await Evaluation.getAverageRating(id);
-    const questionAverages = await EvaluationResponse.getAveragesByFaculty(id);
-
-    // Generate prescriptive recommendations
+    const evaluations     = await Evaluation.findByFacultyId(id);
+    const avgRating       = await Evaluation.getAverageRating(id);
+    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(id);
     const recommendations = generateRecommendations(evaluations);
+
+    // Sentiment overview
+    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
+    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+
+    // Category averages — use SHORT_CATEGORY display labels
+    const categoryAverages = {};
+    questionAvgs.forEach(q => {
+      const displayName = SHORT_CATEGORY[q.category] || q.category;
+      if (!categoryAverages[displayName]) {
+        categoryAverages[displayName] = { total: 0, count: 0 };
+      }
+      categoryAverages[displayName].total += parseFloat(q.avg_rating);
+      categoryAverages[displayName].count += 1;
+    });
+
+    const categoryAveragesFormatted = {};
+    Object.entries(categoryAverages).forEach(([cat, data]) => {
+      categoryAveragesFormatted[cat] = parseFloat((data.total / data.count).toFixed(2));
+    });
+
+    // Recent feedback — include strengths/weaknesses for display
+    const recentFeedback = evaluations.slice(0, 10).map(e => ({
+      id:         e.id,
+      comment:    e.comment,
+      strengths:  e.strengths  || null,
+      weaknesses: e.weaknesses || null,
+      rating:     e.rating,
+      sentiment:  e.sentiment,
+      date:       e.created_at,
+    }));
 
     res.json({
       faculty,
-      evaluations,
-      averageRating: avgRating ? parseFloat(avgRating).toFixed(2) : null,
+      averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
       totalEvaluations: evaluations.length,
-      questionAverages,
+      sentimentOverview,
+      categoryAverages: categoryAveragesFormatted,
+      recentFeedback,
       recommendations,
     });
   } catch (error) {
@@ -133,7 +211,6 @@ const getFacultyEvaluations = async (req, res) => {
 
 /**
  * GET /api/evaluation/my-evaluations
- * Get evaluations submitted by the current student
  */
 const getMyEvaluations = async (req, res) => {
   try {
@@ -145,9 +222,143 @@ const getMyEvaluations = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/evaluation/enrolled-instructors
+ */
+const getEnrolledInstructors = async (req, res) => {
+  try {
+    const student_id = req.user.id;
+
+    const allFaculty    = await Faculty.findAll();
+    const myEvaluations = await Evaluation.findByStudentId(student_id);
+
+    // Coerce to Number so Set lookup works regardless of DB/JS type mismatch
+    const evaluatedIds = new Set(myEvaluations.map(e => Number(e.faculty_id)));
+
+    const instructors = allFaculty.map(f => ({
+      id:         f.id,
+      name:       f.name,
+      subject:    f.subject || f.department,
+      department: f.department,
+      evaluated:  evaluatedIds.has(Number(f.id)),
+    }));
+
+    res.json({ instructors });
+  } catch (error) {
+    console.error('Get enrolled instructors error:', error);
+    res.status(500).json({ message: 'Server error fetching instructors.' });
+  }
+};
+
+/**
+ * GET /api/evaluation/analysis
+ * System-wide prescriptive analysis for admin Reports page.
+ */
+const getSystemAnalysis = async (req, res) => {
+  try {
+    const allEvaluations = await Evaluation.findAll();
+    const allFaculty     = await Faculty.findAll();
+    const analysis       = generateSystemRecommendations(allEvaluations, allFaculty);
+    res.json(analysis);
+  } catch (error) {
+    console.error('System analysis error:', error);
+    res.status(500).json({ message: 'Server error generating system analysis.' });
+  }
+};
+
+/**
+ * DELETE /api/evaluation/clear-all
+ * Clear / reset all evaluation data (admin only).
+ * Deletes evaluation_responses first (FK child) then evaluations.
+ */
+const clearAllEvaluations = async (req, res) => {
+  try {
+    const evalCount = await Evaluation.count();
+    await EvaluationResponse.deleteAll();
+    await Evaluation.deleteAll();
+    res.json({
+      message: `Successfully cleared ${evalCount} evaluation(s) and all associated responses.`,
+      deletedCount: evalCount,
+    });
+  } catch (error) {
+    console.error('Clear evaluations error:', error);
+    res.status(500).json({ message: 'Server error clearing evaluation data.' });
+  }
+};
+
+/**
+ * GET /api/evaluation/my-report
+ * Returns the logged-in faculty member's own evaluation report.
+ * Same shape as getFacultyEvaluations but scoped to the authenticated user.
+ */
+const getMyFacultyReport = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const facultyRecord = await Faculty.findByUserId(userId);
+    if (!facultyRecord) {
+      return res.status(404).json({ message: 'No faculty record linked to your account.' });
+    }
+
+    const facultyId       = facultyRecord.id;
+    const evaluations     = await Evaluation.findByFacultyId(facultyId);
+    const avgRating       = await Evaluation.getAverageRating(facultyId);
+    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(facultyId);
+    const recommendations = generateRecommendations(evaluations);
+
+    // Sentiment overview
+    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
+    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+
+    // Category averages — use SHORT_CATEGORY display labels
+    const categoryAverages = {};
+    questionAvgs.forEach(q => {
+      const displayName = SHORT_CATEGORY[q.category] || q.category;
+      if (!categoryAverages[displayName]) {
+        categoryAverages[displayName] = { total: 0, count: 0 };
+      }
+      categoryAverages[displayName].total += parseFloat(q.avg_rating);
+      categoryAverages[displayName].count += 1;
+    });
+
+    const categoryAveragesFormatted = {};
+    Object.entries(categoryAverages).forEach(([cat, data]) => {
+      categoryAveragesFormatted[cat] = parseFloat((data.total / data.count).toFixed(2));
+    });
+
+    // Recent feedback
+    const recentFeedback = evaluations.slice(0, 10).map(e => ({
+      id:         e.id,
+      comment:    e.comment,
+      strengths:  e.strengths  || null,
+      weaknesses: e.weaknesses || null,
+      rating:     e.rating,
+      sentiment:  e.sentiment,
+      date:       e.created_at,
+    }));
+
+    res.json({
+      faculty:          facultyRecord,
+      averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
+      totalEvaluations: evaluations.length,
+      sentimentOverview,
+      categoryAverages: categoryAveragesFormatted,
+      recentFeedback,
+      recommendations,
+    });
+  } catch (error) {
+    console.error('Get my faculty report error:', error);
+    res.status(500).json({ message: 'Server error fetching your report.' });
+  }
+};
+
 module.exports = {
   getQuestions,
   submitEvaluation,
   getFacultyEvaluations,
   getMyEvaluations,
+  getEnrolledInstructors,
+  getSystemAnalysis,
+  getMyFacultyReport,
+  clearAllEvaluations,
 };

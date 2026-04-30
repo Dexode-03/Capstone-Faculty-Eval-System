@@ -28,6 +28,12 @@ const Faculty = {
     return rows[0];
   },
 
+  // Find faculty by user account ID
+  findByUserId: async (userId) => {
+    const [rows] = await pool.execute('SELECT * FROM faculty WHERE user_id = ?', [userId]);
+    return rows[0];
+  },
+
   // Count total faculty
   count: async () => {
     const [rows] = await pool.execute('SELECT COUNT(*) as count FROM faculty');
