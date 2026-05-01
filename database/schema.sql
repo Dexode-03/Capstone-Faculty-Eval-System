@@ -4,16 +4,12 @@
 CREATE DATABASE IF NOT EXISTS faculty_evaluation_db;
 USE faculty_evaluation_db;
 
--- Users Table
-CREATE TABLE IF NOT EXISTS users (
+-- Admin Table
+CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'faculty', 'student') NOT NULL DEFAULT 'student',
-    year_level VARCHAR(20) DEFAULT NULL,
-    section VARCHAR(50) DEFAULT NULL,
-    department VARCHAR(255) DEFAULT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -23,12 +19,29 @@ CREATE TABLE IF NOT EXISTS users (
 -- Faculty Table
 CREATE TABLE IF NOT EXISTS faculty (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT DEFAULT NULL,
     name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
     department VARCHAR(255) NOT NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Students Table
+CREATE TABLE IF NOT EXISTS students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    year_level VARCHAR(20) NOT NULL,
+    section VARCHAR(50) NOT NULL,
+    department VARCHAR(255) NOT NULL,
+    email_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Evaluations Table
@@ -41,7 +54,7 @@ CREATE TABLE IF NOT EXISTS evaluations (
     sentiment ENUM('positive', 'neutral', 'negative') NOT NULL,
     sentiment_score DECIMAL(5,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
     FOREIGN KEY (faculty_id) REFERENCES faculty(id) ON DELETE CASCADE
 );
 

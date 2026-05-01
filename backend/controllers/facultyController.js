@@ -37,20 +37,46 @@ const getFacultyById = async (req, res) => {
 /**
  * POST /api/faculty
  * Create a new faculty member (admin only)
+ * Note: Faculty members should now be created through registration (User.createFaculty)
+ * This endpoint provides an alternative admin-only method
  */
 const createFaculty = async (req, res) => {
   try {
-    const { name, department, user_id } = req.body;
+    const { name, email, password, department } = req.body;
 
-    if (!name || !department) {
-      return res.status(400).json({ message: 'Name and department are required.' });
+    if (!name || !email || !password || !department) {
+      return res.status(400).json({ message: 'Name, email, password, and department are required.' });
     }
 
-    const result = await Faculty.create({ user_id: user_id || null, name, department });
+    if (!email.endsWith('@psu.edu.ph')) {
+      return res.status(400).json({ message: 'Only PSU email addresses (@psu.edu.ph) are allowed.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const existingFaculty = await Faculty.findByEmail(email);
+    if (existingFaculty) {
+      return res.status(400).json({ message: 'Email is already registered.' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const User = require('../models/User');
+    const result = await User.createFaculty({
+      name,
+      email,
+      password: hashedPassword,
+      department,
+      verification_token: null,
+    });
 
     res.status(201).json({
       message: 'Faculty member created successfully.',
-      faculty: { id: result.insertId, name, department },
+      faculty: { id: result.insertId, name, email, department },
     });
   } catch (error) {
     console.error('Create faculty error:', error);

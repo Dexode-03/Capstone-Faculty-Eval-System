@@ -7,29 +7,24 @@ const seed = async () => {
 
   const adminHash   = await bcrypt.hash('Psu@Admin1',   10);
   const facultyHash = await bcrypt.hash('Psu@Faculty1', 10);
-  const studentHash = await bcrypt.hash('Psu@Student1', 10);
 
-  console.log('Seeding users...');
+  console.log('Seeding admin...');
 
   await pool.execute(
-    `INSERT INTO users (name, email, password, role, email_verified) VALUES
-      ('Admin User',           'admin@psu.edu.ph',  ?, 'admin',   TRUE),
-      ('Dr. Maria Santos',     'maria@fefas.com',   ?, 'faculty', TRUE),
-      ('Prof. Juan Dela Cruz', 'juan@fefas.com',    ?, 'faculty', TRUE)
+    `INSERT INTO admins (name, email, password, email_verified) VALUES
+      ('Admin User', 'admin@psu.edu.ph', ?, TRUE)
     ON DUPLICATE KEY UPDATE name=name`,
-    [adminHash, facultyHash, facultyHash]
+    [adminHash]
   );
 
   console.log('Seeding faculty...');
 
   await pool.execute(
-    `INSERT INTO faculty (user_id, name, department)
-     SELECT id, name, CASE
-       WHEN email = 'maria@fefas.com' THEN 'Computer Science'
-       WHEN email = 'juan@fefas.com'  THEN 'Information Technology'
-     END
-     FROM users WHERE role = 'faculty'
-     ON DUPLICATE KEY UPDATE name=VALUES(name)`
+    `INSERT INTO faculty (name, email, password, department, email_verified) VALUES
+      ('Dr. Maria Santos', 'maria@fefas.com', ?, 'Computer Science', TRUE),
+      ('Prof. Juan Dela Cruz', 'juan@fefas.com', ?, 'Information Technology', TRUE)
+    ON DUPLICATE KEY UPDATE name=name`,
+    [facultyHash, facultyHash]
   );
 
   console.log('Seeding evaluation questions...');
@@ -60,4 +55,4 @@ const seed = async () => {
 seed().catch((err) => {
   console.error('Seed failed:', err.message);
   process.exit(1);
-});
+});

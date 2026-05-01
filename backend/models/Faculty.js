@@ -1,37 +1,65 @@
 const { pool } = require('../config/db');
 
 const Faculty = {
-  // Create a new faculty member
-  create: async ({ user_id, name, department }) => {
-    const [result] = await pool.execute(
-      'INSERT INTO faculty (user_id, name, department) VALUES (?, ?, ?)',
-      [user_id, name, department]
-    );
-    return result;
-  },
-
-  // Get all faculty members
+  // Get all faculty members with subject info
   findAll: async () => {
-    const [rows] = await pool.execute('SELECT * FROM faculty ORDER BY name ASC');
+    const [rows] = await pool.execute(
+      `SELECT f.*, s.id as subject_id, s.code as subject_code, s.name as subject_name
+       FROM faculty f
+       LEFT JOIN subjects s ON s.id = f.subject_id
+       ORDER BY f.name ASC`
+    );
     return rows;
   },
 
   // Find faculty by department
   findByDepartment: async (department) => {
-    const [rows] = await pool.execute('SELECT * FROM faculty WHERE department = ? ORDER BY name ASC', [department]);
+    const [rows] = await pool.execute(
+      `SELECT f.*, s.id as subject_id, s.code as subject_code, s.name as subject_name
+       FROM faculty f
+       LEFT JOIN subjects s ON s.id = f.subject_id
+       WHERE f.department = ?
+       ORDER BY f.name ASC`,
+      [department]
+    );
     return rows;
   },
 
-  // Find faculty by ID
+  // Find faculty by ID with subject info
   findById: async (id) => {
-    const [rows] = await pool.execute('SELECT * FROM faculty WHERE id = ?', [id]);
+    const [rows] = await pool.execute(
+      `SELECT f.*, s.id as subject_id, s.code as subject_code, s.name as subject_name
+       FROM faculty f
+       LEFT JOIN subjects s ON s.id = f.subject_id
+       WHERE f.id = ?`,
+      [id]
+    );
     return rows[0];
   },
 
-  // Find faculty by user account ID
-  findByUserId: async (userId) => {
-    const [rows] = await pool.execute('SELECT * FROM faculty WHERE user_id = ?', [userId]);
+  // Find faculty by email
+  findByEmail: async (email) => {
+    const [rows] = await pool.execute(
+      `SELECT f.*, s.code as subject_code, s.name as subject_name
+       FROM faculty f
+       LEFT JOIN subjects s ON s.id = f.subject_id
+       WHERE f.email = ?`,
+      [email]
+    );
     return rows[0];
+  },
+
+  // Find faculty by subject
+  findBySubject: async (subject_id) => {
+    const [rows] = await pool.execute(
+      `SELECT f.*, s.code as subject_code, s.name as subject_name
+       FROM faculty f
+       LEFT JOIN subjects s ON s.id = f.subject_id
+       WHERE f.subject_id = ?
+       ORDER BY f.name ASC`,
+      [subject_id]
+    );
+    return rows;
   },
 
   // Count total faculty
@@ -41,10 +69,10 @@ const Faculty = {
   },
 
   // Update faculty
-  update: async (id, { name, department }) => {
+  update: async (id, { name, department, subject_id }) => {
     const [result] = await pool.execute(
-      'UPDATE faculty SET name = ?, department = ? WHERE id = ?',
-      [name, department, id]
+      'UPDATE faculty SET name = ?, department = ?, subject_id = ? WHERE id = ?',
+      [name, department, subject_id || null, id]
     );
     return result;
   },

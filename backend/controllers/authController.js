@@ -161,7 +161,7 @@ const verifyEmail = async (req, res) => {
       return res.status(400).json({ message: 'Invalid or expired verification token.' });
     }
 
-    await User.verifyEmail(user.id);
+    await User.verifyEmail(user.id, user.role);
 
     res.json({ message: 'Email verified successfully. You can now log in.' });
   } catch (error) {
@@ -262,7 +262,7 @@ const resetPassword = async (req, res) => {
  */
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id, req.user.role);
     if (!user) {
       return res.status(404).json({ message: 'User not found.' });
     }
@@ -275,7 +275,7 @@ const getProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id, req.user.role);
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {

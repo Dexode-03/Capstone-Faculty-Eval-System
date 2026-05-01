@@ -13,11 +13,11 @@ const Evaluation = {
   // Get evaluations by faculty ID — includes strengths/weaknesses from open-ended responses
   findByFacultyId: async (faculty_id) => {
     const [rows] = await pool.execute(
-      `SELECT e.*, u.name as student_name,
+      `SELECT e.*, s.name as student_name,
               MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END) as strengths,
               MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END) as weaknesses
        FROM evaluations e
-       JOIN users u ON e.student_id = u.id
+       JOIN students s ON e.student_id = s.id
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq
               ON eq.id = er.question_id AND eq.question_type = 'text'
@@ -70,11 +70,11 @@ const Evaluation = {
   // Get all evaluations (for admin/system analysis) — includes strengths/weaknesses
   findAll: async () => {
     const [rows] = await pool.execute(
-      `SELECT e.*, u.name as student_name, f.name as faculty_name, f.department,
+      `SELECT e.*, s.name as student_name, f.name as faculty_name, f.department,
               MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END) as strengths,
               MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END) as weaknesses
        FROM evaluations e
-       JOIN users u ON e.student_id = u.id
+       JOIN students s ON e.student_id = s.id
        JOIN faculty f ON e.faculty_id = f.id
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq
@@ -106,17 +106,14 @@ const Evaluation = {
   getStudentPopulationByDepartment: async () => {
     const [rows] = await pool.execute(
       `SELECT
-         u.department,
-         u.year_level,
-         COUNT(DISTINCT u.id) as total_students,
+         s.department,
+         s.year_level,
+         COUNT(DISTINCT s.id) as total_students,
          COUNT(DISTINCT e.student_id) as evaluated_students
-       FROM users u
-       LEFT JOIN evaluations e ON e.student_id = u.id
-       WHERE u.role = 'student'
-         AND u.department IS NOT NULL
-         AND u.year_level IS NOT NULL
-       GROUP BY u.department, u.year_level
-       ORDER BY u.department ASC, u.year_level ASC`
+       FROM students s
+       LEFT JOIN evaluations e ON e.student_id = s.id
+       GROUP BY s.department, s.year_level
+       ORDER BY s.department ASC, s.year_level ASC`
     );
     return rows;
   },

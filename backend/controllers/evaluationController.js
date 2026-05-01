@@ -2,6 +2,7 @@ const Evaluation = require('../models/Evaluation');
 const EvaluationQuestion = require('../models/EvaluationQuestion');
 const EvaluationResponse = require('../models/EvaluationResponse');
 const Faculty = require('../models/Faculty');
+const Student = require('../models/Student');
 const {
   analyzeSentiment,
   generateRecommendations,
@@ -11,7 +12,6 @@ const {
 
 /**
  * GET /api/evaluation/questions
- * Returns flat list + grouped object with category_description per group
  */
 const getQuestions = async (req, res) => {
   try {
@@ -35,10 +35,9 @@ const getQuestions = async (req, res) => {
   }
 };
 
-// ── Input sanitization helpers ──────────────────────────────────
+// ── Input sanitization helpers ────────────────────────────────────
 const MAX_TEXT_LENGTH = 1000;
 
-/** Strip HTML/script tags and normalize whitespace */
 const sanitizeText = (text) => {
   if (!text || typeof text !== 'string') return '';
   return text
@@ -51,7 +50,6 @@ const sanitizeText = (text) => {
     .slice(0, MAX_TEXT_LENGTH);
 };
 
-/** Detect spam: repeated chars (aaaa), repeated words (good good good) */
 const isSpam = (text) => {
   if (!text || text.length < 3) return false;
   if (/(.)(\1){4,}/i.test(text)) return true;
@@ -113,9 +111,9 @@ const submitEvaluation = async (req, res) => {
 
     let sentimentResult;
     if (strengthsSentiment && weaknessesSentiment) {
-      const posScore = (strengthsSentiment.label === 'positive' ? strengthsSentiment.confidence : 0)
+      const posScore = (strengthsSentiment.label  === 'positive' ? strengthsSentiment.confidence  : 0)
                      + (weaknessesSentiment.label === 'positive' ? weaknessesSentiment.confidence : 0);
-      const negScore = (strengthsSentiment.label === 'negative' ? strengthsSentiment.confidence : 0)
+      const negScore = (strengthsSentiment.label  === 'negative' ? strengthsSentiment.confidence  : 0)
                      + (weaknessesSentiment.label === 'negative' ? weaknessesSentiment.confidence : 0);
 
       if (posScore > negScore)      sentimentResult = strengthsSentiment;
@@ -156,7 +154,7 @@ const submitEvaluation = async (req, res) => {
     await EvaluationResponse.createBulk(evaluationId, allResponses);
 
     res.status(201).json({
-      message:          'Evaluation submitted successfully.',
+      message:           'Evaluation submitted successfully.',
       overallRating,
       sentimentAnalysis: sentimentResult,
     });
@@ -241,22 +239,39 @@ const getMyEvaluations = async (req, res) => {
 
 /**
  * GET /api/evaluation/enrolled-instructors
+ * FIXED: Now scoped to the student's subject_id instead of returning all faculty.
+ * Only returns faculty whose subject matches the logged-in student's subject.
  */
 const getEnrolledInstructors = async (req, res) => {
   try {
     const student_id = req.user.id;
 
-    const allFaculty    = await Faculty.findAll();
+    // Get student's subject_id from students table
+    const student = await Student.findById(student_id);
+    if (!student) {
+      return res.status(404).json({ message: 'Student record not found.' });
+    }
+
+    // Get faculty matching the student's subject
+    let facultyList = [];
+    if (student.subject_id) {
+      facultyList = await Faculty.findBySubject(student.subject_id);
+    } else {
+      // Fallback if student has no subject assigned yet
+      facultyList = await Faculty.findAll();
+    }
+
+    // Mark which faculty have already been evaluated by this student
     const myEvaluations = await Evaluation.findByStudentId(student_id);
+    const evaluatedIds  = new Set(myEvaluations.map(e => Number(e.faculty_id)));
 
-    const evaluatedIds = new Set(myEvaluations.map(e => Number(e.faculty_id)));
-
-    const instructors = allFaculty.map(f => ({
-      id:         f.id,
-      name:       f.name,
-      subject:    f.subject || f.department,
-      department: f.department,
-      evaluated:  evaluatedIds.has(Number(f.id)),
+    const instructors = facultyList.map(f => ({
+      id:          f.id,
+      name:        f.name,
+      department:  f.department,
+      subject:     f.subject_name || f.department,
+      subjectCode: f.subject_code || null,
+      evaluated:   evaluatedIds.has(Number(f.id)),
     }));
 
     res.json({ instructors });
@@ -268,7 +283,6 @@ const getEnrolledInstructors = async (req, res) => {
 
 /**
  * GET /api/evaluation/analysis
- * System-wide prescriptive analysis for admin Reports page.
  */
 const getSystemAnalysis = async (req, res) => {
   try {
@@ -283,143 +297,6 @@ const getSystemAnalysis = async (req, res) => {
 };
 
 /**
- * GET /api/evaluation/analysis/by-year-department
- * Sentiment analysis + prescriptive recommendations
- * grouped by student year_level × faculty department.
- */
-const getAnalysisByYearDepartment = async (req, res) => {
-  try {
-    const db = require('../config/db');
-
-    // Adjust column/table names below if your schema differs
-    const [rows] = await db.query(`
-      SELECT
-        e.id,
-        e.faculty_id,
-        e.rating,
-        e.comment,
-        e.strengths,
-        e.weaknesses,
-        e.sentiment,
-        e.created_at,
-        f.name        AS faculty_name,
-        f.department,
-        u.year_level,
-        u.id          AS student_id
-      FROM evaluations e
-      JOIN faculty     f ON f.id = e.faculty_id
-      JOIN users       u ON u.id = e.student_id
-      WHERE e.rating IS NOT NULL
-      ORDER BY u.year_level, f.department
-    `);
-
-    if (!rows || rows.length === 0) {
-      return res.json({ groups: [], yearLevels: [] });
-    }
-
-    // ── Group by year_level + department ──────────────────────
-    const groupMap = {};
-    rows.forEach(row => {
-      const yearLevel  = row.year_level  || 'Unknown Year';
-      const department = row.department  || 'Unknown Department';
-      const key        = `${yearLevel}|||${department}`;
-
-      if (!groupMap[key]) {
-        groupMap[key] = { year_level: yearLevel, department, evaluations: [], studentIds: new Set() };
-      }
-      groupMap[key].evaluations.push(row);
-      if (row.student_id) groupMap[key].studentIds.add(row.student_id);
-    });
-
-    // ── Compute metrics per group ─────────────────────────────
-    const STOP = new Set([
-      'the','a','an','is','are','was','were','be','been','have','has','had',
-      'do','does','did','will','would','could','should','to','of','in','for',
-      'on','with','at','by','from','and','but','or','not','no','very','just',
-      'ang','ng','sa','na','si','ni','mga','ay','ko','mo','niya','namin',
-      'natin','nila','ito','iyan','pero','dahil','lang','din','rin','pa',
-      'po','ba','yung','siya','sila','kami','tayo','kayo','ako','ka',
-    ]);
-
-    const kwCount = (text) => {
-      const words = (text.toLowerCase().match(/[a-z]{3,}/g) || []);
-      const freq  = {};
-      words.forEach(w => { if (!STOP.has(w)) freq[w] = (freq[w] || 0) + 1; });
-      return Object.entries(freq)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([word, count]) => ({ word, count }));
-    };
-
-    const groups = Object.values(groupMap).map(group => {
-      const evals = group.evaluations;
-      const total = evals.length;
-
-      // Re-classify sentiment if not already stored
-      const withSentiment = evals.map(e => {
-        const text = [e.comment, e.strengths, e.weaknesses].filter(Boolean).join(' ');
-        const sentiment = e.sentiment || (text ? analyzeSentiment(text).label : 'neutral');
-        return { ...e, sentiment };
-      });
-
-      const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
-      withSentiment.forEach(e => { sentimentCounts[e.sentiment]++; });
-
-      const positiveRate = Math.round((sentimentCounts.positive / total) * 100);
-      const negativeRate = Math.round((sentimentCounts.negative / total) * 100);
-      const neutralRate  = Math.round((sentimentCounts.neutral  / total) * 100);
-
-      const avgRating = parseFloat(
-        (evals.reduce((s, e) => s + (parseFloat(e.rating) || 0), 0) / total).toFixed(2)
-      );
-
-      let status;
-      if      (positiveRate >= 70 && avgRating >= 4.5) status = 'excellent';
-      else if (positiveRate >= 50 && avgRating >= 3.5) status = 'good';
-      else if (positiveRate >= 35 || avgRating >= 2.5) status = 'fair';
-      else                                              status = 'needs_improvement';
-
-      const recommendations    = generateRecommendations(withSentiment);
-      const weakText           = withSentiment.map(e => e.weaknesses || '').join(' ');
-      const strongText         = withSentiment.map(e => e.strengths  || '').join(' ');
-      const fallback           = withSentiment.map(e => e.comment    || '').join(' ');
-      const topWeaknessKeywords = kwCount(weakText  || fallback);
-      const topStrengthKeywords = kwCount(strongText || fallback);
-
-      return {
-        year_level:           group.year_level,
-        department:           group.department,
-        totalEvaluations:     total,
-        evaluatedStudents:    group.studentIds.size,
-        avgRating,
-        sentimentCounts,
-        positiveRate,
-        negativeRate,
-        neutralRate,
-        status,
-        recommendations,
-        topWeaknessKeywords,
-        topStrengthKeywords,
-      };
-    });
-
-    // Sort by year_level asc, then avgRating desc within year
-    groups.sort((a, b) => {
-      const yc = String(a.year_level).localeCompare(String(b.year_level), undefined, { numeric: true });
-      return yc !== 0 ? yc : b.avgRating - a.avgRating;
-    });
-
-    const yearLevels = [...new Set(groups.map(g => g.year_level))];
-
-    return res.json({ groups, yearLevels });
-
-  } catch (err) {
-    console.error('[getAnalysisByYearDepartment]', err);
-    return res.status(500).json({ message: 'Failed to generate year-level/department analysis.' });
-  }
-};
-
-/**
  * DELETE /api/evaluation/clear-all
  */
 const clearAllEvaluations = async (req, res) => {
@@ -428,7 +305,7 @@ const clearAllEvaluations = async (req, res) => {
     await EvaluationResponse.deleteAll();
     await Evaluation.deleteAll();
     res.json({
-      message: `Successfully cleared ${evalCount} evaluation(s) and all associated responses.`,
+      message:      `Successfully cleared ${evalCount} evaluation(s) and all associated responses.`,
       deletedCount: evalCount,
     });
   } catch (error) {
@@ -439,17 +316,17 @@ const clearAllEvaluations = async (req, res) => {
 
 /**
  * GET /api/evaluation/my-report
+ * FIXED: req.user.id IS the faculty ID directly — no findByUserId needed.
  */
 const getMyFacultyReport = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const facultyId = req.user.id;
 
-    const facultyRecord = await Faculty.findByUserId(userId);
-    if (!facultyRecord) {
-      return res.status(404).json({ message: 'No faculty record linked to your account.' });
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty record not found.' });
     }
 
-    const facultyId       = facultyRecord.id;
     const evaluations     = await Evaluation.findByFacultyId(facultyId);
     const avgRating       = await Evaluation.getAverageRating(facultyId);
     const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(facultyId);
@@ -484,7 +361,7 @@ const getMyFacultyReport = async (req, res) => {
     }));
 
     res.json({
-      faculty:          facultyRecord,
+      faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
       totalEvaluations: evaluations.length,
       sentimentOverview,
@@ -505,7 +382,6 @@ module.exports = {
   getMyEvaluations,
   getEnrolledInstructors,
   getSystemAnalysis,
-  getAnalysisByYearDepartment,
   getMyFacultyReport,
   clearAllEvaluations,
 };
