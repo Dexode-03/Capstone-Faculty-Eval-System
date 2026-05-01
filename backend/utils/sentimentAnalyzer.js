@@ -44,10 +44,31 @@ const SHORT_CATEGORY = {
  * continues to work unchanged.
  */
 const analyzeSentiment = (text) => {
-  const label = classifier.classify(text);
+  // ── Guard: empty, whitespace-only, or gibberish input ─────────
+  let cleaned = (text || '').trim();
+  if (!cleaned) {
+    return { score: 0, comparative: 0, label: 'neutral', confidence: 0, positive: [], negative: [] };
+  }
+
+  // Strip emojis/symbols — only keep real text for classification
+  cleaned = cleaned
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')   // emojis & symbols
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')      // misc symbols
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')      // variation selectors
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Extract real words (2+ letters with a vowel); if none found → neutral
+  const realWords = (cleaned.match(/[a-zA-ZÀ-ÿñÑ]{2,}/g) || [])
+    .filter(w => /[aeiouàáâãäåèéêëìíîïòóôõöùúûü]/i.test(w));
+  if (realWords.length === 0) {
+    return { score: 0, comparative: 0, label: 'neutral', confidence: 0, positive: [], negative: [] };
+  }
+
+  const label = classifier.classify(cleaned);
 
   // Get per-class log-probabilities for confidence scoring
-  const classifications = classifier.getClassifications(text);
+  const classifications = classifier.getClassifications(cleaned);
   const classMap = {};
   classifications.forEach(c => { classMap[c.label] = c.value; });
 

@@ -10,6 +10,7 @@ import {
   HiCheckCircle,
   HiOutlineTrash,
   HiOutlineExclamation,
+  HiOutlineOfficeBuilding,
 } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import dashboardService from '../services/dashboardService';
@@ -400,6 +401,81 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
         </div>
       </div>
 
+      {/* Department Breakdown */}
+      {stats.departments && stats.departments.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Department Performance</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {stats.departments.map(dept => {
+              const deptTotal = dept.sentiment.positive + dept.sentiment.neutral + dept.sentiment.negative;
+              const dPct = v => deptTotal === 0 ? 0 : Math.round((v / deptTotal) * 100);
+              const ratingPct = Math.round((dept.avgRating / 5) * 100);
+              const circumference = 2 * Math.PI * 28;
+              const strokeOffset = circumference - (ratingPct / 100) * circumference;
+              const ratingColor = dept.avgRating >= 4 ? '#16a34a' : dept.avgRating >= 3 ? '#d97706' : '#dc2626';
+
+              return (
+                <div key={dept.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                  {/* Header */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-psu-primary/10 flex items-center justify-center flex-shrink-0">
+                      <HiOutlineOfficeBuilding className="h-4.5 w-4.5 text-psu-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-semibold text-slate-900 truncate">{dept.name}</h3>
+                      <p className="text-[11px] text-slate-400">{dept.facultyCount} faculty · {dept.totalEvaluations} evaluation{dept.totalEvaluations !== 1 ? 's' : ''}</p>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="px-6 py-5">
+                    <div className="flex items-center gap-6">
+                      {/* Rating Ring */}
+                      <div className="relative flex-shrink-0">
+                        <svg width="72" height="72" className="-rotate-90">
+                          <circle cx="36" cy="36" r="28" fill="none" stroke="#f1f5f9" strokeWidth="6" />
+                          <circle
+                            cx="36" cy="36" r="28" fill="none"
+                            stroke={ratingColor}
+                            strokeWidth="6"
+                            strokeLinecap="round"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={strokeOffset}
+                            className="transition-all duration-700"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-bold text-slate-900 tabular-nums">{dept.avgRating}</span>
+                        </div>
+                      </div>
+
+                      {/* Sentiment mini bars */}
+                      <div className="flex-1 space-y-2.5">
+                        {[
+                          { label: 'Positive', value: dept.sentiment.positive, pct: dPct(dept.sentiment.positive), color: 'bg-psu-primary', text: 'text-psu-primary' },
+                          { label: 'Neutral',  value: dept.sentiment.neutral,  pct: dPct(dept.sentiment.neutral),  color: 'bg-psu-gold',    text: 'text-amber-600'  },
+                          { label: 'Negative', value: dept.sentiment.negative, pct: dPct(dept.sentiment.negative), color: 'bg-red-500',     text: 'text-red-600'    },
+                        ].map(s => (
+                          <div key={s.label}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{s.label}</span>
+                              <span className={`text-[11px] font-semibold tabular-nums ${s.text}`}>{s.value} <span className="font-normal text-slate-300">({s.pct}%)</span></span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full">
+                              <div className={`${s.color} h-full rounded-full transition-all duration-700`} style={{ width: `${s.pct}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Quick links */}
       <div className="mb-10">
         <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Quick Links</h2>
@@ -559,6 +635,7 @@ const Dashboard = () => {
         totalFaculty:      0,
         totalEvaluations:  0,
         sentimentOverview: { positive: 0, neutral: 0, negative: 0 },
+        departments:       [],
       });
     } finally {
       setLoading(false);

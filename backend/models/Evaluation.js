@@ -85,6 +85,23 @@ const Evaluation = {
     return rows;
   },
 
+  // Get stats grouped by department
+  getStatsByDepartment: async () => {
+    const [rows] = await pool.execute(
+      `SELECT f.department,
+              COUNT(e.id) as total_evaluations,
+              ROUND(AVG(e.rating), 1) as avg_rating,
+              SUM(CASE WHEN e.sentiment = 'positive' THEN 1 ELSE 0 END) as positive,
+              SUM(CASE WHEN e.sentiment = 'neutral'  THEN 1 ELSE 0 END) as neutral,
+              SUM(CASE WHEN e.sentiment = 'negative' THEN 1 ELSE 0 END) as negative
+       FROM evaluations e
+       JOIN faculty f ON e.faculty_id = f.id
+       GROUP BY f.department
+       ORDER BY total_evaluations DESC`
+    );
+    return rows;
+  },
+
   // Delete all evaluations (admin reset)
   deleteAll: async () => {
     const [result] = await pool.execute('DELETE FROM evaluations');

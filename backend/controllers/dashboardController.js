@@ -35,9 +35,30 @@ const getStats = async (req, res) => {
       const totalFaculty     = await Faculty.count();
       const totalEvaluations = await Evaluation.count();
       const sentimentOverview = await Evaluation.getSentimentOverview();
+      const departmentStats   = await Evaluation.getStatsByDepartment();
+
+      // Get faculty count per department
+      const allFaculty = await Faculty.findAll();
+      const deptFacultyCount = {};
+      allFaculty.forEach(f => {
+        deptFacultyCount[f.department] = (deptFacultyCount[f.department] || 0) + 1;
+      });
 
       const sentimentData = { positive: 0, neutral: 0, negative: 0 };
       sentimentOverview.forEach(item => { sentimentData[item.sentiment] = item.count; });
+
+      // Build department breakdown
+      const departments = departmentStats.map(d => ({
+        name:             d.department,
+        facultyCount:     deptFacultyCount[d.department] || 0,
+        totalEvaluations: d.total_evaluations,
+        avgRating:        parseFloat(d.avg_rating) || 0,
+        sentiment: {
+          positive: parseInt(d.positive) || 0,
+          neutral:  parseInt(d.neutral)  || 0,
+          negative: parseInt(d.negative) || 0,
+        },
+      }));
 
       res.json({
         role: 'admin',
@@ -45,6 +66,7 @@ const getStats = async (req, res) => {
         totalFaculty,
         totalEvaluations,
         sentimentOverview: sentimentData,
+        departments,
       });
     }
   } catch (error) {

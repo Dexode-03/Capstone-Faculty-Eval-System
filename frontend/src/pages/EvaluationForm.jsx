@@ -448,11 +448,13 @@ const EvaluationForm = () => {
                   </label>
                   <textarea
                     value={strengths}
-                    onChange={e => setStrengths(e.target.value)}
+                    onChange={e => setStrengths(e.target.value.replace(/<[^>]*>/g, '').slice(0, 1000))}
                     rows={4}
+                    maxLength={1000}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-[14px] text-psu-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all resize-none leading-relaxed"
                     placeholder="What did this instructor do well?"
                   />
+                  <p className={`text-[11px] mt-1 text-right ${strengths.length > 900 ? 'text-red-500' : 'text-psu-muted'}`}>{strengths.length}/1000</p>
                 </div>
                 <div className="px-6 py-5">
                   <label className="block text-[13px] font-medium text-psu-text mb-2">
@@ -460,11 +462,13 @@ const EvaluationForm = () => {
                   </label>
                   <textarea
                     value={weaknesses}
-                    onChange={e => setWeaknesses(e.target.value)}
+                    onChange={e => setWeaknesses(e.target.value.replace(/<[^>]*>/g, '').slice(0, 1000))}
                     rows={4}
+                    maxLength={1000}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-[14px] text-psu-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all resize-none leading-relaxed"
                     placeholder="What could this instructor improve on?"
                   />
+                  <p className={`text-[11px] mt-1 text-right ${weaknesses.length > 900 ? 'text-red-500' : 'text-psu-muted'}`}>{weaknesses.length}/1000</p>
                 </div>
               </div>
             </div>

@@ -35,6 +35,36 @@ const getQuestions = async (req, res) => {
   }
 };
 
+// ── Input sanitization helpers ──────────────────────────────────
+const MAX_TEXT_LENGTH = 1000;
+
+/** Strip HTML/script tags and normalize whitespace */
+const sanitizeText = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/<[^>]*>/g, '')           // strip HTML tags
+    .replace(/&[a-z]+;/gi, '')         // strip HTML entities
+    .replace(/javascript:/gi, '')      // strip JS protocol
+    .replace(/on\w+\s*=/gi, '')        // strip event handlers
+    .replace(/\s+/g, ' ')             // normalize whitespace
+    .trim()
+    .slice(0, MAX_TEXT_LENGTH);        // enforce max length
+};
+
+/** Detect spam: repeated chars (aaaa), repeated words (good good good) */
+const isSpam = (text) => {
+  if (!text || text.length < 3) return false;
+  // Single character repeated 5+ times (e.g., "aaaaaaa")
+  if (/(.)(\1){4,}/i.test(text)) return true;
+  // Same word repeated 3+ times (e.g., "good good good good")
+  const words = text.toLowerCase().split(/\s+/);
+  const freq = {};
+  words.forEach(w => { if (w.length > 1) freq[w] = (freq[w] || 0) + 1; });
+  const maxRepeat = Math.max(0, ...Object.values(freq));
+  if (words.length > 2 && maxRepeat / words.length > 0.6) return true;
+  return false;
+};
+
 /**
  * POST /api/evaluation/submit
  *
@@ -48,8 +78,20 @@ const getQuestions = async (req, res) => {
  */
 const submitEvaluation = async (req, res) => {
   try {
-    const { faculty_id, responses, strengths, weaknesses } = req.body;
+    const { faculty_id, responses } = req.body;
     const student_id = req.user.id;
+
+    // ── Sanitize open-ended inputs ─────────────────────────────
+    const strengths  = sanitizeText(req.body.strengths);
+    const weaknesses = sanitizeText(req.body.weaknesses);
+
+    // ── Reject spam / gibberish ────────────────────────────────
+    if (strengths && isSpam(strengths)) {
+      return res.status(400).json({ message: 'Strengths field appears to contain spam or repeated text. Please provide meaningful feedback.' });
+    }
+    if (weaknesses && isSpam(weaknesses)) {
+      return res.status(400).json({ message: 'Weaknesses field appears to contain spam or repeated text. Please provide meaningful feedback.' });
+    }
 
     if (!faculty_id) {
       return res.status(400).json({ message: 'Faculty is required.' });

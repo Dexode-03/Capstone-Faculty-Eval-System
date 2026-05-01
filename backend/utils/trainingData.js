@@ -576,6 +576,113 @@ const trainingData = [
   ['Boring talaga ang class', 'negative'],
   ['Boring talaga ng klase niya', 'negative'],
   ['Sobrang boring talaga', 'negative'],
+
+  // ═══════════════════════════════════════════════════════════════
+  // OXYMORONS & INTENSIFIER + ADJECTIVE PATTERNS
+  // ═══════════════════════════════════════════════════════════════
+
+  // ── "pretty + negative" = negative ────────────────────────────
+  ['Pretty bad instructor', 'negative'],
+  ['Pretty bad at teaching', 'negative'],
+  ['Pretty boring class', 'negative'],
+  ['Pretty terrible lectures', 'negative'],
+  ['Pretty disappointing', 'negative'],
+  ['Pretty awful experience', 'negative'],
+  ['Pretty confusing lessons', 'negative'],
+  ['Pretty bad overall', 'negative'],
+
+  // ── "pretty + positive" = positive ────────────────────────────
+  ['Pretty good teacher', 'positive'],
+  ['Pretty helpful professor', 'positive'],
+  ['Pretty clear explanations', 'positive'],
+  ['Pretty organized class', 'positive'],
+  ['Pretty great experience', 'positive'],
+
+  // ── "clearly + negative" = negative ───────────────────────────
+  ['Clearly incompetent', 'negative'],
+  ['Clearly unprepared for class', 'negative'],
+  ['Clearly does not care', 'negative'],
+  ['Clearly not qualified', 'negative'],
+  ['Clearly has no idea what to teach', 'negative'],
+  ['Clearly do not understand what he is teaching', 'negative'],
+  ['Clearly not interested in teaching', 'negative'],
+
+  // ── "absolutely/totally + negative" = strong negative ─────────
+  ['Absolutely terrible', 'negative'],
+  ['Totally useless lectures', 'negative'],
+  ['Absolutely boring', 'negative'],
+  ['Totally unprepared', 'negative'],
+  ['Absolutely unfair grading', 'negative'],
+  ['Totally disorganized', 'negative'],
+
+  // ── "absolutely/totally + positive" = strong positive ─────────
+  ['Absolutely amazing teacher', 'positive'],
+  ['Totally helpful and kind', 'positive'],
+  ['Absolutely brilliant lectures', 'positive'],
+  ['Totally engaging class', 'positive'],
+  ['Absolutely the best professor', 'positive'],
+
+  // ── "terribly/awfully + positive" = positive (oxymoron) ───────
+  ['Terribly good at teaching', 'positive'],
+  ['Awfully nice professor', 'positive'],
+  ['Terribly effective instructor', 'positive'],
+
+  // ── "terribly/awfully + negative" = negative ──────────────────
+  ['Terribly boring', 'negative'],
+  ['Awfully slow lectures', 'negative'],
+  ['Terribly unprepared', 'negative'],
+  ['Awfully confusing', 'negative'],
+
+  // ── Sarcasm-adjacent / backhanded compliments = negative ──────
+  ['Great at wasting time', 'negative'],
+  ['Really good at confusing students', 'negative'],
+  ['Expert at being late', 'negative'],
+  ['Amazing at making things harder', 'negative'],
+  ['Excellent at being unhelpful', 'negative'],
+
+  // ── Filipino oxymorons / intensifier patterns ─────────────────
+  ['Sobrang pangit ng turo', 'negative'],
+  ['Medyo magaling naman', 'neutral'],
+  ['Medyo boring', 'negative'],
+  ['Medyo okay lang', 'neutral'],
+  ['Sobrang galing talaga', 'positive'],
+  ['Grabe ang galing', 'positive'],
+  ['Grabe ang pangit ng class', 'negative'],
+  ['Grabe ang boring', 'negative'],
+  ['Sobrang laki ng improvement niya', 'positive'],
+
+  // ═══════════════════════════════════════════════════════════════
+  // SHORT PHRASE REINFORCEMENT (2-3 word common expressions)
+  // ═══════════════════════════════════════════════════════════════
+  ['Good teacher', 'positive'],
+  ['Good professor', 'positive'],
+  ['Good instructor', 'positive'],
+  ['Great teacher', 'positive'],
+  ['Best teacher', 'positive'],
+  ['Best professor', 'positive'],
+  ['Nice teacher', 'positive'],
+  ['Kind professor', 'positive'],
+  ['Bad teacher', 'negative'],
+  ['Bad professor', 'negative'],
+  ['Bad instructor', 'negative'],
+  ['Worst teacher', 'negative'],
+  ['Worst professor', 'negative'],
+  ['Terrible teacher', 'negative'],
+  ['Terrible professor', 'negative'],
+  ['Awful teacher', 'negative'],
+  ['Horrible professor', 'negative'],
+  ['Okay teacher', 'neutral'],
+  ['Average teacher', 'neutral'],
+  ['Okay lang', 'neutral'],
+  ['Pwede na', 'neutral'],
+  ['Magaling teacher', 'positive'],
+  ['Magaling professor', 'positive'],
+  ['Magaling magturo', 'positive'],
+  ['Pangit magturo', 'negative'],
+  ['Pangit professor', 'negative'],
+  ['Mahusay magturo', 'positive'],
+  ['Magaling siya', 'positive'],
+  ['Pangit naman', 'negative'],
 ];
 
 module.exports = trainingData;
