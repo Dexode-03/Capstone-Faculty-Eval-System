@@ -102,6 +102,25 @@ const Evaluation = {
     return rows;
   },
 
+  // Get student population vs evaluated count grouped by department and year level
+  getStudentPopulationByDepartment: async () => {
+    const [rows] = await pool.execute(
+      `SELECT
+         u.department,
+         u.year_level,
+         COUNT(DISTINCT u.id) as total_students,
+         COUNT(DISTINCT e.student_id) as evaluated_students
+       FROM users u
+       LEFT JOIN evaluations e ON e.student_id = u.id
+       WHERE u.role = 'student'
+         AND u.department IS NOT NULL
+         AND u.year_level IS NOT NULL
+       GROUP BY u.department, u.year_level
+       ORDER BY u.department ASC, u.year_level ASC`
+    );
+    return rows;
+  },
+
   // Delete all evaluations (admin reset)
   deleteAll: async () => {
     const [result] = await pool.execute('DELETE FROM evaluations');

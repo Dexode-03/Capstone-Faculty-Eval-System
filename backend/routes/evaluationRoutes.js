@@ -9,6 +9,7 @@ const {
   getSystemAnalysis,
   getMyFacultyReport,
   clearAllEvaluations,
+  getAnalysisByYearDepartment,
 } = require('../controllers/evaluationController');
 const { authenticate, authorize } = require('../middleware/auth');
 
@@ -20,5 +21,5 @@ router.get('/my-evaluations',        authenticate, authorize('student'),    getM
 router.get('/enrolled-instructors',  authenticate, authorize('student'),    getEnrolledInstructors);
 router.get('/analysis',              authenticate, authorize('admin'),      getSystemAnalysis);
 router.delete('/clear-all',            authenticate, authorize('admin'),      clearAllEvaluations);
-
+router.get('/analysis/by-year-department', authenticate, authorize('admin'), getAnalysisByYearDepartment);
 module.exports = router;

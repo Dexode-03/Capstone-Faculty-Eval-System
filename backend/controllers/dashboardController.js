@@ -31,34 +31,67 @@ const getStats = async (req, res) => {
         recentEvaluations: myEvaluations.slice(0, 5),
       });
     } else {
-      const totalStudents    = await User.countByRole('student');
-      const totalFaculty     = await Faculty.count();
-      const totalEvaluations = await Evaluation.count();
+      const totalStudents     = await User.countByRole('student');
+      const totalFaculty      = await Faculty.count();
+      const totalEvaluations  = await Evaluation.count();
       const sentimentOverview = await Evaluation.getSentimentOverview();
       const departmentStats   = await Evaluation.getStatsByDepartment();
+      const populationStats   = await Evaluation.getStudentPopulationByDepartment();
 
-      // Get faculty count per department
+      // Faculty count per department
       const allFaculty = await Faculty.findAll();
       const deptFacultyCount = {};
       allFaculty.forEach(f => {
-        deptFacultyCount[f.department] = (deptFacultyCount[f.department] || 0) + 1;
+        if (f.department) {
+          deptFacultyCount[f.department] = (deptFacultyCount[f.department] || 0) + 1;
+        }
+      });
+
+      // Build population map: { [department]: { [year_level]: { total, evaluated } } }
+      const populationMap = {};
+      populationStats.forEach(row => {
+        const dept = row.department;
+        const yr   = row.year_level;
+        if (!populationMap[dept]) populationMap[dept] = {};
+        populationMap[dept][yr] = {
+          yearLevel:         yr,
+          totalStudents:     parseInt(row.total_students)     || 0,
+          evaluatedStudents: parseInt(row.evaluated_students) || 0,
+        };
       });
 
       const sentimentData = { positive: 0, neutral: 0, negative: 0 };
       sentimentOverview.forEach(item => { sentimentData[item.sentiment] = item.count; });
 
-      // Build department breakdown
-      const departments = departmentStats.map(d => ({
-        name:             d.department,
-        facultyCount:     deptFacultyCount[d.department] || 0,
-        totalEvaluations: d.total_evaluations,
-        avgRating:        parseFloat(d.avg_rating) || 0,
-        sentiment: {
-          positive: parseInt(d.positive) || 0,
-          neutral:  parseInt(d.neutral)  || 0,
-          negative: parseInt(d.negative) || 0,
-        },
-      }));
+      // Collect all departments — from both evaluation stats and population stats
+      const allDepts = new Set([
+        ...departmentStats.map(d => d.department),
+        ...Object.keys(populationMap),
+      ]);
+
+      const departments = [...allDepts].map(dept => {
+        const evalStats = departmentStats.find(d => d.department === dept) || {};
+        const yearLevels = Object.values(populationMap[dept] || {});
+
+        const totalStudentsInDept     = yearLevels.reduce((s, y) => s + y.totalStudents, 0);
+        const evaluatedStudentsInDept = yearLevels.reduce((s, y) => s + y.evaluatedStudents, 0);
+
+        return {
+          name:                  dept,
+          facultyCount:          deptFacultyCount[dept] || 0,
+          totalEvaluations:      parseInt(evalStats.total_evaluations) || 0,
+          avgRating:             parseFloat(evalStats.avg_rating)       || 0,
+          sentiment: {
+            positive: parseInt(evalStats.positive) || 0,
+            neutral:  parseInt(evalStats.neutral)  || 0,
+            negative: parseInt(evalStats.negative) || 0,
+          },
+          // Student participation stats
+          totalStudents:     totalStudentsInDept,
+          evaluatedStudents: evaluatedStudentsInDept,
+          yearLevels:        yearLevels.sort((a, b) => a.yearLevel.localeCompare(b.yearLevel)),
+        };
+      }).sort((a, b) => a.name.localeCompare(b.name));
 
       res.json({
         role: 'admin',
@@ -77,11 +110,11 @@ const getStats = async (req, res) => {
 
 /**
  * GET /api/dashboard/faculty
- * Faculty member's own stats — their evaluations, average rating, sentiment breakdown
+ * Faculty member's own stats
  */
 const getFacultyDashboard = async (req, res) => {
   try {
-    const userId = req.user.id; // FIXED: was [req.user.id](http://req.user.id)
+    const userId = req.user.id;
 
     const facultyRecord = await Faculty.findByUserId(userId);
     if (!facultyRecord) {
@@ -93,13 +126,12 @@ const getFacultyDashboard = async (req, res) => {
       });
     }
 
-    const evaluations   = await Evaluation.findByFacultyId(facultyRecord.id); // FIXED
-    const avgRating     = await Evaluation.getAverageRating(facultyRecord.id); // FIXED
+    const evaluations = await Evaluation.findByFacultyId(facultyRecord.id);
+    const avgRating   = await Evaluation.getAverageRating(facultyRecord.id);
 
     const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
     evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
 
-    // Group evaluations by month as a proxy for subjects (no subjects table yet)
     const monthMap = {};
     evaluations.forEach(e => {
       const date = new Date(e.created_at);
@@ -113,7 +145,7 @@ const getFacultyDashboard = async (req, res) => {
 
     const subjects = Object.values(monthMap).map((m, i) => ({
       id:   i + 1,
-      name: m.name, // FIXED: was [m.name](http://m.name)
+      name: m.name,
       blocks: [{
         id:        i + 1,
         name:      `${m.count} evaluation${m.count !== 1 ? 's' : ''}`,

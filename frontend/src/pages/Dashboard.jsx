@@ -271,8 +271,6 @@ const FacultyDashboard = ({ user }) => {
 
 // ── Admin view ────────────────────────────────────────────────────
 const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
-  const total = stats.sentimentOverview.positive + stats.sentimentOverview.neutral + stats.sentimentOverview.negative;
-  const pct   = v => total === 0 ? 0 : Math.round((v / total) * 100);
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText]       = useState('');
@@ -343,131 +341,75 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
         ))}
       </div>
 
-      {/* Sentiment */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-900">Sentiment Breakdown</h2>
-          </div>
-          <div className="p-6 space-y-4">
-            {[
-              { label: 'Positive', value: stats.sentimentOverview.positive, color: 'bg-psu-primary', badge: 'bg-psu-primary/10 text-psu-primary' },
-              { label: 'Neutral',  value: stats.sentimentOverview.neutral,  color: 'bg-psu-gold',    badge: 'bg-psu-gold/15 text-amber-600'     },
-              { label: 'Negative', value: stats.sentimentOverview.negative, color: 'bg-red-500',     badge: 'bg-red-50 text-red-600'            },
-            ].map(item => (
-              <div key={item.label}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${item.badge}`}>
-                    {item.label}
-                  </span>
-                  <span className="text-[13px] font-semibold text-slate-900 tabular-nums">
-                    {item.value} <span className="font-normal text-slate-400">({pct(item.value)}%)</span>
-                  </span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full">
-                  <div className={`${item.color} h-full rounded-full transition-all duration-700`} style={{ width: `${pct(item.value)}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-900">Distribution</h2>
-          </div>
-          <div className="p-6">
-            <div className="flex h-4 rounded-full overflow-hidden mb-8">
-              <div className="bg-psu-primary transition-all duration-700" style={{ width: `${pct(stats.sentimentOverview.positive)}%` }} />
-              <div className="bg-psu-gold transition-all duration-700"    style={{ width: `${pct(stats.sentimentOverview.neutral)}%`  }} />
-              <div className="bg-red-500 transition-all duration-700"     style={{ width: `${pct(stats.sentimentOverview.negative)}%` }} />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Positive', dot: 'bg-psu-primary', val: pct(stats.sentimentOverview.positive) },
-                { label: 'Neutral',  dot: 'bg-psu-gold',    val: pct(stats.sentimentOverview.neutral)  },
-                { label: 'Negative', dot: 'bg-red-500',     val: pct(stats.sentimentOverview.negative) },
-              ].map(item => (
-                <div key={item.label} className="text-center bg-slate-50 rounded-xl py-4 px-3">
-                  <div className="flex items-center justify-center space-x-1.5 mb-1.5">
-                    <div className={`w-2.5 h-2.5 rounded-full ${item.dot}`} />
-                    <span className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">{item.label}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-slate-900 tabular-nums">{item.val}%</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Department Breakdown */}
-      {stats.departments && stats.departments.length > 0 && (
+      {/* Student Participation by Department & Year Level */}
+      {stats.departments && stats.departments.some(d => d.yearLevels?.length > 0) && (
         <div className="mb-10">
-          <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Department Performance</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {stats.departments.map(dept => {
-              const deptTotal = dept.sentiment.positive + dept.sentiment.neutral + dept.sentiment.negative;
-              const dPct = v => deptTotal === 0 ? 0 : Math.round((v / deptTotal) * 100);
-              const ratingPct = Math.round((dept.avgRating / 5) * 100);
-              const circumference = 2 * Math.PI * 28;
-              const strokeOffset = circumference - (ratingPct / 100) * circumference;
-              const ratingColor = dept.avgRating >= 4 ? '#16a34a' : dept.avgRating >= 3 ? '#d97706' : '#dc2626';
-
+          <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Student Evaluation Participation</h2>
+          <div className="space-y-4">
+            {stats.departments.filter(d => d.yearLevels?.length > 0).map(dept => {
+              const participationPct = dept.totalStudents > 0
+                ? Math.round((dept.evaluatedStudents / dept.totalStudents) * 100)
+                : 0;
               return (
                 <div key={dept.name} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  {/* Header */}
-                  <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-psu-primary/10 flex items-center justify-center flex-shrink-0">
-                      <HiOutlineOfficeBuilding className="h-4.5 w-4.5 text-psu-primary" />
+                  {/* Dept header */}
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-900">{dept.name}</h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {dept.evaluatedStudents} of {dept.totalStudents} students evaluated
+                      </p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[14px] font-semibold text-slate-900 truncate">{dept.name}</h3>
-                      <p className="text-[11px] text-slate-400">{dept.facultyCount} faculty · {dept.totalEvaluations} evaluation{dept.totalEvaluations !== 1 ? 's' : ''}</p>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-psu-primary tabular-nums">{participationPct}%</p>
+                      <p className="text-[11px] text-slate-400">participation</p>
                     </div>
                   </div>
-
-                  {/* Body */}
-                  <div className="px-6 py-5">
-                    <div className="flex items-center gap-6">
-                      {/* Rating Ring */}
-                      <div className="relative flex-shrink-0">
-                        <svg width="72" height="72" className="-rotate-90">
-                          <circle cx="36" cy="36" r="28" fill="none" stroke="#f1f5f9" strokeWidth="6" />
-                          <circle
-                            cx="36" cy="36" r="28" fill="none"
-                            stroke={ratingColor}
-                            strokeWidth="6"
-                            strokeLinecap="round"
-                            strokeDasharray={circumference}
-                            strokeDashoffset={strokeOffset}
-                            className="transition-all duration-700"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-lg font-bold text-slate-900 tabular-nums">{dept.avgRating}</span>
-                        </div>
-                      </div>
-
-                      {/* Sentiment mini bars */}
-                      <div className="flex-1 space-y-2.5">
-                        {[
-                          { label: 'Positive', value: dept.sentiment.positive, pct: dPct(dept.sentiment.positive), color: 'bg-psu-primary', text: 'text-psu-primary' },
-                          { label: 'Neutral',  value: dept.sentiment.neutral,  pct: dPct(dept.sentiment.neutral),  color: 'bg-psu-gold',    text: 'text-amber-600'  },
-                          { label: 'Negative', value: dept.sentiment.negative, pct: dPct(dept.sentiment.negative), color: 'bg-red-500',     text: 'text-red-600'    },
-                        ].map(s => (
-                          <div key={s.label}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{s.label}</span>
-                              <span className={`text-[11px] font-semibold tabular-nums ${s.text}`}>{s.value} <span className="font-normal text-slate-300">({s.pct}%)</span></span>
-                            </div>
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full">
-                              <div className={`${s.color} h-full rounded-full transition-all duration-700`} style={{ width: `${s.pct}%` }} />
+                  {/* Overall progress bar */}
+                  <div className="px-6 pt-4 pb-2">
+                    <div className="w-full h-2 bg-slate-100 rounded-full">
+                      <div
+                        className="bg-psu-primary h-full rounded-full transition-all duration-700"
+                        style={{ width: `${participationPct}%` }}
+                      />
+                    </div>
+                  </div>
+                  {/* Year level breakdown */}
+                  <div className="divide-y divide-slate-100">
+                    {dept.yearLevels.map(yr => {
+                      const yrPct = yr.totalStudents > 0
+                        ? Math.round((yr.evaluatedStudents / yr.totalStudents) * 100)
+                        : 0;
+                      return (
+                        <div key={yr.yearLevel} className="px-6 py-3 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="text-[12px] font-medium text-slate-600 w-24 flex-shrink-0">{yr.yearLevel}</span>
+                            <div className="flex-1 h-1.5 bg-slate-100 rounded-full">
+                              <div
+                                className={`h-full rounded-full transition-all duration-700 ${yrPct === 100 ? 'bg-green-500' : 'bg-psu-primary'}`}
+                                style={{ width: `${yrPct}%` }}
+                              />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-[12px] text-slate-500 tabular-nums">
+                              {yr.evaluatedStudents}/{yr.totalStudents}
+                            </span>
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums ${
+                              yrPct === 100
+                                ? 'bg-green-50 text-green-600'
+                                : yrPct >= 50
+                                ? 'bg-psu-primary/10 text-psu-primary'
+                                : 'bg-amber-50 text-amber-600'
+                            }`}>
+                              {yrPct}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -475,6 +417,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
           </div>
         </div>
       )}
+
+
 
       {/* Quick links */}
       <div className="mb-10">
