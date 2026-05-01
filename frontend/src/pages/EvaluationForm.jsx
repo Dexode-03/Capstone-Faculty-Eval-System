@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { HiCheckCircle, HiArrowRight, HiX } from 'react-icons/hi';
+import { HiCheckCircle, HiArrowRight, HiX, HiEmojiHappy, HiEmojiSad, HiMinusCircle } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import facultyService from '../services/facultyService';
 import evaluationService from '../services/evaluationService';
@@ -33,27 +33,28 @@ const RatingScaleTable = () => (
   </div>
 );
 
-// ── Radio button row for a single rated question ──────────────────
+// ── Dropdown row for a single rated question ──────────────────────
 const QuestionRow = ({ number, question, value, onChange }) => (
   <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 border-b border-psu-border last:border-b-0">
     <p className="text-[13px] text-psu-text leading-relaxed flex-1">
       <span className="font-medium text-psu-muted mr-1.5">{number}.</span>
       {question}
     </p>
-    <div className="flex items-center gap-3 flex-shrink-0">
-      {RATING_SCALE.map(r => (
-        <label key={r.value} className="flex flex-col items-center gap-1 cursor-pointer group">
-          <span className="text-[10px] text-psu-muted group-hover:text-psu-primary transition-colors">{r.value}</span>
-          <input
-            type="radio"
-            name={`question-${question}`}
-            value={r.value}
-            checked={value === r.value}
-            onChange={() => onChange(r.value)}
-            className="w-4 h-4 accent-psu-primary cursor-pointer"
-          />
-        </label>
-      ))}
+    <div className="flex-shrink-0 w-full sm:w-56">
+      <select
+        value={value || ''}
+        onChange={(e) => onChange(parseInt(e.target.value, 10))}
+        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all"
+      >
+        <option value="" disabled>
+          Select rating
+        </option>
+        {RATING_SCALE.map(r => (
+          <option key={r.value} value={r.value}>
+            {r.value} - {r.label}
+          </option>
+        ))}
+      </select>
     </div>
   </div>
 );
@@ -80,6 +81,9 @@ const ConfirmationModal = ({ faculty, onNextFaculty, onClose, sentimentResult, o
       {sentimentResult && (
         <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-4 py-2 mb-6 ml-2 text-[12px]">
           <span className="text-psu-muted uppercase tracking-wider font-medium">Sentiment</span>
+          {sentimentResult.label === 'positive' && <HiEmojiHappy className="h-4 w-4 text-psu-primary" />}
+          {sentimentResult.label === 'neutral' && <HiMinusCircle className="h-4 w-4 text-psu-muted" />}
+          {sentimentResult.label === 'negative' && <HiEmojiSad className="h-4 w-4 text-red-500" />}
           <span className={`font-semibold capitalize ${
             sentimentResult.label === 'positive' ? 'text-psu-primary' :
             sentimentResult.label === 'negative' ? 'text-red-500' : 'text-psu-muted'
@@ -89,18 +93,50 @@ const ConfirmationModal = ({ faculty, onNextFaculty, onClose, sentimentResult, o
         </div>
       )}
       <div className="flex flex-col gap-3">
-        <button
-          onClick={onNextFaculty}
-          className="w-full flex items-center justify-center gap-2 bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold hover:bg-psu-secondary transition-colors"
-        >
-          Evaluate Next Faculty
-          <HiArrowRight className="h-4 w-4" />
-        </button>
+        {onNextFaculty && (
+          <button
+            onClick={onNextFaculty}
+            className="w-full flex items-center justify-center gap-2 bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold hover:bg-psu-secondary transition-colors"
+          >
+            Evaluate Next Faculty
+            <HiArrowRight className="h-4 w-4" />
+          </button>
+        )}
         <button
           onClick={onClose}
           className="w-full border border-psu-border text-psu-muted rounded-lg px-6 py-3 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors"
         >
           Done for now
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const SubmitConfirmModal = ({ onConfirm, onCancel, loading }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+    <div className="relative bg-white rounded-2xl border border-psu-border shadow-xl w-full max-w-md p-6 sm:p-7">
+      <h3 className="text-lg font-semibold text-psu-text tracking-tight mb-2">Submit Evaluation?</h3>
+      <p className="text-[13px] text-psu-muted leading-relaxed mb-6">
+        Please confirm before submitting. You will not be able to edit this evaluation after submission.
+      </p>
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="border border-psu-border text-psu-muted rounded-lg px-4 py-2 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors disabled:opacity-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={loading}
+          className="bg-psu-primary text-white rounded-lg px-5 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-40"
+        >
+          {loading ? 'Submitting...' : 'Confirm Submit'}
         </button>
       </div>
     </div>
@@ -142,6 +178,8 @@ const EvaluationForm = () => {
   const [sentimentResult, setSentimentResult] = useState(null);
   const [computedRating,  setComputedRating]  = useState(0);
   const [showModal,       setShowModal]       = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [instructors, setInstructors] = useState([]);
 
   // ── Fetch faculty info + questions ──────────────────────────────
   useEffect(() => {
@@ -149,15 +187,17 @@ const EvaluationForm = () => {
 
     const fetchData = async () => {
       try {
-        const [facultyRes, questionsRes] = await Promise.all([
+        const [facultyRes, questionsRes, instructorsRes] = await Promise.all([
           facultyService.getById(facultyFromUrl),
           evaluationService.getQuestions(),
+          evaluationService.getEnrolledInstructors(),
         ]);
 
         setFacultyInfo(facultyRes.data.faculty);
 
         const groupedData = questionsRes.data.grouped || {};
         setGrouped(groupedData);
+        setInstructors(instructorsRes.data?.instructors || []);
 
         // Collect only rating-type questions for progress tracking
         const rated = [];
@@ -173,6 +213,7 @@ const EvaluationForm = () => {
         setFacultyInfo({ id: facultyFromUrl, name: 'Faculty Member', department: '—' });
         setGrouped({});
         setRatedQuestions([]);
+        setInstructors([]);
       } finally {
         setDataLoading(false);
       }
@@ -205,8 +246,7 @@ const EvaluationForm = () => {
   const canSubmit         = canProceedToStep2;
 
   // ── Submit ─────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const submitEvaluation = async () => {
     setLoading(true);
     setError('');
     setSentimentResult(null);
@@ -226,11 +266,16 @@ const EvaluationForm = () => {
       setSentimentResult(res.data.sentimentAnalysis);
       setComputedRating(res.data.overallRating || computeOverallRating(responses));
       setShowModal(true);
+      setShowSubmitConfirm(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit evaluation.');
     } finally {
       setLoading(false);
     }
+  };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setShowSubmitConfirm(true);
   };
 
   const resetForm = () => {
@@ -246,6 +291,12 @@ const EvaluationForm = () => {
 
   const handleNextFaculty = () => { setShowModal(false); navigate('/dashboard'); };
   const handleCloseModal  = () => { resetForm(); navigate('/dashboard'); };
+  const hasMoreFacultyToEvaluate = instructors.some(
+    (instructor) => !instructor.evaluated && String(instructor.id) !== String(facultyFromUrl)
+  );
+  const pendingInstructors = instructors.filter(
+    (instructor) => !instructor.evaluated && String(instructor.id) !== String(facultyFromUrl)
+  );
 
   // ── Helpers ────────────────────────────────────────────────────
   const getCategoryQuestions = (cat) => Array.isArray(cat) ? cat : (cat.questions || []);
@@ -271,8 +322,15 @@ const EvaluationForm = () => {
           faculty={facultyInfo}
           sentimentResult={sentimentResult}
           overallRating={computedRating}
-          onNextFaculty={handleNextFaculty}
+          onNextFaculty={hasMoreFacultyToEvaluate ? handleNextFaculty : null}
           onClose={handleCloseModal}
+        />
+      )}
+      {showSubmitConfirm && (
+        <SubmitConfirmModal
+          onConfirm={submitEvaluation}
+          onCancel={() => !loading && setShowSubmitConfirm(false)}
+          loading={loading}
         />
       )}
 
@@ -286,8 +344,33 @@ const EvaluationForm = () => {
             <p className="text-[14px] text-psu-muted mt-1">
               Evaluating:{' '}
               <span className="font-medium text-psu-text">{facultyInfo.name}</span>
-              {' '}— {facultyInfo.department}
+              {' '}— {facultyInfo.subject_code ? `${facultyInfo.subject_code} - ${facultyInfo.subject_name}` : facultyInfo.department}
             </p>
+          )}
+        </div>
+
+        {/* Pending evaluations snapshot */}
+        <div className="border border-psu-border bg-white rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider">Pending Evaluations</p>
+            <span className="text-[12px] font-semibold text-psu-primary">
+              {pendingInstructors.length} remaining
+            </span>
+          </div>
+          {pendingInstructors.length > 0 ? (
+            <div className="space-y-1.5">
+              {pendingInstructors.slice(0, 3).map((instructor) => (
+                <p key={instructor.id} className="text-[13px] text-psu-text">
+                  {instructor.name}
+                  <span className="text-psu-muted"> · {instructor.subject || instructor.department}</span>
+                </p>
+              ))}
+              {pendingInstructors.length > 3 && (
+                <p className="text-[12px] text-psu-muted">+{pendingInstructors.length - 3} more pending</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-[13px] text-green-600">No more pending evaluations after this one.</p>
           )}
         </div>
 
@@ -343,15 +426,6 @@ const EvaluationForm = () => {
 
             {/* Rating scale reference */}
             <RatingScaleTable />
-
-            {/* Radio header row */}
-            <div className="hidden sm:flex justify-end pr-6 gap-3 mb-[-16px]">
-              {RATING_SCALE.map(r => (
-                <div key={r.value} className="w-8 text-center text-[10px] font-semibold text-psu-muted uppercase">
-                  {r.value}
-                </div>
-              ))}
-            </div>
 
             {/* Category sections */}
             {ratingCategories.map(([category, catData]) => {

@@ -31,7 +31,9 @@ const FacultyList = () => {
   const filteredFaculty = (faculty || [])
     .filter(f =>
       f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.department.toLowerCase().includes(searchTerm.toLowerCase())
+      f.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (f.subject_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (f.subject_code || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -54,7 +56,7 @@ const FacultyList = () => {
           <HiOutlineSearch className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-4 text-psu-muted" />
           <input
             type="text"
-            placeholder="Search by name or department"
+            placeholder="Search by name, department, or subject"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="pl-6 pr-4 py-2 border-0 border-b border-psu-border bg-transparent text-[14px] text-psu-text placeholder-gray-300 focus:border-psu-primary transition-colors w-full sm:w-72"
@@ -77,7 +79,9 @@ const FacultyList = () => {
               </div>
               <div className="min-w-0">
                 <p className="text-[14px] font-medium text-psu-text truncate">{member.name}</p>
-                <p className="text-[12px] text-psu-muted mt-0.5 truncate">{member.department}</p>
+                <p className="text-[12px] text-psu-muted mt-0.5 truncate">
+                  {member.subject_code ? `${member.subject_code} - ${member.subject_name}` : 'No subject assigned'} · {member.department}
+                </p>
               </div>
             </div>
 

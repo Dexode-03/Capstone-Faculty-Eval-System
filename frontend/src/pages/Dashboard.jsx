@@ -10,7 +10,6 @@ import {
   HiCheckCircle,
   HiOutlineTrash,
   HiOutlineExclamation,
-  HiOutlineOfficeBuilding,
 } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import dashboardService from '../services/dashboardService';
@@ -56,13 +55,8 @@ const StudentDashboard = ({ user }) => {
           My Evaluations
         </p>
         <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
-          Welcome, {user?.name?.split(' ')[0]}
+          Welcome, {user?.name}
         </h1>
-        <p className="text-[14px] text-psu-muted mt-1">
-          You have{' '}
-          <span className="font-semibold text-psu-primary">{pending.length}</span>
-          {' '}pending evaluation{pending.length !== 1 ? 's' : ''} this semester.
-        </p>
       </div>
 
       {/* Pending — entire row is a link */}
@@ -169,8 +163,6 @@ const FacultyDashboard = ({ user }) => {
         setData(res.data);
       } catch {
         setData({
-          overallRating: 0,
-          totalEvaluations: 0,
           subjects: [],
         });
       } finally {
@@ -188,9 +180,6 @@ const FacultyDashboard = ({ user }) => {
     );
   }
 
-  const totalBlocks   = data.subjects.reduce((acc, s) => acc + s.blocks.length, 0);
-  const totalStudents = data.subjects.reduce((acc, s) => s.blocks.reduce((a, b) => a + b.students, acc), 0);
-
   return (
     <div>
       {/* Header */}
@@ -199,71 +188,52 @@ const FacultyDashboard = ({ user }) => {
           Faculty Dashboard
         </p>
         <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
-          Welcome, {user?.name?.split(' ')[0]}
+          Welcome, {user?.name}
         </h1>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        {[
-          { label: 'Subjects', value: data.subjects.length },
-          { label: 'Blocks',   value: totalBlocks          },
-          { label: 'Students', value: totalStudents         },
-        ].map(item => (
-          <div key={item.label} className="bg-white border border-psu-border rounded-xl px-5 py-4 text-center">
-            <p className="text-3xl font-bold text-psu-primary tabular-nums">{item.value}</p>
-            <p className="text-[12px] text-psu-muted uppercase tracking-wider mt-1">{item.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Evaluation score */}
-      <div className="bg-white border border-psu-border rounded-xl px-6 py-5 mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Overall Evaluation Rating</p>
-          <div className="flex items-end gap-2">
-            <p className="text-4xl font-bold text-psu-primary tabular-nums">{data.overallRating.toFixed(1)}</p>
-            <p className="text-[13px] text-psu-muted mb-1">/ 5.0</p>
-          </div>
-          <p className="text-[12px] text-psu-muted mt-1">Based on {data.totalEvaluations} evaluation{data.totalEvaluations !== 1 ? 's' : ''}</p>
-        </div>
-        <div className="flex items-center justify-center w-16 h-16 rounded-full bg-psu-primary/10 border border-psu-border">
-          <span className="text-2xl font-bold text-psu-primary tabular-nums">
-            {data.overallRating.toFixed(1)}
-          </span>
-        </div>
-      </div>
-
-      {/* Subjects & blocks */}
-      <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">Subjects & Blocks</p>
+      {/* Subjects & population */}
+      <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">Subjects & Population</p>
       <div className="space-y-4">
-        {data.subjects.map(subject => (
+        {data.subjects.map(subject => {
+          const totals = subject.blocks.reduce(
+            (acc, block) => ({
+              students: acc.students + (block.students || 0),
+              evaluated: acc.evaluated + (block.evaluated || 0),
+            }),
+            { students: 0, evaluated: 0 }
+          );
+          const pct = totals.students > 0
+            ? Math.round((totals.evaluated / totals.students) * 100)
+            : 0;
+
+          return (
           <div key={subject.id} className="bg-white border border-psu-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-psu-border flex items-center justify-between">
               <p className="text-[14px] font-semibold text-psu-text">{subject.name}</p>
               <span className="text-[11px] font-medium text-psu-muted bg-gray-50 border border-psu-border px-2.5 py-1 rounded-full">
-                {subject.blocks.length} block{subject.blocks.length !== 1 ? 's' : ''}
+                {totals.evaluated}/{totals.students} evaluated
               </span>
             </div>
-            <div className="divide-y divide-psu-border">
-              {subject.blocks.map(block => (
-                <div key={block.id} className="px-6 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <p className="text-[13px] text-psu-text">{block.name}</p>
-                  <div className="flex items-center gap-3">
-                    <p className="text-[12px] text-psu-muted">{block.students} students</p>
-                    <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
-                      block.evaluated === block.students
-                        ? 'bg-green-50 text-green-600 border-green-100'
-                        : 'bg-psu-primary/5 text-psu-primary border-psu-border'
-                    }`}>
-                      {block.evaluated}/{block.students} evaluated
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between text-[12px] text-psu-muted mb-2">
+                <span>Population</span>
+                <span className="tabular-nums">{pct}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-100 rounded-full">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${pct === 100 ? 'bg-green-500' : 'bg-psu-primary'}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="text-[12px] text-psu-muted mt-2">
+                Enrolled students: <span className="font-semibold text-psu-text tabular-nums">{totals.students}</span>
+                {' '}| Evaluated students: <span className="font-semibold text-psu-text tabular-nums">{totals.evaluated}</span>
+              </p>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -311,11 +281,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
             Admin Overview
           </p>
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0]}
+            Welcome back, {user?.name}
           </h1>
-          <p className="text-[14px] text-white/70 mt-2">
-            Monitor evaluations and sentiment across the system.
-          </p>
         </div>
       </div>
 
@@ -423,9 +390,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
       {/* Quick links */}
       <div className="mb-10">
         <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Quick Links</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { label: 'Faculty', desc: 'View all members', to: '/faculty', icon: HiOutlineUserGroup, accent: 'bg-psu-primary/10 text-psu-primary group-hover:bg-psu-primary group-hover:text-white'  },
             { label: 'Reports', desc: 'View analytics',   to: '/reports', icon: HiOutlineChartBar,  accent: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'       },
           ].map(item => (
             <Link key={item.label} to={item.to} className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center space-x-4 hover:border-slate-300 hover:shadow-md transition-all">

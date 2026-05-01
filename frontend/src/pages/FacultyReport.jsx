@@ -7,9 +7,19 @@ import {
   HiOutlineLightBulb,
   HiOutlineCheckCircle,
   HiOutlineExclamation,
+  HiEmojiHappy,
+  HiEmojiSad,
+  HiMinusCircle,
 } from 'react-icons/hi';
 import evaluationService from '../services/evaluationService';
 import facultyService from '../services/facultyService';
+
+const heatBg = (sentiment, rate) => {
+  const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
+  if (sentiment === 'positive') return `rgba(30, 64, 175, ${alpha})`;
+  if (sentiment === 'neutral') return `rgba(234, 179, 8, ${alpha})`;
+  return `rgba(239, 68, 68, ${alpha})`;
+};
 
 // ── Sentiment badge ───────────────────────────────────────────────
 const SentimentBadge = ({ label }) => {
@@ -18,8 +28,10 @@ const SentimentBadge = ({ label }) => {
     neutral:  'bg-gray-100 text-psu-muted',
     negative: 'bg-red-50 text-red-600',
   };
+  const Icon = label === 'positive' ? HiEmojiHappy : label === 'negative' ? HiEmojiSad : HiMinusCircle;
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider ${styles[label] || styles.neutral}`}>
+      <Icon className="h-3.5 w-3.5 mr-1" />
       {label}
     </span>
   );
@@ -166,31 +178,13 @@ const FacultyReport = () => {
       </div>
 
       {/* Top stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 gap-4 mb-8">
         <div className="border border-psu-border bg-white rounded-lg p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Average Rating</p>
           <p className="text-4xl font-bold text-psu-text tabular-nums mb-2">{report.averageRating}</p>
           <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psu-primary/10 text-psu-primary text-[13px] font-semibold">
             {report.averageRating} / 5
           </span>
-        </div>
-        <div className="border border-psu-border bg-white rounded-lg p-5">
-          <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Positive Sentiment</p>
-          <p className="text-4xl font-bold text-psu-primary tabular-nums mb-2">{pct(report.sentimentOverview.positive)}%</p>
-          <p className="text-[12px] text-psu-muted">{report.sentimentOverview.positive} of {total} evaluations</p>
-        </div>
-        <div className="border border-psu-border bg-white rounded-lg p-5">
-          <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-4">Sentiment Split</p>
-          <div className="flex h-2.5 rounded-full overflow-hidden mb-3">
-            <div className="bg-psu-primary transition-all" style={{ width: `${pct(report.sentimentOverview.positive)}%` }} />
-            <div className="bg-psu-gold transition-all"    style={{ width: `${pct(report.sentimentOverview.neutral)}%`  }} />
-            <div className="bg-red-400 transition-all"     style={{ width: `${pct(report.sentimentOverview.negative)}%` }} />
-          </div>
-          <div className="flex gap-3 text-[11px]">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-psu-primary inline-block" />Pos {pct(report.sentimentOverview.positive)}%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-psu-gold inline-block" />Neu {pct(report.sentimentOverview.neutral)}%</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Neg {pct(report.sentimentOverview.negative)}%</span>
-          </div>
         </div>
       </div>
 
@@ -217,6 +211,42 @@ const FacultyReport = () => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Sentiment heat map */}
+      <div className="border border-psu-border bg-white rounded-lg overflow-hidden mb-8">
+        <div className="px-6 py-4 border-b border-psu-border">
+          <h2 className="text-[13px] font-semibold text-psu-text">Sentiment Heat Map</h2>
+          <p className="text-[12px] text-psu-muted mt-1">
+            Darker cells indicate higher share of that sentiment in this faculty report.
+          </p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { key: 'positive', label: 'Positive', count: report.sentimentOverview.positive, icon: HiEmojiHappy },
+              { key: 'neutral', label: 'Neutral', count: report.sentimentOverview.neutral, icon: HiMinusCircle },
+              { key: 'negative', label: 'Negative', count: report.sentimentOverview.negative, icon: HiEmojiSad },
+            ].map((item) => {
+              const rate = pct(item.count);
+              return (
+                <div
+                  key={item.key}
+                  className="rounded-lg px-4 py-4 text-white"
+                  style={{ backgroundColor: heatBg(item.key, rate) }}
+                  title={`${item.count} / ${total} (${rate}%)`}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wider opacity-95 inline-flex items-center gap-1">
+                    <item.icon className="h-3.5 w-3.5" />
+                    {item.label}
+                  </p>
+                  <p className="text-2xl font-bold tabular-nums mt-1">{rate}%</p>
+                  <p className="text-[11px] opacity-95 mt-1">{item.count} of {total}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -268,7 +298,20 @@ const FacultyReport = () => {
                   </span>
                 </div>
               </div>
-              <p className="text-[14px] text-psu-text leading-relaxed">{item.comment}</p>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Strengths</p>
+                  <p className="text-[14px] text-psu-text leading-relaxed">
+                    {item.strengths?.trim() ? item.strengths : 'No strengths provided.'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Weaknesses</p>
+                  <p className="text-[14px] text-psu-text leading-relaxed">
+                    {item.weaknesses?.trim() ? item.weaknesses : 'No weaknesses provided.'}
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
