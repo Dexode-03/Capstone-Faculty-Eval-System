@@ -42,10 +42,10 @@ const getFacultyById = async (req, res) => {
  */
 const createFaculty = async (req, res) => {
   try {
-    const { name, email, password, department } = req.body;
+    const { name, email, password, department, subject_id } = req.body;
 
-    if (!name || !email || !password || !department) {
-      return res.status(400).json({ message: 'Name, email, password, and department are required.' });
+    if (!name || !email || !password || !department || !subject_id) {
+      return res.status(400).json({ message: 'Name, email, password, department, and subject are required.' });
     }
 
     if (!email.endsWith('@psu.edu.ph')) {
@@ -71,12 +71,13 @@ const createFaculty = async (req, res) => {
       email,
       password: hashedPassword,
       department,
+      subject_id,
       verification_token: null,
     });
 
     res.status(201).json({
       message: 'Faculty member created successfully.',
-      faculty: { id: result.insertId, name, email, department },
+      faculty: { id: result.insertId, name, email, department, subject_id },
     });
   } catch (error) {
     console.error('Create faculty error:', error);
@@ -90,7 +91,7 @@ const createFaculty = async (req, res) => {
  */
 const updateFaculty = async (req, res) => {
   try {
-    const { name, department } = req.body;
+    const { name, department, subject_id } = req.body;
     const { id } = req.params;
 
     const faculty = await Faculty.findById(id);
@@ -101,6 +102,7 @@ const updateFaculty = async (req, res) => {
     await Faculty.update(id, {
       name: name || faculty.name,
       department: department || faculty.department,
+      subject_id: subject_id !== undefined ? subject_id : faculty.subject_id,
     });
 
     res.json({ message: 'Faculty member updated successfully.' });

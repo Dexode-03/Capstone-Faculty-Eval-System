@@ -11,31 +11,31 @@ const User = {
   },
 
   // Create a new faculty
-  createFaculty: async ({ name, email, password, department, verification_token }) => {
+  createFaculty: async ({ name, email, password, department, subject_id, verification_token }) => {
     const [result] = await pool.execute(
-      'INSERT INTO faculty (name, email, password, department, verification_token) VALUES (?, ?, ?, ?, ?)',
-      [name, email, password, department, verification_token]
+      'INSERT INTO faculty (name, email, password, department, subject_id, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
+      [name, email, password, department, subject_id || null, verification_token]
     );
     return result;
   },
 
   // Create a new student
-  createStudent: async ({ name, email, password, year_level, section, department, verification_token }) => {
+  createStudent: async ({ name, email, password, year_level, section, department, subject_id, verification_token }) => {
     const [result] = await pool.execute(
-      'INSERT INTO students (name, email, password, year_level, section, department, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, password, year_level, section, department, verification_token]
+      'INSERT INTO students (name, email, password, year_level, section, department, subject_id, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, email, password, year_level, section, department, subject_id || null, verification_token]
     );
     return result;
   },
 
   // Generic create method (determine role and create accordingly)
-  create: async ({ name, email, password, role, verification_token, year_level, section, department }) => {
+  create: async ({ name, email, password, role, verification_token, year_level, section, department, subject_id }) => {
     if (role === 'admin') {
       return User.createAdmin({ name, email, password, verification_token });
     } else if (role === 'faculty') {
-      return User.createFaculty({ name, email, password, department, verification_token });
+      return User.createFaculty({ name, email, password, department, subject_id, verification_token });
     } else if (role === 'student') {
-      return User.createStudent({ name, email, password, year_level, section, department, verification_token });
+      return User.createStudent({ name, email, password, year_level, section, department, subject_id, verification_token });
     }
     throw new Error('Invalid role');
   },
@@ -63,10 +63,24 @@ const User = {
       const [rows] = await pool.execute('SELECT id, name, email, email_verified, created_at FROM admins WHERE id = ?', [id]);
       if (rows.length > 0) return { ...rows[0], role: 'admin' };
     } else if (role === 'faculty') {
-      const [rows] = await pool.execute('SELECT id, name, email, department, email_verified, created_at FROM faculty WHERE id = ?', [id]);
+      const [rows] = await pool.execute(
+        `SELECT f.id, f.name, f.email, f.department, f.subject_id, s.code as subject_code, s.name as subject_name,
+                f.email_verified, f.created_at
+         FROM faculty f
+         LEFT JOIN subjects s ON s.id = f.subject_id
+         WHERE f.id = ?`,
+        [id]
+      );
       if (rows.length > 0) return { ...rows[0], role: 'faculty' };
     } else if (role === 'student') {
-      const [rows] = await pool.execute('SELECT id, name, email, year_level, section, department, email_verified, created_at FROM students WHERE id = ?', [id]);
+      const [rows] = await pool.execute(
+        `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department, st.subject_id,
+                s.code as subject_code, s.name as subject_name, st.email_verified, st.created_at
+         FROM students st
+         LEFT JOIN subjects s ON s.id = st.subject_id
+         WHERE st.id = ?`,
+        [id]
+      );
       if (rows.length > 0) return { ...rows[0], role: 'student' };
     }
     return null;

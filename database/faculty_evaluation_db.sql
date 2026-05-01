@@ -54,9 +54,12 @@ INSERT INTO `admins` (`id`, `name`, `email`, `password`, `email_verified`, `veri
 CREATE TABLE `evaluations` (
   `id` int(11) NOT NULL,
   `student_id` int(11) NOT NULL,
+  `anonymous_student_ref` varchar(255) DEFAULT NULL,
   `faculty_id` int(11) NOT NULL,
   `rating` int(11) NOT NULL CHECK (`rating` >= 1 and `rating` <= 5),
   `comment` text NOT NULL,
+  `strengths` text DEFAULT NULL,
+  `weaknesses` text DEFAULT NULL,
   `sentiment` enum('positive','neutral','negative') NOT NULL,
   `sentiment_score` decimal(5,2) DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

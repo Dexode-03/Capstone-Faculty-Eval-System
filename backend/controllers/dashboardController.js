@@ -1,6 +1,7 @@
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 const Evaluation = require('../models/Evaluation');
+const { pool } = require('../config/db');
 
 /**
  * GET /api/dashboard/stats
@@ -118,43 +119,53 @@ const getStats = async (req, res) => {
 const getFacultyDashboard = async (req, res) => {
   try {
     const facultyId = req.user.id;
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty record not found.' });
+    }
 
     const evaluations = await Evaluation.findByFacultyId(facultyId);
     const avgRating   = await Evaluation.getAverageRating(facultyId);
+    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
+    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
 
-    if (evaluations.length === 0) {
+    if (!faculty.subject_id) {
       return res.json({
         overallRating:     0,
-        totalEvaluations:  0,
-        sentimentOverview: { positive: 0, neutral: 0, negative: 0 },
+        totalEvaluations:  evaluations.length,
+        sentimentOverview,
         subjects:          [],
       });
     }
 
-    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
-    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+    // Show enrolled students for the subject handled by this faculty.
+    const [enrollmentRows] = await pool.execute(
+      `SELECT
+         COUNT(DISTINCT st.id) as total_students,
+         COUNT(DISTINCT e.student_id) as evaluated_students
+       FROM students st
+       LEFT JOIN evaluations e
+         ON e.student_id = st.id
+        AND e.faculty_id = ?
+       WHERE st.subject_id = ?`,
+      [facultyId, faculty.subject_id]
+    );
 
-    const monthMap = {};
-    evaluations.forEach(e => {
-      const date = new Date(e.created_at);
-      const key  = date.toLocaleString('default', { month: 'long', year: 'numeric' });
-      if (!monthMap[key]) {
-        monthMap[key] = { id: key, name: key, ratings: [], count: 0 };
-      }
-      monthMap[key].ratings.push(e.rating);
-      monthMap[key].count++;
-    });
+    const totals = enrollmentRows[0] || { total_students: 0, evaluated_students: 0 };
+    const blocks = [{
+      id: 1,
+      name: 'Enrolled Students',
+      students: parseInt(totals.total_students, 10) || 0,
+      evaluated: parseInt(totals.evaluated_students, 10) || 0,
+    }];
 
-    const subjects = Object.values(monthMap).map((m, i) => ({
-      id:   i + 1,
-      name: m.name,
-      blocks: [{
-        id:        i + 1,
-        name:      `${m.count} evaluation${m.count !== 1 ? 's' : ''}`,
-        students:  m.count,
-        evaluated: m.count,
-      }],
-    }));
+    const subjects = [{
+      id:   faculty.subject_id,
+      name: faculty.subject_code
+        ? `${faculty.subject_code} - ${faculty.subject_name || 'Subject'}`
+        : (faculty.subject_name || 'Assigned Subject'),
+      blocks,
+    }];
 
     res.json({
       overallRating:     avgRating ? parseFloat(parseFloat(avgRating).toFixed(1)) : 0,

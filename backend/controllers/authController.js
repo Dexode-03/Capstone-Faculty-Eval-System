@@ -17,11 +17,11 @@ const generateToken = (user) => {
 
 /**
  * POST /api/auth/register
- * Register a new user
+ * Register a new account
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, role, year_level, section, department } = req.body;
+    const { name, email, password, confirmPassword, role, year_level, section, department, subject_id } = req.body;
 
     // Validation
     if (!name || !email || !password || !confirmPassword || !role) {
@@ -30,8 +30,8 @@ const register = async (req, res) => {
 
     // Student-specific validation
     if (role === 'student') {
-      if (!year_level || !section || !department) {
-        return res.status(400).json({ message: 'Year level, section, and course/department are required for students.' });
+      if (!year_level || !section || !department || !subject_id) {
+        return res.status(400).json({ message: 'Year level, section, department, and subject are required for students.' });
       }
     }
 
@@ -52,9 +52,9 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Invalid role selected.' });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findByEmail(email);
-    if (existingUser) {
+    // Check if account already exists
+    const existingAccount = await User.findByEmail(email);
+    if (existingAccount) {
       return res.status(400).json({ message: 'Email is already registered.' });
     }
 
@@ -65,7 +65,7 @@ const register = async (req, res) => {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Create user
+    // Create account
     await User.create({
       name,
       email,
@@ -74,7 +74,8 @@ const register = async (req, res) => {
       verification_token: verificationToken,
       year_level: role === 'student' ? year_level : null,
       section: role === 'student' ? section : null,
-      department: role === 'student' ? department : null,
+      department: role === 'student' ? department : department || null,
+      subject_id: subject_id || null,
     });
 
     // Send verification email
@@ -98,7 +99,7 @@ const register = async (req, res) => {
 
 /**
  * POST /api/auth/login
- * Login user
+ * Login account
  */
 const login = async (req, res) => {
   try {
@@ -109,37 +110,40 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    // Find user
-    const user = await User.findByEmail(email);
-    if (!user) {
+    // Find account
+    const account = await User.findByEmail(email);
+    if (!account) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
     // Check if email is verified
-    if (!user.email_verified) {
+    if (!account.email_verified) {
       return res.status(403).json({ message: 'Please verify your email before logging in.' });
     }
 
     // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, account.password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
     // Generate token
-    const token = generateToken(user);
+    const token = generateToken(account);
 
     res.json({
       message: 'Login successful.',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        year_level: user.year_level,
-        section: user.section,
-        department: user.department,
+        id: account.id,
+        name: account.name,
+        email: account.email,
+        role: account.role,
+        year_level: account.year_level,
+        section: account.section,
+        department: account.department,
+        subject_id: account.subject_id || null,
+        subject_code: account.subject_code || null,
+        subject_name: account.subject_name || null,
       },
     });
   } catch (error) {
@@ -150,18 +154,18 @@ const login = async (req, res) => {
 
 /**
  * GET /api/auth/verify-email/:token
- * Verify user email
+ * Verify account email
  */
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
 
-    const user = await User.findByVerificationToken(token);
-    if (!user) {
+    const account = await User.findByVerificationToken(token);
+    if (!account) {
       return res.status(400).json({ message: 'Invalid or expired verification token.' });
     }
 
-    await User.verifyEmail(user.id, user.role);
+    await User.verifyEmail(account.id, account.role);
 
     res.json({ message: 'Email verified successfully. You can now log in.' });
   } catch (error) {
@@ -182,8 +186,8 @@ const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: 'Email is required.' });
     }
 
-    const user = await User.findByEmail(email);
-    if (!user) {
+    const account = await User.findByEmail(email);
+    if (!account) {
       // Return success even if email doesn't exist (security best practice)
       return res.json({ message: 'If the email exists, a reset link has been sent.' });
     }
@@ -258,15 +262,15 @@ const resetPassword = async (req, res) => {
 
 /**
  * GET /api/auth/me
- * Get current user profile
+ * Get current account profile
  */
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id, req.user.role);
-    if (!user) {
+    const account = await User.findById(req.user.id, req.user.role);
+    if (!account) {
       return res.status(404).json({ message: 'User not found.' });
     }
-    res.json({ user });
+    res.json({ user: account });
   } catch (error) {
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error.' });
@@ -275,16 +279,21 @@ const getProfile = async (req, res) => {
 const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await User.findById(req.user.id, req.user.role);
+    const account = await User.findById(req.user.id, req.user.role);
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const userWithPassword = await User.findByEmail(account.email);
+    if (!userWithPassword) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, userWithPassword.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Current password is incorrect.' });
     }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    await User.updatePassword(user.email, hashedPassword);
+    await User.updatePassword(account.email, hashedPassword);
 
     res.json({ message: 'Password changed successfully.' });
   } catch (error) {

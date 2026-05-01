@@ -4,6 +4,10 @@ const EvaluationResponse = require('../models/EvaluationResponse');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const {
+  buildAnonymousRespondentRef,
+  buildDecoupledSentimentText,
+} = require('../utils/privacy');
+const {
   analyzeSentiment,
   generateRecommendations,
   generateSystemRecommendations,
@@ -109,29 +113,48 @@ const submitEvaluation = async (req, res) => {
     const strengthsSentiment  = strengths  ? analyzeSentiment(strengths)  : null;
     const weaknessesSentiment = weaknesses ? analyzeSentiment(weaknesses) : null;
 
-    let sentimentResult;
-    if (strengthsSentiment && weaknessesSentiment) {
-      const posScore = (strengthsSentiment.label  === 'positive' ? strengthsSentiment.confidence  : 0)
-                     + (weaknessesSentiment.label === 'positive' ? weaknessesSentiment.confidence : 0);
-      const negScore = (strengthsSentiment.label  === 'negative' ? strengthsSentiment.confidence  : 0)
-                     + (weaknessesSentiment.label === 'negative' ? weaknessesSentiment.confidence : 0);
+    // Programmatic decoupling per field:
+    // strengths and weaknesses are analyzed separately, then aggregated
+    // using confidence-weighted polarity.
+    const toSignedProbability = (result) => {
+      if (!result) return 0;
+      if (result.label === 'positive') return result.confidence;
+      if (result.label === 'negative') return -result.confidence;
+      return 0;
+    };
 
-      if (posScore > negScore)      sentimentResult = strengthsSentiment;
-      else if (negScore > posScore) sentimentResult = weaknessesSentiment;
-      else                          sentimentResult = { label: 'neutral', score: 0, confidence: 0.5 };
-    } else {
-      sentimentResult = strengthsSentiment || weaknessesSentiment
-                     || analyzeSentiment('No comments provided.');
-    }
+    const strengthsProb = toSignedProbability(strengthsSentiment);
+    const weaknessesProb = toSignedProbability(weaknessesSentiment);
+    const combinedScore = strengthsProb + weaknessesProb;
 
-    const commentForSentiment = [strengths || '', weaknesses || ''].filter(Boolean).join(' ')
-                             || 'No comments provided.';
+    let finalLabel = 'neutral';
+    if (combinedScore >= 0.15) finalLabel = 'positive';
+    else if (combinedScore <= -0.15) finalLabel = 'negative';
+
+    const sourceCount = [strengthsSentiment, weaknessesSentiment].filter(Boolean).length;
+    const finalConfidence = sourceCount > 0
+      ? Math.min(1, Math.abs(combinedScore) / sourceCount)
+      : 0;
+
+    const sentimentResult = {
+      label: finalLabel,
+      score: parseFloat(combinedScore.toFixed(4)),
+      confidence: parseFloat(finalConfidence.toFixed(4)),
+    };
+
+    // Programmatic decoupling: sentiment engine receives text-only content.
+    // Student metadata is encrypted separately and never forwarded to analysis.
+    const commentForSentiment = buildDecoupledSentimentText({ strengths, weaknesses });
+    const anonymous_student_ref = buildAnonymousRespondentRef({ studentId: student_id });
 
     const result = await Evaluation.create({
       student_id,
+      anonymous_student_ref,
       faculty_id,
       rating:          Math.round(overallRating),
       comment:         commentForSentiment,
+      strengths,
+      weaknesses,
       sentiment:       sentimentResult.label,
       sentiment_score: sentimentResult.score,
     });

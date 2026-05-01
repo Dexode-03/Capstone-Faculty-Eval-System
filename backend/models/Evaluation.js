@@ -2,10 +2,12 @@ const { pool } = require('../config/db');
 
 const Evaluation = {
   // Create a new evaluation
-  create: async ({ student_id, faculty_id, rating, comment, sentiment, sentiment_score }) => {
+  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score }) => {
     const [result] = await pool.execute(
-      'INSERT INTO evaluations (student_id, faculty_id, rating, comment, sentiment, sentiment_score) VALUES (?, ?, ?, ?, ?, ?)',
-      [student_id, faculty_id, rating, comment, sentiment, sentiment_score]
+      `INSERT INTO evaluations
+         (student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [student_id, anonymous_student_ref || null, faculty_id, rating, comment, strengths || null, weaknesses || null, sentiment, sentiment_score]
     );
     return result;
   },
@@ -13,11 +15,10 @@ const Evaluation = {
   // Get evaluations by faculty ID — includes strengths/weaknesses from open-ended responses
   findByFacultyId: async (faculty_id) => {
     const [rows] = await pool.execute(
-      `SELECT e.*, s.name as student_name,
-              MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END) as strengths,
-              MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END) as weaknesses
+      `SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at,
+              COALESCE(e.strengths, MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END)) as strengths,
+              COALESCE(e.weaknesses, MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END)) as weaknesses
        FROM evaluations e
-       JOIN students s ON e.student_id = s.id
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq
               ON eq.id = er.question_id AND eq.question_type = 'text'
@@ -70,11 +71,11 @@ const Evaluation = {
   // Get all evaluations (for admin/system analysis) — includes strengths/weaknesses
   findAll: async () => {
     const [rows] = await pool.execute(
-      `SELECT e.*, s.name as student_name, f.name as faculty_name, f.department,
-              MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END) as strengths,
-              MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END) as weaknesses
+      `SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at,
+              f.name as faculty_name, f.department,
+              COALESCE(e.strengths, MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END)) as strengths,
+              COALESCE(e.weaknesses, MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END)) as weaknesses
        FROM evaluations e
-       JOIN students s ON e.student_id = s.id
        JOIN faculty f ON e.faculty_id = f.id
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq

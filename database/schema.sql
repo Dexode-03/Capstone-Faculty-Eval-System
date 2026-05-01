@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS faculty (
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     department VARCHAR(255) NOT NULL,
+    subject_id INT DEFAULT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -38,19 +39,32 @@ CREATE TABLE IF NOT EXISTS students (
     year_level VARCHAR(20) NOT NULL,
     section VARCHAR(50) NOT NULL,
     department VARCHAR(255) NOT NULL,
+    subject_id INT DEFAULT NULL,
     email_verified BOOLEAN DEFAULT FALSE,
     verification_token VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Subjects Table
+CREATE TABLE IF NOT EXISTS subjects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(20) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    department VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Evaluations Table
 CREATE TABLE IF NOT EXISTS evaluations (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id INT NOT NULL,
+    anonymous_student_ref VARCHAR(255) DEFAULT NULL,
     faculty_id INT NOT NULL,
     rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comment TEXT NOT NULL,
+    strengths TEXT DEFAULT NULL,
+    weaknesses TEXT DEFAULT NULL,
     sentiment ENUM('positive', 'neutral', 'negative') NOT NULL,
     sentiment_score DECIMAL(5,2) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -62,6 +76,8 @@ CREATE TABLE IF NOT EXISTS evaluations (
 CREATE TABLE IF NOT EXISTS evaluation_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     category VARCHAR(100) NOT NULL,
+    question_type ENUM('rating', 'text') NOT NULL DEFAULT 'rating',
+    category_description TEXT DEFAULT NULL,
     question TEXT NOT NULL,
     sort_order INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
@@ -73,7 +89,8 @@ CREATE TABLE IF NOT EXISTS evaluation_responses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     evaluation_id INT NOT NULL,
     question_id INT NOT NULL,
-    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    rating INT DEFAULT NULL CHECK (rating >= 1 AND rating <= 5),
+    text_response TEXT DEFAULT NULL,
     FOREIGN KEY (evaluation_id) REFERENCES evaluations(id) ON DELETE CASCADE,
     FOREIGN KEY (question_id) REFERENCES evaluation_questions(id) ON DELETE CASCADE
 );
@@ -101,3 +118,9 @@ CREATE TABLE IF NOT EXISTS password_resets (
     INDEX idx_token (token),
     INDEX idx_email (email)
 );
+
+ALTER TABLE faculty
+    ADD CONSTRAINT faculty_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE students
+    ADD CONSTRAINT students_subject_fk FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL ON UPDATE CASCADE;

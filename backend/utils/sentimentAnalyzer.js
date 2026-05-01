@@ -35,6 +35,36 @@ const SHORT_CATEGORY = {
   'C. Commitment and Transparency':                'Commitment',
 };
 
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+// Build per-response sentiment probabilities from stored sentiment_score.
+// sentiment_score is signed (-1..1):
+//   +1 => strong positive, -1 => strong negative, near 0 => mostly neutral.
+const sentimentProbabilities = (evaluation) => {
+  const raw = parseFloat(evaluation?.sentiment_score);
+  if (Number.isFinite(raw)) {
+    const s = Math.max(-1, Math.min(1, raw));
+    return {
+      positive: Math.max(0, s),
+      neutral:  Math.max(0, 1 - Math.abs(s)),
+      negative: Math.max(0, -s),
+    };
+  }
+  // Fallback for legacy rows without score
+  return {
+    positive: evaluation?.sentiment === 'positive' ? 1 : 0,
+    neutral:  evaluation?.sentiment === 'neutral' ? 1 : 0,
+    negative: evaluation?.sentiment === 'negative' ? 1 : 0,
+  };
+};
+
+const dominantSentimentFromProbabilities = (probs) => {
+  const entries = Object.entries(probs || {});
+  if (entries.length === 0) return { label: 'neutral', probability: 0 };
+  const [label, probability] = entries.sort((a, b) => b[1] - a[1])[0];
+  return { label, probability: clamp01(probability) };
+};
+
 /**
  * Analyze the sentiment of a text comment using a trained
  * Naive Bayes classifier (supervised machine learning).
@@ -210,11 +240,20 @@ const generateRecommendations = (evaluations) => {
 
   const avgRating = evaluations.reduce((sum, e) => sum + e.rating, 0) / evaluations.length;
   const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
-  evaluations.forEach(e => { sentimentCounts[e.sentiment]++; });
+  const weightedSentiment = { positive: 0, neutral: 0, negative: 0 };
+  let totalWeight = 0;
 
-  const total           = evaluations.length;
-  const negativePercent = (sentimentCounts.negative / total) * 100;
-  const positivePercent = (sentimentCounts.positive / total) * 100;
+  evaluations.forEach(e => {
+    sentimentCounts[e.sentiment]++;
+    const probs = sentimentProbabilities(e);
+    const { label, probability } = dominantSentimentFromProbabilities(probs);
+    weightedSentiment[label] += probability;
+    totalWeight += probability;
+  });
+
+  const safeTotalWeight = totalWeight > 0 ? totalWeight : 1;
+  const negativePercent = (weightedSentiment.negative / safeTotalWeight) * 100;
+  const positivePercent = (weightedSentiment.positive / safeTotalWeight) * 100;
 
   // ── Rating-based recommendations ──────────────────────────────
   if (avgRating < 2.5) {
@@ -238,17 +277,17 @@ const generateRecommendations = (evaluations) => {
   // ── Sentiment-based recommendations ───────────────────────────
   if (negativePercent > 40) {
     recommendations.push(
-      `High negative sentiment detected (${Math.round(negativePercent)}%). A structured faculty development plan and follow-up evaluation within the semester is strongly recommended.`
+      `High high-probability negative sentiment detected (${Math.round(negativePercent)}%). A structured faculty development plan and follow-up evaluation within the semester is strongly recommended.`
     );
   } else if (negativePercent > 20) {
     recommendations.push(
-      `Moderate negative sentiment present (${Math.round(negativePercent)}%). Review recurring complaints in student feedback and address specific concerns raised.`
+      `Moderate high-probability negative sentiment present (${Math.round(negativePercent)}%). Review recurring complaints in student feedback and address specific concerns raised.`
     );
   }
 
   if (positivePercent > 70) {
     recommendations.push(
-      `Strong positive sentiment trend (${Math.round(positivePercent)}%). Consider nominating this faculty for teaching awards or a leadership role in curriculum development.`
+      `Strong high-probability positive sentiment trend (${Math.round(positivePercent)}%). Consider nominating this faculty for teaching awards or a leadership role in curriculum development.`
     );
   }
 
@@ -325,6 +364,8 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
       systemRecommendations: ['No evaluation data available for system-wide analysis.'],
       departmentInsights:    [],
       facultyFlags:          { needsAttention: [], highPerformers: [] },
+      sentimentHeatmap:      [],
+      facultySummary:        [],
       trends:                [],
     };
   }
@@ -333,10 +374,19 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
 
   // ── Overall sentiment health ──────────────────────────────────
   const sentimentCounts = { positive: 0, neutral: 0, negative: 0 };
-  allEvaluations.forEach(e => { sentimentCounts[e.sentiment]++; });
+  const weightedSentiment = { positive: 0, neutral: 0, negative: 0 };
+  let totalWeight = 0;
+  allEvaluations.forEach(e => {
+    sentimentCounts[e.sentiment]++;
+    const probs = sentimentProbabilities(e);
+    const { label, probability } = dominantSentimentFromProbabilities(probs);
+    weightedSentiment[label] += probability;
+    totalWeight += probability;
+  });
 
-  const positiveRate = (sentimentCounts.positive / total) * 100;
-  const negativeRate = (sentimentCounts.negative / total) * 100;
+  const safeTotalWeight = totalWeight > 0 ? totalWeight : 1;
+  const positiveRate = (weightedSentiment.positive / safeTotalWeight) * 100;
+  const negativeRate = (weightedSentiment.negative / safeTotalWeight) * 100;
 
   let overallHealth;
   if (positiveRate >= 70)      overallHealth = 'excellent';
@@ -355,12 +405,15 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
         department: e.department   || 'Unknown',
         ratings:    [],
         sentiments: { positive: 0, neutral: 0, negative: 0 },
+        weightedSentiments: { positive: 0, neutral: 0, negative: 0 },
         strengths:  [],
         weaknesses: [],
       };
     }
     facultyMap[fid].ratings.push(e.rating);
     facultyMap[fid].sentiments[e.sentiment]++;
+    const { label, probability } = dominantSentimentFromProbabilities(sentimentProbabilities(e));
+    facultyMap[fid].weightedSentiments[label] += probability;
     if (e.strengths)  facultyMap[fid].strengths.push(e.strengths);
     if (e.weaknesses) facultyMap[fid].weaknesses.push(e.weaknesses);
   });
@@ -380,6 +433,7 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
       deptMap[dept] = {
         facultyRatings: {},
         sentiments:     { positive: 0, neutral: 0, negative: 0 },
+        weightedSentiments: { positive: 0, neutral: 0, negative: 0 },
         weaknesses:     [],
         strengths:      [],
       };
@@ -387,6 +441,8 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
     if (!deptMap[dept].facultyRatings[fid]) deptMap[dept].facultyRatings[fid] = [];
     deptMap[dept].facultyRatings[fid].push(e.rating);
     deptMap[dept].sentiments[e.sentiment]++;
+    const { label, probability } = dominantSentimentFromProbabilities(sentimentProbabilities(e));
+    deptMap[dept].weightedSentiments[label] += probability;
     if (e.strengths)  deptMap[dept].strengths.push(e.strengths);
     if (e.weaknesses) deptMap[dept].weaknesses.push(e.weaknesses);
   });
@@ -396,9 +452,11 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
       ratings => ratings.reduce((s, r) => s + r, 0) / ratings.length
     );
     const deptAvg    = perFacultyAvgs.reduce((s, a) => s + a, 0) / perFacultyAvgs.length;
-    const deptTotal  = Object.values(data.facultyRatings).flat().length;
-    const deptNegPct = (data.sentiments.negative / deptTotal) * 100;
-    const deptPosPct = (data.sentiments.positive / deptTotal) * 100;
+    const deptTotalWeight = data.weightedSentiments.positive + data.weightedSentiments.neutral + data.weightedSentiments.negative;
+    const safeDeptWeight = deptTotalWeight > 0 ? deptTotalWeight : 1;
+    const deptNegPct = (data.weightedSentiments.negative / safeDeptWeight) * 100;
+    const deptPosPct = (data.weightedSentiments.positive / safeDeptWeight) * 100;
+    const deptTotal = Object.values(data.facultyRatings).flat().length;
 
     const weakText = data.weaknesses.join(' ').toLowerCase();
     const strongText = data.strengths.join(' ').toLowerCase();
@@ -449,15 +507,43 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
     };
   }).sort((a, b) => b.averageRating - a.averageRating);
 
+  // ── Department sentiment heatmap (for admin visualization) ───────
+  const sentimentHeatmap = Object.entries(deptMap)
+    .map(([department, data]) => {
+      const totalDept = data.sentiments.positive + data.sentiments.neutral + data.sentiments.negative;
+      const rate = (count) => (totalDept > 0 ? Math.round((count / totalDept) * 100) : 0);
+      return {
+        department,
+        totalEvaluations: totalDept,
+        cells: {
+          positive: {
+            count: data.sentiments.positive,
+            rate: rate(data.sentiments.positive),
+          },
+          neutral: {
+            count: data.sentiments.neutral,
+            rate: rate(data.sentiments.neutral),
+          },
+          negative: {
+            count: data.sentiments.negative,
+            rate: rate(data.sentiments.negative),
+          },
+        },
+      };
+    })
+    .sort((a, b) => a.department.localeCompare(b.department));
+
   // ── Per-faculty flags ─────────────────────────────────────────
   const needsAttention = [];
   const highPerformers = [];
 
   Object.values(facultyMap).forEach(f => {
     const fAvg    = f.ratings.reduce((s, r) => s + r, 0) / f.ratings.length;
-    const fTotal  = f.ratings.length;
-    const fNegPct = (f.sentiments.negative / fTotal) * 100;
-    const fPosPct = (f.sentiments.positive / fTotal) * 100;
+    const fTotalWeight = f.weightedSentiments.positive + f.weightedSentiments.neutral + f.weightedSentiments.negative;
+    const safeFWeight = fTotalWeight > 0 ? fTotalWeight : 1;
+    const fNegPct = (f.weightedSentiments.negative / safeFWeight) * 100;
+    const fPosPct = (f.weightedSentiments.positive / safeFWeight) * 100;
+    const fTotal = f.ratings.length;
 
     if (fAvg < 3.0 || fNegPct > 40) {
       needsAttention.push({
@@ -482,6 +568,28 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
       });
     }
   });
+
+  const facultySummary = Object.values(facultyMap)
+    .map(f => {
+      const totalEvals = f.ratings.length;
+      const avg = totalEvals > 0
+        ? parseFloat((f.ratings.reduce((s, r) => s + r, 0) / totalEvals).toFixed(2))
+        : 0;
+      const positiveRate = totalEvals > 0 ? Math.round((f.sentiments.positive / totalEvals) * 100) : 0;
+      const neutralRate = totalEvals > 0 ? Math.round((f.sentiments.neutral / totalEvals) * 100) : 0;
+      const negativeRate = totalEvals > 0 ? Math.round((f.sentiments.negative / totalEvals) * 100) : 0;
+      return {
+        id: f.id,
+        name: f.name,
+        department: f.department,
+        averageRating: avg,
+        totalEvaluations: totalEvals,
+        positiveRate,
+        neutralRate,
+        negativeRate,
+      };
+    })
+    .sort((a, b) => b.averageRating - a.averageRating);
 
   // ── Dynamic system-wide keyword trends ────────────────────────
   const allWeaknesses = allEvaluations.map(e => (e.weaknesses || e.comment || '')).join(' ');
@@ -584,6 +692,8 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
     negativeRate:          Math.round(negativeRate),
     systemRecommendations,
     departmentInsights,
+    sentimentHeatmap,
+    facultySummary,
     facultyFlags: { needsAttention, highPerformers },
     trends,
   };
