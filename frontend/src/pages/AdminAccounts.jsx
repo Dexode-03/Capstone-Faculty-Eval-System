@@ -201,12 +201,14 @@ export default function AdminAccounts() {
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() => setDeleteConfirm(account.id)}
-                          className="text-red-600 hover:text-red-900 font-medium text-sm"
-                        >
-                          Delete
-                        </button>
+                        {role !== 'admin' && (
+                          <button
+                            onClick={() => setDeleteConfirm(account.id)}
+                            className="text-red-600 hover:text-red-900 font-medium text-sm"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

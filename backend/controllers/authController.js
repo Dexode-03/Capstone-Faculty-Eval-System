@@ -516,9 +516,9 @@ const adminDeleteAccount = async (req, res) => {
       return res.status(404).json({ message: 'Account not found.' });
     }
 
-    // Prevent self-deletion
-    if (req.user.id === parseInt(id) && req.user.role === role) {
-      return res.status(400).json({ message: 'Cannot delete your own account.' });
+    // Prevent deletion of admin accounts
+    if (role === 'admin') {
+      return res.status(403).json({ message: 'Admin accounts cannot be deleted.' });
     }
 
     // Delete account

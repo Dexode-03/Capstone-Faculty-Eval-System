@@ -17,4 +17,4 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Privacy Note (RA 10173)
 
-This system applies programmatic decoupling for sentiment analysis. Comment text is analyzed without student identity fields, while respondent metadata is encrypted and stored separately for anonymity. Faculty and admin report payloads do not expose `student_id`, supporting Data Privacy Act (RA 10173) compliance requirements for confidentiality and data minimization.
+This faculty evaluation system applies programmatic decoupling for sentiment analysis. Comment text is analyzed without student identity fields, while respondent metadata is encrypted and stored separately for anonymity. Faculty and admin report payloads do not expose `student_id`, supporting Data Privacy Act (RA 10173) compliance requirements for confidentiality and data minimization.
