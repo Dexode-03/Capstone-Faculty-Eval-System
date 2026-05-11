@@ -143,21 +143,18 @@ export default function AdminAccounts() {
                 <tr>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
-                  {role === 'faculty' && (
+                  {(role === 'faculty' || role === 'student') && (
                     <>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Department</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Subject</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Subjects</th>
                     </>
                   )}
                   {role === 'student' && (
                     <>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Year</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Year Level</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Section</th>
                     </>
                   )}
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Verified</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Created</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
                 </tr>
               </thead>
@@ -166,11 +163,10 @@ export default function AdminAccounts() {
                   <tr key={account.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{account.id}</td>
                     <td className="px-6 py-4 text-sm text-gray-900">{account.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{account.email}</td>
-                    {role === 'faculty' && (
+                    {(role === 'faculty' || role === 'student') && (
                       <>
                         <td className="px-6 py-4 text-sm text-gray-600">{account.department || '-'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{account.subject_code || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{account.subject_names || '-'}</td>
                       </>
                     )}
                     {role === 'student' && (
@@ -179,20 +175,6 @@ export default function AdminAccounts() {
                         <td className="px-6 py-4 text-sm text-gray-600">{account.section || '-'}</td>
                       </>
                     )}
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          account.email_verified
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {account.email_verified ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {new Date(account.created_at).toLocaleDateString()}
-                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button

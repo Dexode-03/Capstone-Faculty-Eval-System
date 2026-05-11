@@ -163,7 +163,6 @@ CREATE TABLE `faculty` (
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `department` varchar(255) NOT NULL,
-  `subject_id` int(11) DEFAULT NULL,
   `email_verified` tinyint(1) DEFAULT 0,
   `verification_token` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -174,9 +173,33 @@ CREATE TABLE `faculty` (
 -- Dumping data for table `faculty`
 --
 
-INSERT INTO `faculty` (`id`, `name`, `email`, `password`, `department`, `subject_id`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
-(2, 'Dr. Maria Santos', 'faculty@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Computer Science', 1, 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09'),
-(3, 'Prof. Juan Dela Cruz', 'faculty2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Information Technology', 3, 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09');
+INSERT INTO `faculty` (`id`, `name`, `email`, `password`, `department`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
+(2, 'Dr. Maria Santos', 'faculty@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09'),
+(3, 'Prof. Juan Dela Cruz', 'faculty2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `faculty_subjects`
+--
+
+CREATE TABLE `faculty_subjects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `faculty_id` int(11) NOT NULL,
+  `subject_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_faculty_subject` (`faculty_id`, `subject_id`),
+  FOREIGN KEY (`faculty_id`) REFERENCES `faculty`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `faculty_subjects`
+--
+
+INSERT INTO `faculty_subjects` (`faculty_id`, `subject_id`) VALUES
+(2, 1),
+(3, 3);
 
 -- --------------------------------------------------------
 
@@ -206,7 +229,6 @@ CREATE TABLE `students` (
   `year_level` varchar(20) NOT NULL,
   `section` varchar(50) NOT NULL,
   `department` varchar(255) NOT NULL,
-  `subject_id` int(11) DEFAULT NULL,
   `email_verified` tinyint(1) DEFAULT 0,
   `verification_token` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
@@ -217,12 +239,39 @@ CREATE TABLE `students` (
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`id`, `name`, `email`, `password`, `year_level`, `section`, `department`, `subject_id`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
-(4, 'Raymond Heras', 'student1@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Computer Science', 1, 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:36'),
-(5, 'Hero Reyes', 'student2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 3, 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:24'),
-(11, 'Mark Len', 'student3@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 3, 1, NULL, '2026-03-15 03:45:05', '2026-05-01 11:10:51'),
-(13, 'Jordan Dave Caparas', 'student4@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 3, 1, NULL, '2026-03-15 04:01:06', '2026-05-01 11:11:04'),
-(14, 'Junard Chua', 'student5@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Information Technology', 3, 1, NULL, '2026-03-15 13:14:30', '2026-05-01 11:11:20');
+INSERT INTO `students` (`id`, `name`, `email`, `password`, `year_level`, `section`, `department`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
+(4, 'Raymond Heras', 'student1@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:36'),
+(5, 'Hero Reyes', 'student2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:24'),
+(11, 'Mark Len', 'student3@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 03:45:05', '2026-05-01 11:10:51'),
+(13, 'Jordan Dave Caparas', 'student4@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 04:01:06', '2026-05-01 11:11:04'),
+(14, 'Junard Chua', 'student5@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Information Technology', 1, NULL, '2026-03-15 13:14:30', '2026-05-01 11:11:20');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_subjects`
+--
+
+CREATE TABLE `student_subjects` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `subject_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_student_subject` (`student_id`, `subject_id`),
+  FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student_subjects`
+--
+
+INSERT INTO `student_subjects` (`student_id`, `subject_id`) VALUES
+(4, 1),
+(5, 3),
+(11, 3),
+(13, 3),
+(14, 3);
 
 -- --------------------------------------------------------
 
@@ -286,8 +335,7 @@ ALTER TABLE `evaluation_responses`
 --
 ALTER TABLE `faculty`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `faculty_subject_fk` (`subject_id`);
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `password_resets`
@@ -302,8 +350,7 @@ ALTER TABLE `password_resets`
 --
 ALTER TABLE `students`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `students_subject_fk` (`subject_id`);
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `subjects`
@@ -382,17 +429,7 @@ ALTER TABLE `evaluation_responses`
   ADD CONSTRAINT `evaluation_responses_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `evaluation_questions` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `evaluation_responses_ibfk_3` FOREIGN KEY (`evaluation_id`) REFERENCES `evaluations` (`id`) ON DELETE CASCADE;
 
---
--- Constraints for table `faculty`
---
-ALTER TABLE `faculty`
-  ADD CONSTRAINT `faculty_subject_fk` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
---
--- Constraints for table `students`
---
-ALTER TABLE `students`
-  ADD CONSTRAINT `students_subject_fk` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

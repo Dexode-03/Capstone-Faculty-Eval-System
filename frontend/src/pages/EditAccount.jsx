@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
+import subjectService from '../services/subjectService';
 import useAuth from '../hooks/useAuth';
 
 export default function EditAccount() {
@@ -14,10 +15,11 @@ export default function EditAccount() {
     name: '',
     email: '',
     department: '',
-    subject_id: '',
+    subject_ids: [],
     year_level: '',
     section: '',
   });
+  const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -33,8 +35,18 @@ export default function EditAccount() {
   useEffect(() => {
     if (user?.role === 'admin' && !authLoading) {
       fetchAccount();
+      fetchSubjects();
     }
   }, [user, authLoading, id, role]);
+
+  const fetchSubjects = async () => {
+    try {
+      const res = await subjectService.getAll();
+      setSubjects(res.data.subjects || res.data || []);
+    } catch (err) {
+      console.error('Error fetching subjects:', err);
+    }
+  };
 
   const fetchAccount = async () => {
     try {
@@ -43,11 +55,16 @@ export default function EditAccount() {
       const result = await authService.getAccountById(id, role);
       const account = result.data.data || result.data.user || result.data;
       
+      // Parse subject_ids from comma-separated string (from GROUP_CONCAT)
+      const parsedSubjectIds = account.subject_ids
+        ? account.subject_ids.split(',').map(Number)
+        : [];
+
       setFormData({
         name: account.name || '',
         email: account.email || '',
         department: account.department || '',
-        subject_id: account.subject_id || '',
+        subject_ids: parsedSubjectIds,
         year_level: account.year_level || '',
         section: account.section || '',
       });
@@ -95,14 +112,14 @@ export default function EditAccount() {
       
       if (role === 'faculty') {
         if (formData.department) submitData.department = formData.department.trim();
-        if (formData.subject_id) submitData.subject_id = parseInt(formData.subject_id);
+        submitData.subject_ids = formData.subject_ids;
       }
 
       if (role === 'student') {
         if (formData.year_level) submitData.year_level = formData.year_level;
         if (formData.section) submitData.section = formData.section.trim();
         if (formData.department) submitData.department = formData.department.trim();
-        if (formData.subject_id) submitData.subject_id = parseInt(formData.subject_id);
+        submitData.subject_ids = formData.subject_ids;
       }
 
       // Update account
@@ -263,20 +280,39 @@ export default function EditAccount() {
               </>
             )}
 
-            {/* Subject ID (optional) */}
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                Subject ID (optional)
-              </label>
-              <input
-                type="number"
-                name="subject_id"
-                value={formData.subject_id}
-                onChange={handleChange}
-                placeholder="Leave blank if not applicable"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            {/* Subjects (checkboxes) */}
+            {(role === 'faculty' || role === 'student') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Subjects
+                </label>
+                <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  {subjects.length === 0 ? (
+                    <p className="text-sm text-gray-400">No subjects available</p>
+                  ) : (
+                    subjects.map((s) => (
+                      <label key={s.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.subject_ids.includes(s.id)}
+                          onChange={(e) => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              subject_ids: e.target.checked
+                                ? [...prev.subject_ids, s.id]
+                                : prev.subject_ids.filter((id) => id !== s.id),
+                            }));
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">{s.code} — {s.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Select one or more subjects</p>
+              </div>
+            )}
 
             {/* Buttons */}
             <div className="flex gap-4 pt-4">

@@ -2,6 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
+const Faculty = require('../models/Faculty');
+const Student = require('../models/Student');
 const PasswordReset = require('../models/PasswordReset');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/email');
 require('dotenv').config();
@@ -21,7 +23,7 @@ const generateToken = (user) => {
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, role, year_level, section, department, subject_id } = req.body;
+    const { name, email, password, confirmPassword, role, year_level, section, department, subject_ids } = req.body;
 
     // Validation
     if (!name || !email || !password || !confirmPassword || !role) {
@@ -66,7 +68,7 @@ const register = async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
 
     // Create account
-    await User.create({
+    const result = await User.create({
       name,
       email,
       password: hashedPassword,
@@ -75,8 +77,15 @@ const register = async (req, res) => {
       year_level: role === 'student' ? year_level : null,
       section: role === 'student' ? section : null,
       department: role === 'student' ? department : department || null,
-      subject_id: subject_id || null,
     });
+
+    // Assign subjects via junction table
+    const newId = result.insertId;
+    const sids = Array.isArray(subject_ids) ? subject_ids : (subject_ids ? [subject_ids] : []);
+    if (sids.length > 0) {
+      if (role === 'faculty') await Faculty.setSubjects(newId, sids);
+      else if (role === 'student') await Student.setSubjects(newId, sids);
+    }
 
     // Send verification email
     try {
@@ -152,27 +161,7 @@ const login = async (req, res) => {
   }
 };
 
-/**
- * GET /api/auth/verify-email/:token
- * Verify account email
- */
-const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
 
-    const account = await User.findByVerificationToken(token);
-    if (!account) {
-      return res.status(400).json({ message: 'Invalid or expired verification token.' });
-    }
-
-    await User.verifyEmail(account.id, account.role);
-
-    res.json({ message: 'Email verified successfully. You can now log in.' });
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.status(500).json({ message: 'Server error during email verification.' });
-  }
-};
 
 /**
  * POST /api/auth/forgot-password
@@ -374,7 +363,7 @@ const getAccountById = async (req, res) => {
  */
 const adminCreateAccount = async (req, res) => {
   try {
-    const { name, email, password, role, department, subject_id, year_level, section } = req.body;
+    const { name, email, password, role, department, subject_ids, year_level, section } = req.body;
 
     // Authorization
     if (req.user.role !== 'admin') {
@@ -420,15 +409,22 @@ const adminCreateAccount = async (req, res) => {
       role,
       verification_token: verificationToken,
       department: department || null,
-      subject_id: subject_id || null,
       year_level: year_level || null,
       section: section || null,
     });
 
+    // Assign subjects via junction table
+    const newId = result.insertId;
+    const sids = Array.isArray(subject_ids) ? subject_ids : (subject_ids ? [subject_ids] : []);
+    if (sids.length > 0) {
+      if (role === 'faculty') await Faculty.setSubjects(newId, sids);
+      else if (role === 'student') await Student.setSubjects(newId, sids);
+    }
+
     res.status(201).json({
       success: true,
       message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully.`,
-      id: result.insertId,
+      id: newId,
     });
   } catch (error) {
     console.error('Error creating account:', error);
@@ -465,9 +461,16 @@ const adminUpdateAccount = async (req, res) => {
     // Prevent field modification restrictions
     const allowedFields = {
       admin: ['name', 'email'],
-      faculty: ['name', 'email', 'department', 'subject_id'],
-      student: ['name', 'email', 'year_level', 'section', 'department', 'subject_id'],
+      faculty: ['name', 'email', 'department'],
+      student: ['name', 'email', 'year_level', 'section', 'department'],
     };
+
+    // Handle subject_ids separately (via junction table)
+    if (updateData.subject_ids !== undefined && (role === 'faculty' || role === 'student')) {
+      const sids = Array.isArray(updateData.subject_ids) ? updateData.subject_ids : [];
+      if (role === 'faculty') await Faculty.setSubjects(id, sids);
+      else if (role === 'student') await Student.setSubjects(id, sids);
+    }
 
     // Filter out disallowed fields
     const filteredData = {};
@@ -477,12 +480,9 @@ const adminUpdateAccount = async (req, res) => {
       }
     }
 
-    if (Object.keys(filteredData).length === 0) {
-      return res.status(400).json({ message: 'No valid fields to update.' });
+    if (Object.keys(filteredData).length > 0) {
+      await User.updateById(id, role, filteredData);
     }
-
-    // Update account
-    await User.updateById(id, role, filteredData);
 
     res.json({ success: true, message: 'Account updated successfully.' });
   } catch (error) {
@@ -528,6 +528,28 @@ const adminDeleteAccount = async (req, res) => {
   } catch (error) {
     console.error('Error deleting account:', error);
     res.status(500).json({ message: 'Server error deleting account.' });
+  }
+};
+
+/**
+ * GET /api/auth/verify-email/:token
+ * Verify account email
+ */
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const account = await User.findByVerificationToken(token);
+    if (!account) {
+      return res.status(400).json({ message: 'Invalid or expired verification token.' });
+    }
+
+    await User.verifyEmail(account.id, account.role);
+
+    res.json({ message: 'Email verified successfully. You can now log in.' });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Server error during email verification.' });
   }
 };
 

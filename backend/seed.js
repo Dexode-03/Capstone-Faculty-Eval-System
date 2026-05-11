@@ -27,6 +27,19 @@ const seed = async () => {
     [facultyHash, facultyHash]
   );
 
+  // Assign subjects via junction table
+  console.log('Assigning subjects to faculty...');
+  await pool.execute(
+    `INSERT INTO faculty_subjects (faculty_id, subject_id)
+     SELECT f.id, 1 FROM faculty f WHERE f.email = 'maria@fefas.com'
+     ON DUPLICATE KEY UPDATE faculty_id=faculty_id`
+  );
+  await pool.execute(
+    `INSERT INTO faculty_subjects (faculty_id, subject_id)
+     SELECT f.id, 3 FROM faculty f WHERE f.email = 'juan@fefas.com'
+     ON DUPLICATE KEY UPDATE faculty_id=faculty_id`
+  );
+
   console.log('Seeding evaluation questions...');
 
   await pool.execute(

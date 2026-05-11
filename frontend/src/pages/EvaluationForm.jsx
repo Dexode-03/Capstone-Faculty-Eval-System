@@ -344,7 +344,7 @@ const EvaluationForm = () => {
             <p className="text-[14px] text-psu-muted mt-1">
               Evaluating:{' '}
               <span className="font-medium text-psu-text">{facultyInfo.name}</span>
-              {' '}— {facultyInfo.subject_code ? `${facultyInfo.subject_code} - ${facultyInfo.subject_name}` : facultyInfo.department}
+              {' '}— {facultyInfo.subject_names ? `${facultyInfo.subject_codes} - ${facultyInfo.subject_names}` : facultyInfo.department}
             </p>
           )}
         </div>

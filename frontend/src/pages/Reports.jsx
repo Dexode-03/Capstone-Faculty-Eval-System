@@ -13,6 +13,12 @@ import {
   HiEmojiSad,
   HiMinusCircle,
 } from 'react-icons/hi';
+import {
+  Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+  WidthType, AlignmentType, BorderStyle, HeadingLevel, ShadingType,
+  PageBreak,
+} from 'docx';
+import { saveAs } from 'file-saver';
 import evaluationService from '../services/evaluationService';
 
 const heatBg = (sentiment, rate) => {
@@ -44,6 +50,69 @@ const HealthBadge = ({ status }) => {
     </span>
   );
 };
+
+// ── Word doc helpers ──────────────────────────────────────────────
+const PSU_BLUE = '1E40B0';
+const LIGHT_GRAY = 'F3F4F6';
+const WHITE = 'FFFFFF';
+
+const noBorders = {
+  top: { style: BorderStyle.NONE, size: 0 },
+  bottom: { style: BorderStyle.NONE, size: 0 },
+  left: { style: BorderStyle.NONE, size: 0 },
+  right: { style: BorderStyle.NONE, size: 0 },
+};
+
+const thinBorders = {
+  top: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
+  bottom: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
+  left: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
+  right: { style: BorderStyle.SINGLE, size: 1, color: 'D1D5DB' },
+};
+
+const headerCell = (text, width) =>
+  new TableCell({
+    children: [new Paragraph({
+      children: [new TextRun({ text, bold: true, size: 20, font: 'Calibri', color: WHITE })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 60, after: 60 },
+    })],
+    width: { size: width, type: WidthType.PERCENTAGE },
+    shading: { type: ShadingType.CLEAR, fill: PSU_BLUE },
+    borders: thinBorders,
+  });
+
+const dataCell = (text, width, opts = {}) =>
+  new TableCell({
+    children: [new Paragraph({
+      children: [new TextRun({ text: String(text), size: 20, font: 'Calibri', bold: opts.bold || false })],
+      alignment: opts.align || AlignmentType.LEFT,
+      spacing: { before: 40, after: 40 },
+    })],
+    width: { size: width, type: WidthType.PERCENTAGE },
+    shading: opts.shading ? { type: ShadingType.CLEAR, fill: opts.shading } : undefined,
+    borders: thinBorders,
+  });
+
+const sectionHeading = (text) =>
+  new Paragraph({
+    children: [new TextRun({ text, bold: true, size: 26, font: 'Calibri', color: PSU_BLUE })],
+    heading: HeadingLevel.HEADING_2,
+    spacing: { before: 360, after: 160 },
+  });
+
+const bodyText = (text) =>
+  new Paragraph({
+    children: [new TextRun({ text, size: 22, font: 'Calibri' })],
+    spacing: { before: 60, after: 60 },
+  });
+
+const bulletText = (text) =>
+  new Paragraph({
+    children: [new TextRun({ text, size: 22, font: 'Calibri' })],
+    bullet: { level: 0 },
+    spacing: { before: 40, after: 40 },
+  });
 
 const Reports = () => {
   const [analysis, setAnalysis] = useState(null);
@@ -121,33 +190,226 @@ const Reports = () => {
     .filter(row => selectedDepartment === 'all' ? true : row.department === selectedDepartment)
     .map(row => ({ id: row.id, name: row.name }));
 
-  const generateSummaryReport = () => {
-    const payload = {
-      generatedAt: new Date().toISOString(),
-      filters: {
-        department: selectedDepartment,
-        facultyId: selectedFaculty,
-      },
-      overview: {
-        avgRating: analysis.avgRating,
-        totalEvaluations: analysis.totalEvaluations,
-        positiveRate: analysis.positiveRate,
-        negativeRate: analysis.negativeRate,
-      },
-      departments: filteredDeptInsights,
-      faculty: filteredFaculty,
-      recommendations: analysis.systemRecommendations,
+  const generateSummaryReport = async () => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const filterLabel = selectedDepartment === 'all' ? 'All Departments' : selectedDepartment;
+    const facultyLabel = selectedFaculty === 'all' ? 'All Faculty' : (facultyOptions.find(f => String(f.id) === String(selectedFaculty))?.name || 'Selected Faculty');
+
+    const healthLabels = {
+      excellent: 'Excellent', good: 'Good', fair: 'Fair',
+      needs_improvement: 'Needs Improvement', insufficient_data: 'Insufficient Data',
     };
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `summary-report-${Date.now()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    // ── Build document sections ──────────────────────────────────
+    const children = [];
+
+    // Title
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Faculty Evaluation System', bold: true, size: 36, font: 'Calibri', color: PSU_BLUE })],
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 40 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: 'Summary Report', bold: true, size: 28, font: 'Calibri', color: '374151' })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 80 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Generated: ${dateStr}`, size: 20, font: 'Calibri', color: '6B7280' })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 20 },
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Department: ${filterLabel}  •  Faculty: ${facultyLabel}`, size: 20, font: 'Calibri', color: '6B7280' })],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 300 },
+      }),
+    );
+
+    // Divider line
+    children.push(new Paragraph({
+      children: [new TextRun({ text: '━'.repeat(70), size: 16, color: 'D1D5DB' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }));
+
+    // ── Overview ──────────────────────────────────────────────────
+    children.push(sectionHeading('Overview'));
+
+    children.push(new Table({
+      rows: [
+        new TableRow({ children: [
+          headerCell('Metric', 50), headerCell('Value', 50),
+        ]}),
+        new TableRow({ children: [
+          dataCell('System Health', 50), dataCell(healthLabels[analysis.overallHealth] || analysis.overallHealth, 50, { bold: true }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Average Rating', 50, { shading: LIGHT_GRAY }), dataCell(`${analysis.avgRating} / 5`, 50, { bold: true, shading: LIGHT_GRAY }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Positive Rate', 50), dataCell(`${analysis.positiveRate}%`, 50, { bold: true }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Negative Rate', 50, { shading: LIGHT_GRAY }), dataCell(`${analysis.negativeRate}%`, 50, { shading: LIGHT_GRAY }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Total Evaluations', 50), dataCell(String(analysis.totalEvaluations), 50, { bold: true }),
+        ]}),
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    }));
+
+    // ── Sentiment Breakdown ──────────────────────────────────────
+    children.push(sectionHeading('Sentiment Breakdown'));
+
+    children.push(new Table({
+      rows: [
+        new TableRow({ children: [
+          headerCell('Sentiment', 34), headerCell('Count', 33), headerCell('Percentage', 33),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Positive', 34), dataCell(String(sentimentCounts.positive), 33, { align: AlignmentType.CENTER }),
+          dataCell(`${pct(sentimentCounts.positive)}%`, 33, { align: AlignmentType.CENTER }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Neutral', 34, { shading: LIGHT_GRAY }), dataCell(String(sentimentCounts.neutral), 33, { align: AlignmentType.CENTER, shading: LIGHT_GRAY }),
+          dataCell(`${pct(sentimentCounts.neutral)}%`, 33, { align: AlignmentType.CENTER, shading: LIGHT_GRAY }),
+        ]}),
+        new TableRow({ children: [
+          dataCell('Negative', 34), dataCell(String(sentimentCounts.negative), 33, { align: AlignmentType.CENTER }),
+          dataCell(`${pct(sentimentCounts.negative)}%`, 33, { align: AlignmentType.CENTER }),
+        ]}),
+      ],
+      width: { size: 100, type: WidthType.PERCENTAGE },
+    }));
+
+    // ── Department Insights ──────────────────────────────────────
+    if (filteredDeptInsights.length > 0) {
+      children.push(sectionHeading('Department Insights'));
+
+      const deptRows = [
+        new TableRow({ children: [
+          headerCell('Department', 25), headerCell('Status', 15), headerCell('Avg Rating', 15),
+          headerCell('Positive', 15), headerCell('Negative', 15), headerCell('Evaluations', 15),
+        ]}),
+      ];
+
+      filteredDeptInsights.forEach((dept, i) => {
+        const bg = i % 2 === 1 ? LIGHT_GRAY : undefined;
+        deptRows.push(new TableRow({ children: [
+          dataCell(dept.department, 25, { bold: true, shading: bg }),
+          dataCell(healthLabels[dept.status] || dept.status, 15, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${dept.averageRating}/5`, 15, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${dept.positiveRate}%`, 15, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${dept.negativeRate}%`, 15, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(String(dept.totalEvaluations), 15, { align: AlignmentType.CENTER, shading: bg }),
+        ]}));
+      });
+
+      children.push(new Table({ rows: deptRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+
+      // Department-specific insights
+      filteredDeptInsights.forEach(dept => {
+        if (dept.insights && dept.insights.length > 0) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: dept.department, bold: true, size: 22, font: 'Calibri', color: '374151' })],
+            spacing: { before: 200, after: 60 },
+          }));
+          dept.insights.forEach(insight => {
+            children.push(bulletText(insight));
+          });
+        }
+      });
+    }
+
+    // ── Faculty Drill-Down ───────────────────────────────────────
+    if (filteredFaculty.length > 0) {
+      children.push(sectionHeading('Faculty Drill-Down'));
+
+      const facRows = [
+        new TableRow({ children: [
+          headerCell('Faculty Name', 22), headerCell('Department', 18), headerCell('Avg Rating', 12),
+          headerCell('Evaluations', 12), headerCell('Positive', 12), headerCell('Neutral', 12), headerCell('Negative', 12),
+        ]}),
+      ];
+
+      filteredFaculty.forEach((f, i) => {
+        const bg = i % 2 === 1 ? LIGHT_GRAY : undefined;
+        facRows.push(new TableRow({ children: [
+          dataCell(f.name, 22, { bold: true, shading: bg }),
+          dataCell(f.department, 18, { shading: bg }),
+          dataCell(`${f.averageRating}/5`, 12, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(String(f.totalEvaluations), 12, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${f.positiveRate}%`, 12, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${f.neutralRate}%`, 12, { align: AlignmentType.CENTER, shading: bg }),
+          dataCell(`${f.negativeRate}%`, 12, { align: AlignmentType.CENTER, shading: bg }),
+        ]}));
+      });
+
+      children.push(new Table({ rows: facRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+    }
+
+    // ── Faculty Flags ────────────────────────────────────────────
+    const needsAttention = analysis.facultyFlags?.needsAttention || [];
+    const highPerformers = analysis.facultyFlags?.highPerformers || [];
+
+    if (needsAttention.length > 0) {
+      children.push(sectionHeading('Needs Attention'));
+      needsAttention.forEach(f => {
+        children.push(bulletText(`${f.name} (${f.department}) — ${f.reason}`));
+      });
+    }
+
+    if (highPerformers.length > 0) {
+      children.push(sectionHeading('High Performers'));
+      highPerformers.forEach(f => {
+        children.push(bulletText(`${f.name} (${f.department}) — ${f.averageRating}/5 avg, ${f.positiveRate}% positive`));
+      });
+    }
+
+    // ── Keyword Trends ───────────────────────────────────────────
+    if (analysis.trends && analysis.trends.length > 0) {
+      children.push(sectionHeading('Keyword Trends'));
+      analysis.trends.forEach(trend => {
+        children.push(bulletText(`[${trend.type.toUpperCase()}] ${trend.text}`));
+      });
+    }
+
+    // ── Recommendations ──────────────────────────────────────────
+    if (analysis.systemRecommendations && analysis.systemRecommendations.length > 0) {
+      children.push(sectionHeading('System-wide Recommendations'));
+      analysis.systemRecommendations.forEach((rec, i) => {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `${i + 1}. `, bold: true, size: 22, font: 'Calibri', color: PSU_BLUE }),
+            new TextRun({ text: rec, size: 22, font: 'Calibri' }),
+          ],
+          spacing: { before: 60, after: 60 },
+        }));
+      });
+    }
+
+    // ── Footer ───────────────────────────────────────────────────
+    children.push(new Paragraph({
+      children: [new TextRun({ text: '━'.repeat(70), size: 16, color: 'D1D5DB' })],
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 400, after: 100 },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'This report was automatically generated by the Faculty Evaluation System.', size: 18, font: 'Calibri', color: '9CA3AF', italics: true })],
+      alignment: AlignmentType.CENTER,
+    }));
+
+    // ── Generate & download ──────────────────────────────────────
+    const doc = new Document({
+      sections: [{ children }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Summary-Report-${now.toISOString().slice(0, 10)}.docx`);
   };
 
   return (

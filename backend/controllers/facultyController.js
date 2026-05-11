@@ -71,13 +71,19 @@ const createFaculty = async (req, res) => {
       email,
       password: hashedPassword,
       department,
-      subject_id,
       verification_token: null,
     });
 
+    // Assign subjects via junction table
+    const newId = result.insertId;
+    const sids = Array.isArray(subject_id) ? subject_id : (subject_id ? [subject_id] : []);
+    if (sids.length > 0) {
+      await Faculty.setSubjects(newId, sids);
+    }
+
     res.status(201).json({
       message: 'Faculty member created successfully.',
-      faculty: { id: result.insertId, name, email, department, subject_id },
+      faculty: { id: newId, name, email, department, subject_ids: sids },
     });
   } catch (error) {
     console.error('Create faculty error:', error);
@@ -91,7 +97,7 @@ const createFaculty = async (req, res) => {
  */
 const updateFaculty = async (req, res) => {
   try {
-    const { name, department, subject_id } = req.body;
+    const { name, department, subject_ids } = req.body;
     const { id } = req.params;
 
     const faculty = await Faculty.findById(id);
@@ -102,8 +108,13 @@ const updateFaculty = async (req, res) => {
     await Faculty.update(id, {
       name: name || faculty.name,
       department: department || faculty.department,
-      subject_id: subject_id !== undefined ? subject_id : faculty.subject_id,
     });
+
+    // Update subjects via junction table if provided
+    if (subject_ids !== undefined) {
+      const sids = Array.isArray(subject_ids) ? subject_ids : [];
+      await Faculty.setSubjects(id, sids);
+    }
 
     res.json({ message: 'Faculty member updated successfully.' });
   } catch (error) {

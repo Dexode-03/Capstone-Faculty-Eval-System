@@ -10,75 +10,81 @@ const User = {
     return result;
   },
 
-  // Create a new faculty
-  createFaculty: async ({ name, email, password, department, subject_id, verification_token }) => {
+  // Create a new faculty (no subject_id — use Faculty.setSubjects after)
+  createFaculty: async ({ name, email, password, department, verification_token }) => {
     const [result] = await pool.execute(
-      'INSERT INTO faculty (name, email, password, department, subject_id, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
-      [name, email, password, department, subject_id || null, verification_token]
+      'INSERT INTO faculty (name, email, password, department, verification_token) VALUES (?, ?, ?, ?, ?)',
+      [name, email, password, department, verification_token]
     );
     return result;
   },
 
-  // Create a new student
-  createStudent: async ({ name, email, password, year_level, section, department, subject_id, verification_token }) => {
+  // Create a new student (no subject_id — use Student.setSubjects after)
+  createStudent: async ({ name, email, password, year_level, section, department, verification_token }) => {
     const [result] = await pool.execute(
-      'INSERT INTO students (name, email, password, year_level, section, department, subject_id, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, email, password, year_level, section, department, subject_id || null, verification_token]
+      'INSERT INTO students (name, email, password, year_level, section, department, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, password, year_level, section, department, verification_token]
     );
     return result;
   },
 
   // Generic create method (determine role and create accordingly)
-  create: async ({ name, email, password, role, verification_token, year_level, section, department, subject_id }) => {
+  create: async ({ name, email, password, role, verification_token, year_level, section, department }) => {
     if (role === 'admin') {
       return User.createAdmin({ name, email, password, verification_token });
     } else if (role === 'faculty') {
-      return User.createFaculty({ name, email, password, department, subject_id, verification_token });
+      return User.createFaculty({ name, email, password, department, verification_token });
     } else if (role === 'student') {
-      return User.createStudent({ name, email, password, year_level, section, department, subject_id, verification_token });
+      return User.createStudent({ name, email, password, year_level, section, department, verification_token });
     }
     throw new Error('Invalid role');
   },
 
   // Find user by email (searches all three tables)
   findByEmail: async (email) => {
-    // Check admin table
     const [adminRows] = await pool.execute('SELECT *, "admin" as role FROM admins WHERE email = ?', [email]);
     if (adminRows.length > 0) return adminRows[0];
 
-    // Check faculty table
     const [facultyRows] = await pool.execute('SELECT *, "faculty" as role FROM faculty WHERE email = ?', [email]);
     if (facultyRows.length > 0) return facultyRows[0];
 
-    // Check student table
     const [studentRows] = await pool.execute('SELECT *, "student" as role FROM students WHERE email = ?', [email]);
     if (studentRows.length > 0) return studentRows[0];
 
     return null;
   },
 
-  // Find user by ID and role (more efficient when you know the role)
+  // Find user by ID and role
   findById: async (id, role) => {
     if (role === 'admin') {
       const [rows] = await pool.execute('SELECT id, name, email, email_verified, created_at FROM admins WHERE id = ?', [id]);
       if (rows.length > 0) return { ...rows[0], role: 'admin' };
     } else if (role === 'faculty') {
       const [rows] = await pool.execute(
-        `SELECT f.id, f.name, f.email, f.department, f.subject_id, s.code as subject_code, s.name as subject_name,
-                f.email_verified, f.created_at
+        `SELECT f.id, f.name, f.email, f.department, f.email_verified, f.created_at,
+                GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+                GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+                GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names
          FROM faculty f
-         LEFT JOIN subjects s ON s.id = f.subject_id
-         WHERE f.id = ?`,
+         LEFT JOIN faculty_subjects fs ON fs.faculty_id = f.id
+         LEFT JOIN subjects s ON s.id = fs.subject_id
+         WHERE f.id = ?
+         GROUP BY f.id`,
         [id]
       );
       if (rows.length > 0) return { ...rows[0], role: 'faculty' };
     } else if (role === 'student') {
       const [rows] = await pool.execute(
-        `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department, st.subject_id,
-                s.code as subject_code, s.name as subject_name, st.email_verified, st.created_at
+        `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department,
+                st.email_verified, st.created_at,
+                GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+                GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+                GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names
          FROM students st
-         LEFT JOIN subjects s ON s.id = st.subject_id
-         WHERE st.id = ?`,
+         LEFT JOIN student_subjects ss ON ss.student_id = st.id
+         LEFT JOIN subjects s ON s.id = ss.subject_id
+         WHERE st.id = ?
+         GROUP BY st.id`,
         [id]
       );
       if (rows.length > 0) return { ...rows[0], role: 'student' };
@@ -86,17 +92,14 @@ const User = {
     return null;
   },
 
-  // Find user by verification token (searches all three tables)
+  // Find user by verification token
   findByVerificationToken: async (token) => {
-    // Check admin table
     const [adminRows] = await pool.execute('SELECT *, "admin" as role FROM admins WHERE verification_token = ?', [token]);
     if (adminRows.length > 0) return adminRows[0];
 
-    // Check faculty table
     const [facultyRows] = await pool.execute('SELECT *, "faculty" as role FROM faculty WHERE verification_token = ?', [token]);
     if (facultyRows.length > 0) return facultyRows[0];
 
-    // Check student table
     const [studentRows] = await pool.execute('SELECT *, "student" as role FROM students WHERE verification_token = ?', [token]);
     if (studentRows.length > 0) return studentRows[0];
 
@@ -107,43 +110,24 @@ const User = {
   verifyEmail: async (id, role) => {
     let result;
     if (role === 'admin') {
-      [result] = await pool.execute(
-        'UPDATE admins SET email_verified = TRUE, verification_token = NULL WHERE id = ?',
-        [id]
-      );
+      [result] = await pool.execute('UPDATE admins SET email_verified = TRUE, verification_token = NULL WHERE id = ?', [id]);
     } else if (role === 'faculty') {
-      [result] = await pool.execute(
-        'UPDATE faculty SET email_verified = TRUE, verification_token = NULL WHERE id = ?',
-        [id]
-      );
+      [result] = await pool.execute('UPDATE faculty SET email_verified = TRUE, verification_token = NULL WHERE id = ?', [id]);
     } else if (role === 'student') {
-      [result] = await pool.execute(
-        'UPDATE students SET email_verified = TRUE, verification_token = NULL WHERE id = ?',
-        [id]
-      );
+      [result] = await pool.execute('UPDATE students SET email_verified = TRUE, verification_token = NULL WHERE id = ?', [id]);
     }
     return result;
   },
 
   // Update user password
   updatePassword: async (email, password) => {
-    // Try updating in each table
-    const [adminResult] = await pool.execute(
-      'UPDATE admins SET password = ? WHERE email = ?',
-      [password, email]
-    );
+    const [adminResult] = await pool.execute('UPDATE admins SET password = ? WHERE email = ?', [password, email]);
     if (adminResult.affectedRows > 0) return adminResult;
 
-    const [facultyResult] = await pool.execute(
-      'UPDATE faculty SET password = ? WHERE email = ?',
-      [password, email]
-    );
+    const [facultyResult] = await pool.execute('UPDATE faculty SET password = ? WHERE email = ?', [password, email]);
     if (facultyResult.affectedRows > 0) return facultyResult;
 
-    const [studentResult] = await pool.execute(
-      'UPDATE students SET password = ? WHERE email = ?',
-      [password, email]
-    );
+    const [studentResult] = await pool.execute('UPDATE students SET password = ? WHERE email = ?', [password, email]);
     return studentResult;
   },
 
@@ -153,69 +137,63 @@ const User = {
     if (role === 'admin') table = 'admins';
     else if (role === 'faculty') table = 'faculty';
     else if (role === 'student') table = 'students';
-    
     if (!table) return 0;
-    
     const [rows] = await pool.execute(`SELECT COUNT(*) as count FROM ${table}`);
     return rows[0].count;
   },
 
   // ADMIN CRUD OPERATIONS
 
-  // Read: Find all accounts by role
+  // Find all accounts by role (with subjects for faculty/students)
   findAllByRole: async (role) => {
     let query = '';
     if (role === 'admin') {
       query = 'SELECT id, name, email, email_verified, created_at, updated_at FROM admins ORDER BY created_at DESC';
     } else if (role === 'faculty') {
-      query = `SELECT f.id, f.name, f.email, f.department, f.subject_id, s.code as subject_code, s.name as subject_name,
+      query = `SELECT f.id, f.name, f.email, f.department,
+               GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+               GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+               GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
                f.email_verified, f.created_at, f.updated_at
                FROM faculty f
-               LEFT JOIN subjects s ON s.id = f.subject_id
+               LEFT JOIN faculty_subjects fs ON fs.faculty_id = f.id
+               LEFT JOIN subjects s ON s.id = fs.subject_id
+               GROUP BY f.id
                ORDER BY f.created_at DESC`;
     } else if (role === 'student') {
-      query = `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department, st.subject_id,
-               s.code as subject_code, s.name as subject_name, st.email_verified, st.created_at, st.updated_at
+      query = `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department,
+               GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+               GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+               GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+               st.email_verified, st.created_at, st.updated_at
                FROM students st
-               LEFT JOIN subjects s ON s.id = st.subject_id
+               LEFT JOIN student_subjects ss ON ss.student_id = st.id
+               LEFT JOIN subjects s ON s.id = ss.subject_id
+               GROUP BY st.id
                ORDER BY st.created_at DESC`;
     }
-
     const [rows] = await pool.execute(query);
     return rows;
   },
 
-  // Update: Update account by ID and role
+  // Update account by ID and role
   updateById: async (id, role, updateData) => {
     const table = role === 'admin' ? 'admins' : role === 'faculty' ? 'faculty' : 'students';
-    
-    // Build dynamic update query
     const fields = Object.keys(updateData);
     const values = Object.values(updateData);
-    
-    if (fields.length === 0) {
-      throw new Error('No fields to update.');
-    }
-    
+    if (fields.length === 0) throw new Error('No fields to update.');
     const setClause = fields.map(f => `${f} = ?`).join(', ');
-    
     const [result] = await pool.execute(
       `UPDATE ${table} SET ${setClause}, updated_at = NOW() WHERE id = ?`,
       [...values, id]
     );
-    
     return result;
   },
 
-  // Delete: Delete account by ID and role
+  // Delete account by ID and role
   deleteById: async (id, role) => {
     const table = role === 'admin' ? 'admins' : role === 'faculty' ? 'faculty' : 'students';
-    
-    const [result] = await pool.execute(
-      `DELETE FROM ${table} WHERE id = ?`,
-      [id]
-    );
-    
+    const [result] = await pool.execute(`DELETE FROM ${table} WHERE id = ?`, [id]);
     return result;
   },
 };

@@ -129,6 +129,7 @@ When a student submits, the system automatically:
 | **Auth** | JWT + bcrypt | Login and security |
 | **Email** | Nodemailer (Gmail SMTP) | Verification and password reset |
 | **Encryption** | Node.js crypto (AES-256-GCM) | Student anonymity |
+| **Report Export** | docx + file-saver | Word document (.docx) generation |
 
 ### Folder Structure
 
@@ -188,10 +189,12 @@ faculty-evaluation-system/
 | Table | Purpose | Key Fields |
 |-------|---------|-----------|
 | `admins` | Admin accounts | name, email, password, email_verified |
-| `students` | Student accounts | name, email, year_level, section, department, subject_id |
-| `faculty` | Faculty accounts | name, email, department, subject_id |
+| `students` | Student accounts | name, email, year_level, section, department |
+| `faculty` | Faculty accounts | name, email, department |
 | `subjects` | Course/subject list | code (e.g., CS101), name, department |
-| `evaluations` | Submitted evaluations | student_id, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score |
+| `faculty_subjects` | Many-to-many: faculty ↔ subjects | faculty_id, subject_id (junction table) |
+| `student_subjects` | Many-to-many: students ↔ subjects | student_id, subject_id (junction table) |
+| `evaluations` | Submitted evaluations | student_id, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, anonymous_student_ref |
 | `evaluation_questions` | Question bank (17 questions) | category, question_type (rating/text), question, sort_order |
 | `evaluation_responses` | Individual question answers | evaluation_id, question_id, rating, text_response |
 | `password_resets` | Temporary reset tokens | email, token, expires_at |
@@ -312,6 +315,7 @@ faculty-evaluation-system/
 - **Department Insights:** Per-department average ratings, sentiment rates, and AI-detected keyword themes
 - **System-Wide Trends:** AI-detected recurring themes across all evaluations with recommendations
 - **System Recommendations:** Actionable institutional-level recommendations
+- **Export to Word (.docx):** Generates a professionally formatted Word document containing the complete summary report — including overview metrics, sentiment breakdown, department insights, faculty drill-down table, faculty flags, keyword trends, and system recommendations — filtered by the selected department and faculty. Uses PSU-blue branded table headers, alternating row shading, and Calibri typography.
 
 ### Faculty Report Page
 - Displays individual faculty member's complete evaluation results
@@ -434,7 +438,7 @@ The backend is a **Node.js + Express REST API** that handles all business logic,
 
 ### 10.2 Frontend Codebase (`frontend/src/`)
 
-The frontend is a **React 19 + Vite 7** single-page application using TailwindCSS 4 for styling. It communicates with the backend via Axios HTTP requests.
+The frontend is a **React 19 + Vite 7** single-page application using TailwindCSS 4 for styling. It communicates with the backend via Axios HTTP requests. It uses the `docx` library with `file-saver` for client-side Word document (.docx) report generation.
 
 #### Core Files
 
@@ -477,7 +481,7 @@ The frontend is a **React 19 + Vite 7** single-page application using TailwindCS
 | `Login.jsx` | 140 | Login form with email/password fields. Calls `authService.login()`, stores JWT and user data in context, redirects to `/dashboard`. Shows validation errors. Links to forgot password and registration. |
 | `Dashboard.jsx` | 650 | Role-aware dashboard. For **admin**: displays stat cards (total students, faculty, evaluations), system-wide sentiment bar, and per-department accordion panels showing faculty count, average rating, sentiment breakdown, and student population by year level with evaluation completion rates. For **student**: shows personal evaluation count, average rating given, and recent submissions. For **faculty**: shows overall rating, evaluation count, sentiment pie chart, and enrolled student completion stats. |
 | `EvaluationForm.jsx` | 680 | Two-step evaluation flow. **Step 1**: Student selects a faculty member from their enrolled instructors (already-evaluated ones are disabled). **Step 2**: Renders all 15 rating questions grouped by 3 categories with dropdown selectors (1-5 scale), plus 2 open-ended text fields for strengths and weaknesses. Validates all fields, submits to the API, and shows a success confirmation with the AI sentiment result. |
-| `Reports.jsx` | 640 | Admin system-wide analytics page. Displays: overall system health indicator, sentiment heatmap by department, faculty summary table (sortable by rating), faculty flags (needs attention / high performers), department insights with AI-detected keyword themes, system-wide trend analysis, and prescriptive recommendations. All data comes from the `/api/evaluation/analysis` endpoint. |
+| `Reports.jsx` | 695 | Admin system-wide analytics page. Displays: overall system health indicator, sentiment heatmap by department, faculty summary table (sortable by rating), faculty flags (needs attention / high performers), department insights with AI-detected keyword themes, system-wide trend analysis, and prescriptive recommendations. Includes a **"Generate Summary Report" button** that exports a professionally formatted Word document (.docx) using the `docx` library — containing a title header, overview table, sentiment breakdown, department insights, faculty drill-down, faculty flags, keyword trends, and numbered recommendations, all styled with PSU-blue branded headers, alternating row shading, and Calibri typography. All data comes from the `/api/evaluation/analysis` endpoint. |
 | `FacultyReport.jsx` | 370 | Individual faculty evaluation report. Shows: faculty name and department, overall average rating, total evaluations, sentiment overview chart (positive/neutral/negative), per-category average ratings, recent student feedback with sentiment labels, and AI-generated prescriptive recommendations. Used both for admin viewing (via `/reports/:id`) and faculty self-view (via `/reports` when logged in as faculty). |
 | `FacultyList.jsx` | 130 | Simple page listing all faculty members with their name, department, and a "View Report" link. Used by admin to navigate to individual faculty reports. |
 | `AdminAccounts.jsx` | 260 | Account management table. Tabs to switch between viewing admins, faculty, and students. Displays a searchable table with name, email, department, and action buttons (edit/delete). Links to create account and edit account pages. Includes delete confirmation dialog. |

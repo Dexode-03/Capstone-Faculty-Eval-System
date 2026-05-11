@@ -129,7 +129,12 @@ const getFacultyDashboard = async (req, res) => {
     const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
     evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
 
-    if (!faculty.subject_id) {
+    // Parse subject_ids from GROUP_CONCAT result
+    const subjectIds = faculty.subject_ids
+      ? faculty.subject_ids.split(',').map(Number)
+      : [];
+
+    if (subjectIds.length === 0) {
       return res.json({
         overallRating:     0,
         totalEvaluations:  evaluations.length,
@@ -138,34 +143,41 @@ const getFacultyDashboard = async (req, res) => {
       });
     }
 
-    // Show enrolled students for the subject handled by this faculty.
-    const [enrollmentRows] = await pool.execute(
-      `SELECT
-         COUNT(DISTINCT st.id) as total_students,
-         COUNT(DISTINCT e.student_id) as evaluated_students
-       FROM students st
-       LEFT JOIN evaluations e
-         ON e.student_id = st.id
-        AND e.faculty_id = ?
-       WHERE st.subject_id = ?`,
-      [facultyId, faculty.subject_id]
-    );
+    // Show enrolled students for each subject handled by this faculty
+    const subjects = [];
+    const subjectCodes = faculty.subject_codes ? faculty.subject_codes.split(',') : [];
+    const subjectNames = faculty.subject_names ? faculty.subject_names.split(', ') : [];
 
-    const totals = enrollmentRows[0] || { total_students: 0, evaluated_students: 0 };
-    const blocks = [{
-      id: 1,
-      name: 'Enrolled Students',
-      students: parseInt(totals.total_students, 10) || 0,
-      evaluated: parseInt(totals.evaluated_students, 10) || 0,
-    }];
+    for (let i = 0; i < subjectIds.length; i++) {
+      const sid = subjectIds[i];
+      const [enrollmentRows] = await pool.execute(
+        `SELECT
+           COUNT(DISTINCT st.id) as total_students,
+           COUNT(DISTINCT e.student_id) as evaluated_students
+         FROM students st
+         INNER JOIN student_subjects ss ON ss.student_id = st.id AND ss.subject_id = ?
+         LEFT JOIN evaluations e
+           ON e.student_id = st.id
+          AND e.faculty_id = ?`,
+        [sid, facultyId]
+      );
 
-    const subjects = [{
-      id:   faculty.subject_id,
-      name: faculty.subject_code
-        ? `${faculty.subject_code} - ${faculty.subject_name || 'Subject'}`
-        : (faculty.subject_name || 'Assigned Subject'),
-      blocks,
-    }];
+      const totals = enrollmentRows[0] || { total_students: 0, evaluated_students: 0 };
+      const blocks = [{
+        id: i + 1,
+        name: 'Enrolled Students',
+        students: parseInt(totals.total_students, 10) || 0,
+        evaluated: parseInt(totals.evaluated_students, 10) || 0,
+      }];
+
+      const code = subjectCodes[i] || '';
+      const name = subjectNames[i] || 'Subject';
+      subjects.push({
+        id:   sid,
+        name: code ? `${code} - ${name}` : name,
+        blocks,
+      });
+    }
 
     res.json({
       overallRating:     avgRating ? parseFloat(parseFloat(avgRating).toFixed(1)) : 0,

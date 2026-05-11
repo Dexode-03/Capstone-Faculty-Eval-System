@@ -32,8 +32,8 @@ const FacultyList = () => {
     .filter(f =>
       f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (f.subject_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (f.subject_code || '').toLowerCase().includes(searchTerm.toLowerCase())
+      (f.subject_names || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (f.subject_codes || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -80,7 +80,7 @@ const FacultyList = () => {
               <div className="min-w-0">
                 <p className="text-[14px] font-medium text-psu-text truncate">{member.name}</p>
                 <p className="text-[12px] text-psu-muted mt-0.5 truncate">
-                  {member.subject_code ? `${member.subject_code} - ${member.subject_name}` : 'No subject assigned'} · {member.department}
+                  {member.subject_names ? `${member.subject_codes} - ${member.subject_names}` : 'No subject assigned'} · {member.department}
                 </p>
               </div>
             </div>

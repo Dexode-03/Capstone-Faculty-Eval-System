@@ -262,25 +262,44 @@ const getMyEvaluations = async (req, res) => {
 
 /**
  * GET /api/evaluation/enrolled-instructors
- * FIXED: Now scoped to the student's subject_id instead of returning all faculty.
- * Only returns faculty whose subject matches the logged-in student's subject.
+ * Returns faculty who share at least one subject with the logged-in student
+ * via the student_subjects and faculty_subjects junction tables.
  */
 const getEnrolledInstructors = async (req, res) => {
   try {
     const student_id = req.user.id;
 
-    // Get student's subject_id from students table
     const student = await Student.findById(student_id);
     if (!student) {
       return res.status(404).json({ message: 'Student record not found.' });
     }
 
-    // Get faculty matching the student's subject
+    // Parse student's subject_ids (comes as comma-separated string from GROUP_CONCAT)
+    const studentSubjectIds = student.subject_ids
+      ? student.subject_ids.split(',').map(Number)
+      : [];
+
     let facultyList = [];
-    if (student.subject_id) {
-      facultyList = await Faculty.findBySubject(student.subject_id);
+    if (studentSubjectIds.length > 0) {
+      // Find faculty who teach ANY of the student's subjects
+      const { pool } = require('../config/db');
+      const placeholders = studentSubjectIds.map(() => '?').join(',');
+      const [rows] = await pool.execute(
+        `SELECT DISTINCT f.id, f.name, f.email, f.department,
+                GROUP_CONCAT(DISTINCT s.id ORDER BY s.id) as subject_ids,
+                GROUP_CONCAT(DISTINCT s.code ORDER BY s.id) as subject_codes,
+                GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names
+         FROM faculty f
+         INNER JOIN faculty_subjects fs ON fs.faculty_id = f.id
+         LEFT JOIN subjects s ON s.id = fs.subject_id
+         WHERE fs.subject_id IN (${placeholders})
+         GROUP BY f.id
+         ORDER BY f.name ASC`,
+        studentSubjectIds
+      );
+      facultyList = rows;
     } else {
-      // Fallback if student has no subject assigned yet
+      // Fallback: no subjects assigned — show all faculty
       facultyList = await Faculty.findAll();
     }
 
@@ -292,8 +311,8 @@ const getEnrolledInstructors = async (req, res) => {
       id:          f.id,
       name:        f.name,
       department:  f.department,
-      subject:     f.subject_name || f.department,
-      subjectCode: f.subject_code || null,
+      subject:     f.subject_names || f.department,
+      subjectCode: f.subject_codes || null,
       evaluated:   evaluatedIds.has(Number(f.id)),
     }));
 
