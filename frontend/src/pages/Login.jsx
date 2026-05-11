@@ -118,8 +118,15 @@ const Login = () => {
       </div>
 
       {/* Background note */}
-      <p className="absolute bottom-6 left-6 text-sm text-white font-medium tracking-wide drop-shadow-md">
+      <p className="absolute bottom-4 center-6 text-sm text-white font-medium tracking-wide drop-shadow-md">
         Capstone Project Group 6: Web-based Faculty Evaluation with Sentiments and Prescriptive Analysis
+      </p>
+      <p className="absolute bottom-0 center-6 text-sm text-white font-medium tracking-wide drop-shadow-md">
+        Members: Dallo, Jhanylla |
+                 Garcia, John Raphael |
+                 Gayap, Drextler |
+                 Magundayao, Crizell Ann |
+                 Mercado, Arjay
       </p>
     </div>
   );

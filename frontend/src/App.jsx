@@ -11,6 +11,9 @@ import FacultyReport from './pages/FacultyReport';
 import EvaluationForm from './pages/EvaluationForm';
 import Reports from './pages/Reports';
 import ChangePassword from './pages/ChangePassword';
+import AdminAccounts from './pages/AdminAccounts';
+import CreateAccount from './pages/CreateAccount';
+import EditAccount from './pages/EditAccount';
 import useAuth from './hooks/useAuth';
 
 // Renders the correct Reports page based on the user's role
@@ -43,6 +46,11 @@ function App() {
             <Route path="/reports/:id"    element={<FacultyReport />} />
             <Route path="/reports"        element={<ReportsRouter />} />
             <Route path="/change-password" element={<ChangePassword />} />
+
+            {/* Admin only */}
+            <Route path="/admin/accounts" element={<AdminAccounts />} />
+            <Route path="/admin/accounts/create" element={<CreateAccount />} />
+            <Route path="/admin/accounts/edit/:id" element={<EditAccount />} />
             
             {/* Students only */}
             <Route

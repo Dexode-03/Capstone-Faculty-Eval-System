@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: May 01, 2026 at 02:06 PM
+-- Generation Time: May 01, 2026 at 04:57 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -67,6 +67,13 @@ CREATE TABLE `evaluations` (
   `faculty_id_new` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `evaluations`
+--
+
+INSERT INTO `evaluations` (`id`, `student_id`, `anonymous_student_ref`, `faculty_id`, `rating`, `comment`, `strengths`, `weaknesses`, `sentiment`, `sentiment_score`, `created_at`, `student_id_new`, `faculty_id_new`) VALUES
+(13, 14, 'v1.q436BzTdxl1jiyM2.Cjq3ND8YiB0MPNcMbd0jjg.Y04Ytb--FZWukOzS6pnFhIwBcJ4T-zH3MHsEcQuE2xdWPmfb2eRrgXI6', 3, 4, 'No comments provided.', NULL, NULL, 'neutral', 0.00, '2026-05-01 14:36:19', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -120,6 +127,29 @@ CREATE TABLE `evaluation_responses` (
   `rating` int(11) DEFAULT NULL,
   `text_response` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `evaluation_responses`
+--
+
+INSERT INTO `evaluation_responses` (`id`, `evaluation_id`, `question_id`, `rating`, `text_response`) VALUES
+(205, 13, 1, 1, NULL),
+(206, 13, 2, 4, NULL),
+(207, 13, 3, 3, NULL),
+(208, 13, 4, 4, NULL),
+(209, 13, 5, 5, NULL),
+(210, 13, 6, 5, NULL),
+(211, 13, 7, 5, NULL),
+(212, 13, 8, 5, NULL),
+(213, 13, 9, 2, NULL),
+(214, 13, 10, 3, NULL),
+(215, 13, 11, 5, NULL),
+(216, 13, 12, 4, NULL),
+(217, 13, 13, 5, NULL),
+(218, 13, 14, 4, NULL),
+(219, 13, 15, 4, NULL),
+(220, 13, 16, NULL, ''),
+(221, 13, 17, NULL, '');
 
 -- --------------------------------------------------------
 
@@ -296,7 +326,7 @@ ALTER TABLE `admins`
 -- AUTO_INCREMENT for table `evaluations`
 --
 ALTER TABLE `evaluations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `evaluation_questions`
@@ -308,7 +338,7 @@ ALTER TABLE `evaluation_questions`
 -- AUTO_INCREMENT for table `evaluation_responses`
 --
 ALTER TABLE `evaluation_responses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=137;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=222;
 
 --
 -- AUTO_INCREMENT for table `faculty`

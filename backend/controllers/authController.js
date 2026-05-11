@@ -301,6 +301,236 @@ const changePassword = async (req, res) => {
     res.status(500).json({ message: 'Server error.' });
   }
 };
+
+// ──────────────────────────────────────────────────
+// ADMIN ACCOUNT MANAGEMENT CRUD OPERATIONS
+// ──────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/admin/accounts?role=faculty
+ * Admin retrieves all accounts by role (READ)
+ */
+const getAllAccounts = async (req, res) => {
+  try {
+    const { role } = req.query;
+
+    // Authorization check
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+
+    // Validation
+    if (!role || !['admin', 'faculty', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Valid role required: admin, faculty, or student.' });
+    }
+
+    // Fetch accounts
+    const accounts = await User.findAllByRole(role);
+
+    res.json({
+      success: true,
+      count: accounts.length,
+      data: accounts,
+    });
+  } catch (error) {
+    console.error('Error fetching accounts:', error);
+    res.status(500).json({ message: 'Server error fetching accounts.' });
+  }
+};
+
+/**
+ * GET /api/auth/admin/accounts/:id?role=faculty
+ * Admin retrieves single account details (READ)
+ */
+const getAccountById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.query;
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+
+    if (!role || !['admin', 'faculty', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Valid role required.' });
+    }
+
+    const account = await User.findById(id, role);
+
+    if (!account) {
+      return res.status(404).json({ message: 'Account not found.' });
+    }
+
+    res.json({ success: true, data: account });
+  } catch (error) {
+    console.error('Error fetching account:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+/**
+ * POST /api/auth/admin/accounts
+ * Admin creates a new account (CREATE)
+ */
+const adminCreateAccount = async (req, res) => {
+  try {
+    const { name, email, password, role, department, subject_id, year_level, section } = req.body;
+
+    // Authorization
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+
+    // Validation
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Name, email, password, and role are required.' });
+    }
+
+    if (!['admin', 'faculty', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be admin, faculty, or student.' });
+    }
+
+    // Email format validation
+    if (!email.endsWith('@psu.edu.ph')) {
+      return res.status(400).json({ message: 'Only PSU email addresses (@psu.edu.ph) allowed.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    // Check if email already exists
+    const existingAccount = await User.findByEmail(email);
+    if (existingAccount) {
+      return res.status(400).json({ message: 'Email already registered.' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Create account based on role
+    const result = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role,
+      verification_token: verificationToken,
+      department: department || null,
+      subject_id: subject_id || null,
+      year_level: year_level || null,
+      section: section || null,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully.`,
+      id: result.insertId,
+    });
+  } catch (error) {
+    console.error('Error creating account:', error);
+    res.status(500).json({ message: 'Server error creating account.' });
+  }
+};
+
+/**
+ * PUT /api/auth/admin/accounts/:id?role=faculty
+ * Admin updates account details (UPDATE)
+ */
+const adminUpdateAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.query;
+    const updateData = req.body;
+
+    // Authorization
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+
+    // Validation
+    if (!role || !['admin', 'faculty', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Valid role required.' });
+    }
+
+    // Verify account exists
+    const account = await User.findById(id, role);
+    if (!account) {
+      return res.status(404).json({ message: 'Account not found.' });
+    }
+
+    // Prevent field modification restrictions
+    const allowedFields = {
+      admin: ['name', 'email'],
+      faculty: ['name', 'email', 'department', 'subject_id'],
+      student: ['name', 'email', 'year_level', 'section', 'department', 'subject_id'],
+    };
+
+    // Filter out disallowed fields
+    const filteredData = {};
+    for (const key of allowedFields[role]) {
+      if (updateData[key] !== undefined) {
+        filteredData[key] = updateData[key];
+      }
+    }
+
+    if (Object.keys(filteredData).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update.' });
+    }
+
+    // Update account
+    await User.updateById(id, role, filteredData);
+
+    res.json({ success: true, message: 'Account updated successfully.' });
+  } catch (error) {
+    console.error('Error updating account:', error);
+    res.status(500).json({ message: 'Server error updating account.' });
+  }
+};
+
+/**
+ * DELETE /api/auth/admin/accounts/:id?role=faculty
+ * Admin deletes an account (DELETE)
+ */
+const adminDeleteAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.query;
+
+    // Authorization
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+
+    // Validation
+    if (!role || !['admin', 'faculty', 'student'].includes(role)) {
+      return res.status(400).json({ message: 'Valid role required.' });
+    }
+
+    // Verify account exists
+    const account = await User.findById(id, role);
+    if (!account) {
+      return res.status(404).json({ message: 'Account not found.' });
+    }
+
+    // Prevent self-deletion
+    if (req.user.id === parseInt(id) && req.user.role === role) {
+      return res.status(400).json({ message: 'Cannot delete your own account.' });
+    }
+
+    // Delete account
+    await User.deleteById(id, role);
+
+    res.json({ success: true, message: 'Account deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: 'Server error deleting account.' });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -309,4 +539,9 @@ module.exports = {
   resetPassword,
   getProfile,
   changePassword,
+  getAllAccounts,
+  getAccountById,
+  adminCreateAccount,
+  adminUpdateAccount,
+  adminDeleteAccount,
 };

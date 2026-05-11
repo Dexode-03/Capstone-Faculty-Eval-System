@@ -159,6 +159,65 @@ const User = {
     const [rows] = await pool.execute(`SELECT COUNT(*) as count FROM ${table}`);
     return rows[0].count;
   },
+
+  // ADMIN CRUD OPERATIONS
+
+  // Read: Find all accounts by role
+  findAllByRole: async (role) => {
+    let query = '';
+    if (role === 'admin') {
+      query = 'SELECT id, name, email, email_verified, created_at, updated_at FROM admins ORDER BY created_at DESC';
+    } else if (role === 'faculty') {
+      query = `SELECT f.id, f.name, f.email, f.department, f.subject_id, s.code as subject_code, s.name as subject_name,
+               f.email_verified, f.created_at, f.updated_at
+               FROM faculty f
+               LEFT JOIN subjects s ON s.id = f.subject_id
+               ORDER BY f.created_at DESC`;
+    } else if (role === 'student') {
+      query = `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department, st.subject_id,
+               s.code as subject_code, s.name as subject_name, st.email_verified, st.created_at, st.updated_at
+               FROM students st
+               LEFT JOIN subjects s ON s.id = st.subject_id
+               ORDER BY st.created_at DESC`;
+    }
+
+    const [rows] = await pool.execute(query);
+    return rows;
+  },
+
+  // Update: Update account by ID and role
+  updateById: async (id, role, updateData) => {
+    const table = role === 'admin' ? 'admins' : role === 'faculty' ? 'faculty' : 'students';
+    
+    // Build dynamic update query
+    const fields = Object.keys(updateData);
+    const values = Object.values(updateData);
+    
+    if (fields.length === 0) {
+      throw new Error('No fields to update.');
+    }
+    
+    const setClause = fields.map(f => `${f} = ?`).join(', ');
+    
+    const [result] = await pool.execute(
+      `UPDATE ${table} SET ${setClause}, updated_at = NOW() WHERE id = ?`,
+      [...values, id]
+    );
+    
+    return result;
+  },
+
+  // Delete: Delete account by ID and role
+  deleteById: async (id, role) => {
+    const table = role === 'admin' ? 'admins' : role === 'faculty' ? 'faculty' : 'students';
+    
+    const [result] = await pool.execute(
+      `DELETE FROM ${table} WHERE id = ?`,
+      [id]
+    );
+    
+    return result;
+  },
 };
 
 module.exports = User;

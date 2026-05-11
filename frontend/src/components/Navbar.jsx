@@ -17,6 +17,7 @@ const Navbar = () => {
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/reports',   label: 'Reports',  roles: ['admin', 'faculty'] },
+    { to: '/admin/accounts', label: 'Accounts', roles: ['admin'] },
   ];
 
   const filteredLinks = (navLinks || []).filter(
