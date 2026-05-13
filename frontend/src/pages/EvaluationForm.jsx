@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { HiCheckCircle, HiArrowRight, HiX, HiEmojiHappy, HiEmojiSad, HiMinusCircle } from 'react-icons/hi';
+import { HiCheckCircle, HiArrowRight, HiX, HiEmojiHappy, HiEmojiSad, HiMinusCircle, HiExclamation } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import facultyService from '../services/facultyService';
 import evaluationService from '../services/evaluationService';
@@ -33,28 +33,50 @@ const RatingScaleTable = () => (
   </div>
 );
 
-// ── Dropdown row for a single rated question ──────────────────────
-const QuestionRow = ({ number, question, value, onChange }) => (
-  <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 border-b border-psu-border last:border-b-0">
-    <p className="text-[13px] text-psu-text leading-relaxed flex-1">
+// ── Radio-button row for a single rated question ──────────────────
+const QuestionRow = ({ number, question, value, onChange, isUnanswered }) => (
+  <div
+    id={`question-row-${number}`}
+    className={`px-6 py-4 border-b border-psu-border last:border-b-0 transition-colors ${
+      isUnanswered ? 'bg-red-50/60' : ''
+    }`}
+  >
+    <p className="text-[13px] text-psu-text leading-relaxed mb-3">
       <span className="font-medium text-psu-muted mr-1.5">{number}.</span>
       {question}
+      {isUnanswered && (
+        <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-red-500 font-medium">
+          <HiExclamation className="h-3.5 w-3.5" /> Required
+        </span>
+      )}
     </p>
-    <div className="flex-shrink-0 w-full sm:w-56">
-      <select
-        value={value || ''}
-        onChange={(e) => onChange(parseInt(e.target.value, 10))}
-        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all"
-      >
-        <option value="" disabled>
-          Select rating
-        </option>
-        {RATING_SCALE.map(r => (
-          <option key={r.value} value={r.value}>
-            {r.value} - {r.label}
-          </option>
-        ))}
-      </select>
+    <div className="flex gap-2">
+      {RATING_SCALE.map(r => {
+        const isSelected = value === r.value;
+        return (
+          <label
+            key={r.value}
+            className={`inline-flex items-center justify-center cursor-pointer w-10 h-10 rounded-full border-2 text-[13px] font-semibold transition-all ${
+              isSelected
+                ? 'border-psu-primary bg-psu-primary text-white'
+                : isUnanswered
+                  ? 'border-red-300 bg-white text-psu-muted hover:border-red-400'
+                  : 'border-gray-200 bg-white text-psu-muted hover:border-gray-300 hover:text-psu-text'
+            }`}
+            title={r.label}
+          >
+            <input
+              type="radio"
+              name={`question-${number}`}
+              value={r.value}
+              checked={isSelected}
+              onChange={() => onChange(r.value)}
+              className="sr-only"
+            />
+            {r.value}
+          </label>
+        );
+      })}
     </div>
   </div>
 );
@@ -180,6 +202,7 @@ const EvaluationForm = () => {
   const [showModal,       setShowModal]       = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [instructors, setInstructors] = useState([]);
+  const [showValidationWarning, setShowValidationWarning] = useState(false);
 
   // ── Fetch faculty info + questions ──────────────────────────────
   useEffect(() => {
@@ -244,6 +267,29 @@ const EvaluationForm = () => {
 
   const canProceedToStep2 = answeredCount === totalRated && totalRated > 0;
   const canSubmit         = canProceedToStep2;
+  const unansweredCount   = totalRated - answeredCount;
+
+  // ── Find unanswered question IDs for highlighting ─────────────
+  const unansweredIds = ratedQuestions
+    .filter(q => responses[q.id] === undefined)
+    .map(q => q.id);
+
+  // ── Attempt to continue — validate first ──────────────────────
+  const handleContinue = () => {
+    if (canProceedToStep2) {
+      setShowValidationWarning(false);
+      setStep(2);
+    } else {
+      setShowValidationWarning(true);
+      // Scroll to the first unanswered question
+      const firstUnanswered = ratedQuestions.find(q => responses[q.id] === undefined);
+      if (firstUnanswered) {
+        const sortOrder = firstUnanswered.sort_order || 1;
+        const el = document.getElementById(`question-row-${sortOrder}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
 
   // ── Submit ─────────────────────────────────────────────────────
   const submitEvaluation = async () => {
@@ -287,6 +333,7 @@ const EvaluationForm = () => {
     setSentimentResult(null);
     setComputedRating(0);
     setShowModal(false);
+    setShowValidationWarning(false);
   };
 
   const handleNextFaculty = () => { setShowModal(false); navigate('/dashboard'); };
@@ -410,15 +457,41 @@ const EvaluationForm = () => {
         {step === 1 && (
           <div className="space-y-6">
 
+            {/* Validation warning banner */}
+            {showValidationWarning && unansweredCount > 0 && (
+              <div className="border border-red-200 bg-red-50 rounded-lg px-4 py-3 flex items-start gap-3 animate-[fadeIn_0.2s_ease-out]">
+                <HiExclamation className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-semibold text-red-700">
+                    {unansweredCount} unanswered {unansweredCount === 1 ? 'question' : 'questions'}
+                  </p>
+                  <p className="text-[12px] text-red-600 mt-0.5">
+                    All rating questions are required before you can proceed. Please answer the highlighted questions below.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowValidationWarning(false)}
+                  className="text-red-400 hover:text-red-600 transition-colors"
+                >
+                  <HiX className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
             {/* Progress bar */}
             <div className="border border-psu-border bg-white rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Progress</span>
-                <span className="text-[12px] text-psu-muted tabular-nums">{answeredCount} of {totalRated} answered</span>
+                <span className={`text-[12px] tabular-nums ${
+                  showValidationWarning && unansweredCount > 0 ? 'text-red-500 font-semibold' : 'text-psu-muted'
+                }`}>{answeredCount} of {totalRated} answered</span>
               </div>
               <div className="w-full h-1.5 bg-gray-100 rounded-full">
                 <div
-                  className="bg-psu-primary h-full rounded-full transition-all duration-300"
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    showValidationWarning && unansweredCount > 0 ? 'bg-red-400' : 'bg-psu-primary'
+                  }`}
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -445,19 +518,31 @@ const EvaluationForm = () => {
                       number={q.sort_order || idx + 1}
                       question={q.question}
                       value={responses[q.id] || null}
-                      onChange={rating => handleResponseChange(q.id, rating)}
+                      onChange={rating => {
+                        handleResponseChange(q.id, rating);
+                        // Clear validation warning once all are answered
+                        const newAnswered = { ...responses, [q.id]: rating };
+                        if (Object.keys(newAnswered).length === totalRated) {
+                          setShowValidationWarning(false);
+                        }
+                      }}
+                      isUnanswered={showValidationWarning && unansweredIds.includes(q.id)}
                     />
                   ))}
                 </div>
               );
             })}
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-3">
+              {showValidationWarning && unansweredCount > 0 && (
+                <span className="text-[12px] text-red-500 font-medium">
+                  {unansweredCount} {unansweredCount === 1 ? 'question' : 'questions'} remaining
+                </span>
+              )}
               <button
                 type="button"
-                disabled={!canProceedToStep2}
-                onClick={() => setStep(2)}
-                className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={handleContinue}
+                className="bg-psu-primary text-white rounded-lg px-6 py-3 text-[13px] font-semibold tracking-wide hover:bg-psu-secondary transition-colors"
               >
                 Continue
               </button>
