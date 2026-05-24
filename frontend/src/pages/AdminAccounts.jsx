@@ -1,17 +1,31 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
 import useAuth from '../hooks/useAuth';
 
 export default function AdminAccounts() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const [accounts, setAccounts] = useState([]);
-  const [role, setRole] = useState('faculty');
+  const [role, setRole] = useState(searchParams.get('role') || 'faculty');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  // Filter state
+  const [department, setDepartment] = useState('');
+  const [yearLevel, setYearLevel] = useState('');
+  const [section, setSection] = useState('');
+  const [search, setSearch] = useState('');
+
+  // Available filter options (from DB)
+  const [filterOptions, setFilterOptions] = useState({
+    departments: [],
+    yearLevels: [],
+    sections: [],
+  });
 
   // Check if user is admin (only after auth loading is complete)
   useEffect(() => {
@@ -20,42 +34,57 @@ export default function AdminAccounts() {
     }
   }, [user, authLoading, navigate]);
 
-  // Fetch accounts when role changes
+  // Reset filters when role changes
   useEffect(() => {
-    if (user?.role === 'admin' && !authLoading) {
-      console.log('Fetching accounts, user:', user, 'token exists:', !!localStorage.getItem('token'));
-      fetchAccounts();
-    }
-  }, [role, user, authLoading]);
+    setDepartment('');
+    setYearLevel('');
+    setSection('');
+    setSearch('');
+  }, [role]);
 
-  const fetchAccounts = async () => {
+  // Fetch accounts when role or filters change
+  const fetchAccounts = useCallback(async () => {
+    if (!user || user.role !== 'admin') return;
     try {
       setLoading(true);
       setError('');
-      
-      // Ensure token exists
+
       const token = localStorage.getItem('token');
-      console.log('📋 Fetching accounts...');
-      console.log('   Token exists:', !!token);
-      console.log('   Token length:', token ? token.length : 0);
-      console.log('   User:', user);
-      
       if (!token) {
         setError('No authentication token found. Please log in again.');
         navigate('/login');
         return;
       }
-      
-      const result = await authService.getAllAccounts(role);
-      console.log('✅ Accounts fetched successfully:', result);
+
+      const filters = {};
+      if (department) filters.department = department;
+      if (yearLevel) filters.year_level = yearLevel;
+      if (section) filters.section = section;
+      if (search) filters.search = search;
+
+      const result = await authService.getAllAccounts(role, filters);
       setAccounts(result.data.data || []);
+      if (result.data.filters) {
+        setFilterOptions(result.data.filters);
+      }
     } catch (err) {
-      console.error('❌ Error fetching accounts:', err);
+      console.error('Error fetching accounts:', err);
       setError(err.message || 'Error fetching accounts');
     } finally {
       setLoading(false);
     }
-  };
+  }, [role, department, yearLevel, section, search, user, navigate]);
+
+  useEffect(() => {
+    if (user?.role === 'admin' && !authLoading) {
+      fetchAccounts();
+    }
+  }, [fetchAccounts, user, authLoading]);
+
+  // Sync role to URL
+  useEffect(() => {
+    setSearchParams({ role });
+  }, [role, setSearchParams]);
 
   const handleDelete = async (id) => {
     try {
@@ -78,6 +107,15 @@ export default function AdminAccounts() {
     navigate(`/admin/accounts/edit/${id}?role=${role}`);
   };
 
+  // Debounced search
+  const [searchInput, setSearchInput] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Show nothing while auth is loading
   if (authLoading) {
     return null;
@@ -87,6 +125,8 @@ export default function AdminAccounts() {
   if (user?.role !== 'admin') {
     return null;
   }
+
+  const activeFilterCount = [department, yearLevel, section, search].filter(Boolean).length;
 
   return (
     <div>
@@ -108,26 +148,111 @@ export default function AdminAccounts() {
         </div>
       )}
 
-      {/* Controls */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex gap-2">
-          <label className="text-sm font-medium text-gray-700">Filter by Role:</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      {/* Filter Bar */}
+      <div className="mb-6 bg-white rounded-lg shadow p-4">
+        <div className="flex flex-wrap gap-3 items-end">
+          {/* Role */}
+          <div className="min-w-[140px]">
+            <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="faculty">Faculty</option>
+              <option value="student">Students</option>
+              <option value="admin">Admins</option>
+            </select>
+          </div>
+
+          {/* Department (faculty + student) */}
+          {(role === 'faculty' || role === 'student') && (
+            <div className="min-w-[180px]">
+              <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Department</label>
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Departments</option>
+                {filterOptions.departments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Year Level (student only) */}
+          {role === 'student' && (
+            <div className="min-w-[140px]">
+              <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Year Level</label>
+              <select
+                value={yearLevel}
+                onChange={(e) => setYearLevel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Year Levels</option>
+                {filterOptions.yearLevels.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Section (student only) */}
+          {role === 'student' && (
+            <div className="min-w-[120px]">
+              <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Section</label>
+              <select
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Sections</option>
+                {filterOptions.sections.map(s => (
+                  <option key={s} value={s}>Section {s}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Search</label>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by name or email..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Create Account */}
+          <button
+            onClick={() => navigate('/admin/accounts/create')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium whitespace-nowrap"
           >
-            <option value="faculty">Faculty</option>
-            <option value="student">Students</option>
-            <option value="admin">Admins</option>
-          </select>
+            + Create Account
+          </button>
         </div>
-        <button
-          onClick={() => navigate('/admin/accounts/create')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          + Create Account
-        </button>
+
+        {/* Active filter count + clear */}
+        {activeFilterCount > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+            <span className="text-[12px] text-gray-500">
+              {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active
+            </span>
+            <span className="text-gray-300">·</span>
+            <span className="text-[12px] text-gray-500">{accounts.length} result{accounts.length !== 1 ? 's' : ''}</span>
+            <button
+              onClick={() => { setDepartment(''); setYearLevel(''); setSection(''); setSearch(''); setSearchInput(''); }}
+              className="text-[12px] text-blue-600 hover:text-blue-800 font-medium ml-auto"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -135,7 +260,9 @@ export default function AdminAccounts() {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading...</div>
         ) : accounts.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No accounts found</div>
+          <div className="p-8 text-center text-gray-500">
+            {activeFilterCount > 0 ? 'No accounts match the current filters' : 'No accounts found'}
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -162,11 +289,16 @@ export default function AdminAccounts() {
                 {accounts.map((account) => (
                   <tr key={account.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm text-gray-900">{account.id}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{account.name}</td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{account.name}</p>
+                        <p className="text-xs text-gray-500">{account.email}</p>
+                      </div>
+                    </td>
                     {(role === 'faculty' || role === 'student') && (
                       <>
                         <td className="px-6 py-4 text-sm text-gray-600">{account.department || '-'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{account.subject_names || '-'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 max-w-[200px] truncate">{account.subject_names || '-'}</td>
                       </>
                     )}
                     {role === 'student' && (

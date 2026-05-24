@@ -23,6 +23,29 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+-- Table structure for table `academic_periods`
+--
+
+CREATE TABLE `academic_periods` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `academic_year` varchar(20) NOT NULL,
+  `semester` enum('1st','2nd') NOT NULL,
+  `is_active` tinyint(1) DEFAULT 0,
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `academic_periods`
+--
+
+INSERT INTO `academic_periods` (`academic_year`, `semester`, `is_active`, `start_date`, `end_date`) VALUES
+('2025-2026', '2nd', 1, '2026-01-01', '2026-06-30');
+
+-- --------------------------------------------------------
+
 --
 -- Table structure for table `admins`
 --
@@ -64,7 +87,8 @@ CREATE TABLE `evaluations` (
   `sentiment_score` decimal(5,2) DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `student_id_new` int(11) DEFAULT NULL,
-  `faculty_id_new` int(11) DEFAULT NULL
+  `faculty_id_new` int(11) DEFAULT NULL,
+  `academic_period_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -187,8 +211,11 @@ CREATE TABLE `faculty_subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `faculty_id` int(11) NOT NULL,
   `subject_id` int(11) NOT NULL,
+  `section` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_faculty_subject` (`faculty_id`, `subject_id`),
+  UNIQUE KEY `unique_subject_section` (`subject_id`, `section`),
+  KEY `idx_faculty_id` (`faculty_id`),
+  KEY `idx_subject_id` (`subject_id`),
   FOREIGN KEY (`faculty_id`) REFERENCES `faculty`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -197,9 +224,9 @@ CREATE TABLE `faculty_subjects` (
 -- Dumping data for table `faculty_subjects`
 --
 
-INSERT INTO `faculty_subjects` (`faculty_id`, `subject_id`) VALUES
-(2, 1),
-(3, 3);
+INSERT INTO `faculty_subjects` (`faculty_id`, `subject_id`, `section`) VALUES
+(2, 1, NULL),
+(3, 3, NULL);
 
 -- --------------------------------------------------------
 
@@ -256,10 +283,12 @@ CREATE TABLE `student_subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `student_id` int(11) NOT NULL,
   `subject_id` int(11) NOT NULL,
+  `faculty_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_student_subject` (`student_id`, `subject_id`),
   FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE
+  FOREIGN KEY (`subject_id`) REFERENCES `subjects`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`faculty_id`) REFERENCES `faculty`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -284,6 +313,8 @@ CREATE TABLE `subjects` (
   `code` varchar(20) NOT NULL,
   `name` varchar(255) NOT NULL,
   `department` varchar(255) NOT NULL,
+  `semester` enum('1st','2nd','both') DEFAULT 'both',
+  `year_level` varchar(20) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -291,11 +322,17 @@ CREATE TABLE `subjects` (
 -- Dumping data for table `subjects`
 --
 
-INSERT INTO `subjects` (`id`, `code`, `name`, `department`, `created_at`) VALUES
-(1, 'CS101', 'Computer Programming 1', 'Computer Science', '2026-05-01 10:33:01'),
-(2, 'CS102', 'Data Structures', 'Computer Science', '2026-05-01 10:33:01'),
-(3, 'IT101', 'Information Assurance and Security', 'Information Technology', '2026-05-01 10:33:01'),
-(4, 'IT102', 'Network Administration', 'Information Technology', '2026-05-01 10:33:01');
+INSERT INTO `subjects` (`id`, `code`, `name`, `department`, `semester`, `year_level`, `created_at`) VALUES
+(1, 'CS101', 'Computer Programming 1', 'Computer Science', '1st', '1st Year', '2026-05-01 10:33:01'),
+(2, 'CS102', 'Data Structures', 'Computer Science', '2nd', '1st Year', '2026-05-01 10:33:01'),
+(3, 'IT101', 'Information Assurance and Security', 'Information Technology', '1st', '1st Year', '2026-05-01 10:33:01'),
+(4, 'IT102', 'Network Administration', 'Information Technology', '2nd', '1st Year', '2026-05-01 10:33:01'),
+(5, 'CS201', 'Operating Systems', 'Computer Science', '1st', '2nd Year', '2026-05-01 10:33:01'),
+(6, 'IT201', 'Web Development', 'Information Technology', '1st', '2nd Year', '2026-05-01 10:33:01'),
+(7, 'ENG101', 'Engineering Mathematics', 'Engineering', '1st', '1st Year', '2026-05-01 10:33:01'),
+(8, 'ENG201', 'Thermodynamics', 'Engineering', '2nd', '2nd Year', '2026-05-01 10:33:01'),
+(9, 'EDU101', 'Principles of Teaching', 'Education', '1st', '1st Year', '2026-05-01 10:33:01'),
+(10, 'BA101', 'Financial Management', 'Business Administration', '1st', '1st Year', '2026-05-01 10:33:01');
 
 --
 -- Indexes for dumped tables
@@ -409,7 +446,7 @@ ALTER TABLE `students`
 -- AUTO_INCREMENT for table `subjects`
 --
 ALTER TABLE `subjects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Constraints for dumped tables

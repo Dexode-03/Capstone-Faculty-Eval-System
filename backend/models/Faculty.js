@@ -94,14 +94,56 @@ const Faculty = {
   },
 
   // Set subjects for a faculty member (replaces all existing)
-  setSubjects: async (facultyId, subjectIds) => {
+  // Accepts either:
+  //   - Plain IDs: [1, 2, 3]
+  //   - Enriched objects: [{ subject_id: 1, section: 'A', year_level: '4th Year', semester: '1st' }]
+  setSubjects: async (facultyId, subjectData) => {
     // Remove old assignments
     await pool.execute('DELETE FROM faculty_subjects WHERE faculty_id = ?', [facultyId]);
     // Insert new assignments
-    if (subjectIds && subjectIds.length > 0) {
-      const values = subjectIds.map(sid => `(${parseInt(facultyId)}, ${parseInt(sid)})`).join(', ');
-      await pool.execute(`INSERT INTO faculty_subjects (faculty_id, subject_id) VALUES ${values}`);
+    if (subjectData && subjectData.length > 0) {
+      const values = subjectData.map(item => {
+        if (typeof item === 'object' && item !== null && item.subject_id !== undefined) {
+          // Enriched format
+          const sid = parseInt(item.subject_id);
+          const section = item.section ? `'${item.section}'` : 'NULL';
+          return `(${parseInt(facultyId)}, ${sid}, ${section})`;
+        } else {
+          // Plain ID format (backward compatible)
+          return `(${parseInt(facultyId)}, ${parseInt(item)}, NULL)`;
+        }
+      }).join(', ');
+      await pool.execute(
+        `INSERT INTO faculty_subjects (faculty_id, subject_id, section) VALUES ${values}`
+      );
     }
+  },
+
+  // Get enriched subject assignments for a faculty member
+  getSubjectAssignments: async (facultyId) => {
+    const [rows] = await pool.execute(
+      `SELECT fs.subject_id, fs.section, s.year_level, s.semester,
+              s.code as subject_code, s.name as subject_name
+       FROM faculty_subjects fs
+       INNER JOIN subjects s ON s.id = fs.subject_id
+       WHERE fs.faculty_id = ?
+       ORDER BY s.id ASC`,
+      [facultyId]
+    );
+    return rows;
+  },
+
+  // Get ALL subject assignments for ALL faculty members
+  getAllSubjectAssignments: async () => {
+    const [rows] = await pool.execute(
+      `SELECT fs.faculty_id, fs.subject_id, fs.section, s.year_level, s.semester,
+              f.name as faculty_name, s.code as subject_code, s.name as subject_name
+       FROM faculty_subjects fs
+       INNER JOIN faculty f ON f.id = fs.faculty_id
+       INNER JOIN subjects s ON s.id = fs.subject_id
+       ORDER BY s.id ASC`
+    );
+    return rows;
   },
 
   // Update faculty

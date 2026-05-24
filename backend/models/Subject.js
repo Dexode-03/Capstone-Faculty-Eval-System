@@ -37,19 +37,19 @@ const Subject = {
   },
 
   // Create a new subject
-  create: async ({ code, name, department }) => {
+  create: async ({ code, name, department, semester, year_level }) => {
     const [result] = await pool.execute(
-      'INSERT INTO subjects (code, name, department) VALUES (?, ?, ?)',
-      [code, name, department]
+      'INSERT INTO subjects (code, name, department, semester, year_level) VALUES (?, ?, ?, ?, ?)',
+      [code, name, department, semester || 'both', year_level || null]
     );
     return result;
   },
 
   // Update a subject
-  update: async (id, { code, name, department }) => {
+  update: async (id, { code, name, department, semester, year_level }) => {
     const [result] = await pool.execute(
-      'UPDATE subjects SET code = ?, name = ?, department = ? WHERE id = ?',
-      [code, name, department, id]
+      'UPDATE subjects SET code = ?, name = ?, department = ?, semester = ?, year_level = ? WHERE id = ?',
+      [code, name, department, semester || 'both', year_level || null, id]
     );
     return result;
   },

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { HiOutlineSearch, HiArrowRight, HiOutlineChartBar } from 'react-icons/hi';
+import { HiOutlineSearch, HiArrowRight, HiOutlineChartBar, HiOutlineUserGroup } from 'react-icons/hi';
 import facultyService from '../services/facultyService';
 
 const FacultyList = () => {
   const [faculty, setFaculty] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeDept, setActiveDept] = useState('All');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,13 +15,7 @@ const FacultyList = () => {
         const response = await facultyService.getAll();
         setFaculty(response.data.faculty);
       } catch {
-        setFaculty([
-          { id: 1, name: 'Dr. Maria Santos',    department: 'Computer Science',       created_at: '2024-01-15' },
-          { id: 2, name: 'Prof. Juan Dela Cruz', department: 'Information Technology', created_at: '2024-01-15' },
-          { id: 3, name: 'Dr. Ana Reyes',        department: 'Mathematics',            created_at: '2024-02-10' },
-          { id: 4, name: 'Prof. Carlo Mendoza',  department: 'Engineering',            created_at: '2024-03-05' },
-          { id: 5, name: 'Dr. Lisa Garcia',      department: 'Computer Science',       created_at: '2024-03-12' },
-        ]);
+        setFaculty([]);
       } finally {
         setLoading(false);
       }
@@ -28,14 +23,37 @@ const FacultyList = () => {
     fetchFaculty();
   }, []);
 
-  const filteredFaculty = (faculty || [])
-    .filter(f =>
-      f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (f.subject_names || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (f.subject_codes || '').toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // Get unique departments
+  const departments = useMemo(() => {
+    const depts = [...new Set((faculty || []).map(f => f.department))].sort();
+    return ['All', ...depts];
+  }, [faculty]);
+
+  // Filter by search + department
+  const filteredFaculty = useMemo(() => {
+    return (faculty || [])
+      .filter(f => {
+        const matchesSearch =
+          f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          f.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (f.subject_names || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (f.subject_codes || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesDept = activeDept === 'All' || f.department === activeDept;
+        return matchesSearch && matchesDept;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [faculty, searchTerm, activeDept]);
+
+  // Group filtered faculty by department
+  const groupedFaculty = useMemo(() => {
+    const groups = {};
+    filteredFaculty.forEach(f => {
+      if (!groups[f.department]) groups[f.department] = [];
+      groups[f.department].push(f);
+    });
+    // Sort department keys
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredFaculty]);
 
   if (loading) {
     return (
@@ -47,7 +65,8 @@ const FacultyList = () => {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-10">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
         <div>
           <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Directory</p>
           <h1 className="text-3xl font-semibold text-psu-text tracking-tight">Faculty</h1>
@@ -64,37 +83,85 @@ const FacultyList = () => {
         </div>
       </div>
 
-      <div className="border border-psu-border divide-y divide-psu-border">
-        {filteredFaculty.map(member => (
-          <div
-            key={member.id}
-            className="bg-white px-6 py-4 flex items-center justify-between gap-4 hover:bg-gray-50 transition-colors"
+      {/* Department tabs */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {departments.map(dept => (
+          <button
+            key={dept}
+            onClick={() => setActiveDept(dept)}
+            className={`px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+              activeDept === dept
+                ? 'bg-psu-primary text-white shadow-sm'
+                : 'bg-white text-psu-muted border border-psu-border hover:border-slate-300 hover:text-psu-text'
+            }`}
           >
-            {/* Faculty info */}
-            <div className="flex items-center space-x-4 min-w-0 flex-1">
-              <div className="w-10 h-10 bg-psu-primary/8 border border-psu-border flex items-center justify-center flex-shrink-0">
-                <span className="text-[13px] font-semibold text-psu-primary">
-                  {member.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
-                </span>
+            {dept}
+            {dept === 'All' && (
+              <span className="ml-1.5 opacity-70">({(faculty || []).length})</span>
+            )}
+            {dept !== 'All' && (
+              <span className="ml-1.5 opacity-70">
+                ({(faculty || []).filter(f => f.department === dept).length})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Grouped list */}
+      <div className="space-y-8">
+        {groupedFaculty.map(([department, members]) => (
+          <div key={department}>
+            {/* Department header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-psu-primary/10 text-psu-primary flex items-center justify-center flex-shrink-0">
+                <HiOutlineUserGroup className="h-4 w-4" />
               </div>
-              <div className="min-w-0">
-                <p className="text-[14px] font-medium text-psu-text truncate">{member.name}</p>
-                <p className="text-[12px] text-psu-muted mt-0.5 truncate">
-                  {member.subject_names ? `${member.subject_codes} - ${member.subject_names}` : 'No subject assigned'} · {member.department}
+              <div>
+                <h2 className="text-[14px] font-semibold text-psu-text">{department}</h2>
+                <p className="text-[11px] text-psu-muted">
+                  {members.length} faculty member{members.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <Link
-                to={`/reports/${member.id}`}
-                className="flex items-center gap-1.5 text-[12px] font-medium text-psu-muted hover:text-psu-primary transition-colors border border-psu-border hover:border-psu-primary rounded-lg px-3 py-1.5"
-              >
-                <HiOutlineChartBar className="h-3.5 w-3.5" />
-                Report
-              </Link>
-              <HiArrowRight className="h-4 w-4 text-gray-300" />
+            {/* Faculty cards */}
+            <div className="border border-psu-border rounded-xl divide-y divide-psu-border overflow-hidden">
+              {members.map(member => (
+                <div
+                  key={member.id}
+                  className="bg-white px-6 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/60 transition-colors"
+                >
+                  {/* Faculty info */}
+                  <div className="flex items-center space-x-4 min-w-0 flex-1">
+                    <div className="w-10 h-10 bg-psu-primary/8 border border-psu-border rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-[13px] font-semibold text-psu-primary">
+                        {member.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-medium text-psu-text truncate">{member.name}</p>
+                      <p className="text-[12px] text-psu-muted mt-0.5 truncate">
+                        {member.subject_names
+                          ? `${member.subject_codes} — ${member.subject_names}`
+                          : 'No subject assigned'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <Link
+                      to={`/reports/${member.id}`}
+                      className="flex items-center gap-1.5 text-[12px] font-medium text-psu-muted hover:text-psu-primary transition-colors border border-psu-border hover:border-psu-primary rounded-lg px-3 py-1.5"
+                    >
+                      <HiOutlineChartBar className="h-3.5 w-3.5" />
+                      Report
+                    </Link>
+                    <HiArrowRight className="h-4 w-4 text-gray-300" />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -106,8 +173,9 @@ const FacultyList = () => {
         </div>
       )}
 
-      <p className="text-[12px] text-psu-muted mt-4">
+      <p className="text-[12px] text-psu-muted mt-6">
         {filteredFaculty.length} member{filteredFaculty.length !== 1 ? 's' : ''}
+        {activeDept !== 'All' && ` in ${activeDept}`}
       </p>
     </div>
   );

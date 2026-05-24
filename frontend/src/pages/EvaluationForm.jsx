@@ -392,6 +392,11 @@ const EvaluationForm = () => {
               Evaluating:{' '}
               <span className="font-medium text-psu-text">{facultyInfo.name}</span>
               {' '}— {facultyInfo.subject_names ? `${facultyInfo.subject_codes} - ${facultyInfo.subject_names}` : facultyInfo.department}
+              {user?.section && (
+                <span className="ml-2 inline-flex items-center bg-psu-primary/10 text-psu-primary text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                  Section {user.section}
+                </span>
+              )}
             </p>
           )}
         </div>

@@ -6,6 +6,7 @@ const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const PasswordReset = require('../models/PasswordReset');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/email');
+const { pool } = require('../config/db');
 require('dotenv').config();
 
 // Generate JWT token
@@ -296,12 +297,12 @@ const changePassword = async (req, res) => {
 // ──────────────────────────────────────────────────
 
 /**
- * GET /api/auth/admin/accounts?role=faculty
- * Admin retrieves all accounts by role (READ)
+ * GET /api/auth/admin/accounts?role=faculty&department=CS&year_level=4th+Year&section=A&search=juan
+ * Admin retrieves all accounts by role with optional filters (READ)
  */
 const getAllAccounts = async (req, res) => {
   try {
-    const { role } = req.query;
+    const { role, department, year_level, section, search } = req.query;
 
     // Authorization check
     if (req.user.role !== 'admin') {
@@ -313,13 +314,18 @@ const getAllAccounts = async (req, res) => {
       return res.status(400).json({ message: 'Valid role required: admin, faculty, or student.' });
     }
 
-    // Fetch accounts
-    const accounts = await User.findAllByRole(role);
+    // Fetch filtered accounts
+    const filters = { department, year_level, section, search };
+    const accounts = await User.findAllByRoleFiltered(role, filters);
+
+    // Fetch distinct filter values for dropdown population
+    const filterOptions = await User.getDistinctFilterValues(role);
 
     res.json({
       success: true,
       count: accounts.length,
       data: accounts,
+      filters: filterOptions,
     });
   } catch (error) {
     console.error('Error fetching accounts:', error);
@@ -394,6 +400,41 @@ const adminCreateAccount = async (req, res) => {
       return res.status(400).json({ message: 'Email already registered.' });
     }
 
+    // Validation for duplicate subject-section assignments for faculty
+    if (role === 'faculty') {
+      const assignments = req.body.subject_assignments || [];
+      const seen = new Set();
+      for (const assign of assignments) {
+        if (assign.subject_id && assign.section) {
+          const key = `${assign.subject_id}-${assign.section.trim().toLowerCase()}`;
+          if (seen.has(key)) {
+            return res.status(400).json({
+              message: 'Duplicate assignment: You cannot assign the same subject to the same section multiple times.'
+            });
+          }
+          seen.add(key);
+        }
+      }
+
+      for (const assign of assignments) {
+        if (assign.subject_id && assign.section) {
+          const [existing] = await pool.execute(
+            `SELECT fs.faculty_id, f.name AS faculty_name, s.code AS subject_code
+             FROM faculty_subjects fs
+             INNER JOIN faculty f ON f.id = fs.faculty_id
+             INNER JOIN subjects s ON s.id = fs.subject_id
+             WHERE fs.subject_id = ? AND LOWER(TRIM(fs.section)) = LOWER(TRIM(?))`,
+            [assign.subject_id, assign.section]
+          );
+          if (existing.length > 0) {
+            return res.status(400).json({
+              message: `Section "${assign.section}" for subject "${existing[0].subject_code}" is already assigned to faculty "${existing[0].faculty_name}".`
+            });
+          }
+        }
+      }
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -415,10 +456,19 @@ const adminCreateAccount = async (req, res) => {
 
     // Assign subjects via junction table
     const newId = result.insertId;
-    const sids = Array.isArray(subject_ids) ? subject_ids : (subject_ids ? [subject_ids] : []);
-    if (sids.length > 0) {
-      if (role === 'faculty') await Faculty.setSubjects(newId, sids);
-      else if (role === 'student') await Student.setSubjects(newId, sids);
+    if (role === 'faculty') {
+      // Support enriched assignments: [{ subject_id, section, year_level, semester }]
+      const assignments = req.body.subject_assignments || [];
+      if (assignments.length > 0) {
+        await Faculty.setSubjects(newId, assignments);
+      } else {
+        // Fallback to plain subject_ids
+        const sids = Array.isArray(subject_ids) ? subject_ids : (subject_ids ? [subject_ids] : []);
+        if (sids.length > 0) await Faculty.setSubjects(newId, sids);
+      }
+    } else if (role === 'student') {
+      const sids = Array.isArray(subject_ids) ? subject_ids : (subject_ids ? [subject_ids] : []);
+      if (sids.length > 0) await Student.setSubjects(newId, sids);
     }
 
     res.status(201).json({
@@ -465,11 +515,49 @@ const adminUpdateAccount = async (req, res) => {
       student: ['name', 'email', 'year_level', 'section', 'department'],
     };
 
-    // Handle subject_ids separately (via junction table)
-    if (updateData.subject_ids !== undefined && (role === 'faculty' || role === 'student')) {
+    // Handle subject assignments separately (via junction table)
+    if (role === 'faculty' && updateData.subject_assignments !== undefined) {
+      // Enriched assignments: [{ subject_id, section, year_level, semester }]
+      const assignments = updateData.subject_assignments || [];
+      const seen = new Set();
+      for (const assign of assignments) {
+        if (assign.subject_id && assign.section) {
+          const key = `${assign.subject_id}-${assign.section.trim().toLowerCase()}`;
+          if (seen.has(key)) {
+            return res.status(400).json({
+              message: 'Duplicate assignment: You cannot assign the same subject to the same section multiple times.'
+            });
+          }
+          seen.add(key);
+        }
+      }
+
+      for (const assign of assignments) {
+        if (assign.subject_id && assign.section) {
+          const [existing] = await pool.execute(
+            `SELECT fs.faculty_id, f.name AS faculty_name, s.code AS subject_code
+             FROM faculty_subjects fs
+             INNER JOIN faculty f ON f.id = fs.faculty_id
+             INNER JOIN subjects s ON s.id = fs.subject_id
+             WHERE fs.subject_id = ? AND LOWER(TRIM(fs.section)) = LOWER(TRIM(?)) AND fs.faculty_id != ?`,
+            [assign.subject_id, assign.section, id]
+          );
+          if (existing.length > 0) {
+            return res.status(400).json({
+              message: `Section "${assign.section}" for subject "${existing[0].subject_code}" is already assigned to faculty "${existing[0].faculty_name}".`
+            });
+          }
+        }
+      }
+
+      await Faculty.setSubjects(id, assignments);
+    } else if (role === 'faculty' && updateData.subject_ids !== undefined) {
+      // Fallback: plain subject_ids (backward compatible)
       const sids = Array.isArray(updateData.subject_ids) ? updateData.subject_ids : [];
-      if (role === 'faculty') await Faculty.setSubjects(id, sids);
-      else if (role === 'student') await Student.setSubjects(id, sids);
+      await Faculty.setSubjects(id, sids);
+    } else if (role === 'student' && updateData.subject_ids !== undefined) {
+      const sids = Array.isArray(updateData.subject_ids) ? updateData.subject_ids : [];
+      await Student.setSubjects(id, sids);
     }
 
     // Filter out disallowed fields
@@ -535,6 +623,37 @@ const adminDeleteAccount = async (req, res) => {
  * GET /api/auth/verify-email/:token
  * Verify account email
  */
+
+/**
+ * GET /api/auth/admin/faculty-assignments/:id
+ * Get enriched subject assignments for a faculty member
+ */
+const getFacultyAssignments = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+    const { id } = req.params;
+    const assignments = await Faculty.getSubjectAssignments(id);
+    res.json({ success: true, assignments });
+  } catch (error) {
+    console.error('Error fetching faculty assignments:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
+
+const getAllFacultyAssignments = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Admin access required.' });
+    }
+    const assignments = await Faculty.getAllSubjectAssignments();
+    res.json({ success: true, assignments });
+  } catch (error) {
+    console.error('Error fetching all faculty assignments:', error);
+    res.status(500).json({ message: 'Server error.' });
+  }
+};
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
@@ -566,4 +685,6 @@ module.exports = {
   adminCreateAccount,
   adminUpdateAccount,
   adminDeleteAccount,
+  getFacultyAssignments,
+  getAllFacultyAssignments,
 };

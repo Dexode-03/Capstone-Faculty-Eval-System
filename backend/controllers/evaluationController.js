@@ -3,6 +3,8 @@ const EvaluationQuestion = require('../models/EvaluationQuestion');
 const EvaluationResponse = require('../models/EvaluationResponse');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
+const AcademicPeriod = require('../models/AcademicPeriod');
+const Subject = require('../models/Subject');
 const {
   buildAnonymousRespondentRef,
   buildDecoupledSentimentText,
@@ -70,6 +72,12 @@ const isSpam = (text) => {
  */
 const submitEvaluation = async (req, res) => {
   try {
+    // Gate: evaluation must be open
+    const evalOpen = await AcademicPeriod.isEvaluationOpen();
+    if (!evalOpen) {
+      return res.status(403).json({ message: 'Evaluation is currently closed. Please wait for the admin to open the evaluation period.' });
+    }
+
     const { faculty_id, responses } = req.body;
     const student_id = req.user.id;
 
@@ -147,6 +155,9 @@ const submitEvaluation = async (req, res) => {
     const commentForSentiment = buildDecoupledSentimentText({ strengths, weaknesses });
     const anonymous_student_ref = buildAnonymousRespondentRef({ studentId: student_id });
 
+    // Get active academic period to stamp on the evaluation
+    const activePeriod = await AcademicPeriod.getActive();
+
     const result = await Evaluation.create({
       student_id,
       anonymous_student_ref,
@@ -157,6 +168,7 @@ const submitEvaluation = async (req, res) => {
       weaknesses,
       sentiment:       sentimentResult.label,
       sentiment_score: sentimentResult.score,
+      academic_period_id: activePeriod ? activePeriod.id : null,
     });
 
     const evaluationId = result.insertId;
@@ -232,6 +244,8 @@ const getFacultyEvaluations = async (req, res) => {
       date:       e.created_at,
     }));
 
+    const subjectAssignments = await Faculty.getSubjectAssignments(id);
+
     res.json({
       faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
@@ -240,6 +254,7 @@ const getFacultyEvaluations = async (req, res) => {
       categoryAverages: categoryAveragesFormatted,
       recentFeedback,
       recommendations,
+      subjectAssignments,
     });
   } catch (error) {
     console.error('Get faculty evaluations error:', error);
@@ -262,8 +277,9 @@ const getMyEvaluations = async (req, res) => {
 
 /**
  * GET /api/evaluation/enrolled-instructors
- * Returns faculty who share at least one subject with the logged-in student
- * via the student_subjects and faculty_subjects junction tables.
+ * Returns faculty who share at least one subject with the logged-in student,
+ * filtered by section-aware matching (Phase 3).
+ * NULL section/year_level in faculty_subjects = wildcard (all sections/year levels).
  */
 const getEnrolledInstructors = async (req, res) => {
   try {
@@ -281,21 +297,37 @@ const getEnrolledInstructors = async (req, res) => {
 
     let facultyList = [];
     if (studentSubjectIds.length > 0) {
-      // Find faculty who teach ANY of the student's subjects
+      // Find faculty who teach ANY of the student's subjects,
+      // filtered by section/year_level matching and active semester
       const { pool } = require('../config/db');
+      const activePeriod = await AcademicPeriod.getActive();
+      const activeSemester = activePeriod ? activePeriod.semester : null;
+
       const placeholders = studentSubjectIds.map(() => '?').join(',');
+      const queryParams = [...studentSubjectIds, student.section || '', student.year_level || ''];
+
+      let semesterClause = '';
+      if (activeSemester) {
+        semesterClause = " AND (s.semester = 'both' OR s.semester = ?)";
+        queryParams.push(activeSemester);
+      }
+
       const [rows] = await pool.execute(
         `SELECT DISTINCT f.id, f.name, f.email, f.department,
                 GROUP_CONCAT(DISTINCT s.id ORDER BY s.id) as subject_ids,
                 GROUP_CONCAT(DISTINCT s.code ORDER BY s.id) as subject_codes,
-                GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names
+                GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+                GROUP_CONCAT(DISTINCT fs.section ORDER BY s.id) as assigned_sections
          FROM faculty f
          INNER JOIN faculty_subjects fs ON fs.faculty_id = f.id
-         LEFT JOIN subjects s ON s.id = fs.subject_id
+         INNER JOIN subjects s ON s.id = fs.subject_id
          WHERE fs.subject_id IN (${placeholders})
+           AND (fs.section IS NULL OR fs.section = ?)
+           AND (s.year_level IS NULL OR s.year_level = ?)
+           ${semesterClause}
          GROUP BY f.id
          ORDER BY f.name ASC`,
-        studentSubjectIds
+        queryParams
       );
       facultyList = rows;
     } else {
@@ -308,12 +340,14 @@ const getEnrolledInstructors = async (req, res) => {
     const evaluatedIds  = new Set(myEvaluations.map(e => Number(e.faculty_id)));
 
     const instructors = facultyList.map(f => ({
-      id:          f.id,
-      name:        f.name,
-      department:  f.department,
-      subject:     f.subject_names || f.department,
-      subjectCode: f.subject_codes || null,
-      evaluated:   evaluatedIds.has(Number(f.id)),
+      id:              f.id,
+      name:            f.name,
+      department:      f.department,
+      subject:         f.subject_names || f.department,
+      subjectCode:     f.subject_codes || null,
+      section:         f.assigned_sections || null,
+      studentSection:  student.section || null,
+      evaluated:       evaluatedIds.has(Number(f.id)),
     }));
 
     res.json({ instructors });
@@ -402,6 +436,8 @@ const getMyFacultyReport = async (req, res) => {
       date:       e.created_at,
     }));
 
+    const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
+
     res.json({
       faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
@@ -410,10 +446,150 @@ const getMyFacultyReport = async (req, res) => {
       categoryAverages: categoryAveragesFormatted,
       recentFeedback,
       recommendations,
+      subjectAssignments,
     });
   } catch (error) {
     console.error('Get my faculty report error:', error);
     res.status(500).json({ message: 'Server error fetching your report.' });
+  }
+};
+
+/**
+ * GET /api/evaluation/faculty/:id/subject-section-report
+ */
+const getFacultySubjectSectionReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { subject_id, section } = req.query;
+
+    if (!subject_id || !section) {
+      return res.status(400).json({ message: 'subject_id and section are required.' });
+    }
+
+    const facultyId = parseInt(id);
+    if (req.user.role === 'faculty' && req.user.id !== facultyId) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own report.' });
+    }
+    if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return res.status(404).json({ message: 'Faculty member not found.' });
+    }
+
+    const subject = await Subject.findById(subject_id);
+    if (!subject) {
+      return res.status(404).json({ message: 'Subject not found.' });
+    }
+
+    const activePeriod = await AcademicPeriod.getActive();
+    if (!activePeriod) {
+      return res.status(400).json({ message: 'No active academic period found.' });
+    }
+
+    const { pool } = require('../config/db');
+
+    // 1. Enrolled students count
+    const [enrolledRows] = await pool.execute(
+      `SELECT COUNT(DISTINCT st.id) as enrolled_count
+       FROM students st
+       INNER JOIN student_subjects ss ON ss.student_id = st.id
+       WHERE ss.subject_id = ? AND st.section = ?`,
+      [subject_id, section]
+    );
+    const enrolledCount = enrolledRows[0]?.enrolled_count || 0;
+
+    // 2. Respondents count
+    const [respondentRows] = await pool.execute(
+      `SELECT COUNT(DISTINCT e.student_id) as respondent_count
+       FROM evaluations e
+       INNER JOIN students st ON e.student_id = st.id
+       INNER JOIN student_subjects ss ON ss.student_id = st.id
+       WHERE e.faculty_id = ?
+         AND ss.subject_id = ?
+         AND st.section = ?
+         AND e.academic_period_id = ?`,
+      [facultyId, subject_id, section, activePeriod.id]
+    );
+    const respondentCount = respondentRows[0]?.respondent_count || 0;
+
+    // 3. Question ratings
+    const [ratingsRows] = await pool.execute(
+      `SELECT 
+         eq.id as question_id,
+         eq.question,
+         eq.category,
+         eq.category_description,
+         eq.sort_order,
+         COALESCE(SUM(CASE WHEN r.rating = 5 THEN 1 ELSE 0 END), 0) as rating_5,
+         COALESCE(SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END), 0) as rating_4,
+         COALESCE(SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END), 0) as rating_3,
+         COALESCE(SUM(CASE WHEN r.rating = 2 THEN 1 ELSE 0 END), 0) as rating_2,
+         COALESCE(SUM(CASE WHEN r.rating = 1 THEN 1 ELSE 0 END), 0) as rating_1,
+         COALESCE(SUM(r.rating), 0) as total_score,
+         COALESCE(AVG(r.rating), 0) as avg_rating,
+         COUNT(r.rating) as response_count
+       FROM evaluation_questions eq
+       LEFT JOIN (
+         SELECT er.question_id, er.rating
+         FROM evaluation_responses er
+         INNER JOIN evaluations e ON er.evaluation_id = e.id
+         INNER JOIN students st ON e.student_id = st.id
+         INNER JOIN student_subjects ss ON ss.student_id = st.id
+         WHERE e.faculty_id = ?
+           AND e.academic_period_id = ?
+           AND st.section = ?
+           AND ss.subject_id = ?
+       ) r ON eq.id = r.question_id
+       WHERE eq.question_type = 'rating'
+         AND eq.is_active = TRUE
+       GROUP BY eq.id
+       ORDER BY eq.sort_order ASC`,
+      [facultyId, activePeriod.id, section, subject_id]
+    );
+
+    // 4. Comments (Strengths/Weaknesses)
+    const [commentsRows] = await pool.execute(
+      `SELECT e.strengths, e.weaknesses
+       FROM evaluations e
+       INNER JOIN students st ON e.student_id = st.id
+       INNER JOIN student_subjects ss ON ss.student_id = st.id
+       WHERE e.faculty_id = ?
+         AND e.academic_period_id = ?
+         AND st.section = ?
+         AND ss.subject_id = ?
+         AND (e.strengths IS NOT NULL OR e.weaknesses IS NOT NULL)`,
+      [facultyId, activePeriod.id, section, subject_id]
+    );
+
+    res.json({
+      faculty,
+      subject,
+      section,
+      activePeriod,
+      enrolledCount,
+      respondentCount,
+      ratings: ratingsRows.map(row => ({
+        ...row,
+        rating_5: parseInt(row.rating_5),
+        rating_4: parseInt(row.rating_4),
+        rating_3: parseInt(row.rating_3),
+        rating_2: parseInt(row.rating_2),
+        rating_1: parseInt(row.rating_1),
+        total_score: parseInt(row.total_score),
+        avg_rating: parseFloat(row.avg_rating || 0).toFixed(2),
+        response_count: parseInt(row.response_count),
+      })),
+      comments: commentsRows.map(row => ({
+        strengths: row.strengths ? row.strengths.trim() : null,
+        weaknesses: row.weaknesses ? row.weaknesses.trim() : null,
+      })).filter(c => c.strengths || c.weaknesses),
+    });
+  } catch (error) {
+    console.error('Get faculty subject section report error:', error);
+    res.status(500).json({ message: 'Server error generating subject-section report.' });
   }
 };
 
@@ -426,4 +602,5 @@ module.exports = {
   getSystemAnalysis,
   getMyFacultyReport,
   clearAllEvaluations,
+  getFacultySubjectSectionReport,
 };

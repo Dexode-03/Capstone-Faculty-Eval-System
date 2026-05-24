@@ -10,22 +10,33 @@ import {
   HiCheckCircle,
   HiOutlineTrash,
   HiOutlineExclamation,
+  HiOutlineLockClosed,
+  HiOutlineLockOpen,
 } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import dashboardService from '../services/dashboardService';
 import evaluationService from '../services/evaluationService';
+import academicPeriodService from '../services/academicPeriodService';
 
 
 // ── Student view ──────────────────────────────────────────────────
 const StudentDashboard = ({ user }) => {
   const [instructors, setInstructors] = useState([]);
+  const [activePeriod, setActivePeriod] = useState(null);
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await evaluationService.getEnrolledInstructors();
-        setInstructors(res.data.instructors);
+        const [instrRes, periodRes] = await Promise.all([
+          evaluationService.getEnrolledInstructors(),
+          academicPeriodService.getActive(),
+        ]);
+        setInstructors(instrRes.data.instructors);
+        const active = periodRes.data.active || null;
+        setActivePeriod(active);
+        setEvaluationOpen(!!active?.evaluation_open);
       } catch {
         setInstructors([]);
       } finally {
@@ -47,6 +58,36 @@ const StudentDashboard = ({ user }) => {
     );
   }
 
+  // Evaluation is closed — show a locked message
+  if (!evaluationOpen) {
+    return (
+      <div>
+        <div className="mb-8">
+          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">My Evaluations</p>
+          <h1 className="text-3xl font-semibold text-psu-text tracking-tight">Welcome, {user?.name}</h1>
+          {activePeriod && (
+          <p className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full border border-blue-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              {activePeriod.academic_year} · {activePeriod.semester} Semester
+            </p>
+          )}
+          {(user?.year_level || user?.section || user?.department) && (
+            <p className="mt-2 block text-[13px] text-psu-muted">
+              {user.department} · {user.year_level} · Section {user.section}
+            </p>
+          )}
+        </div>
+        <div className="border border-amber-200 bg-amber-50 rounded-xl px-6 py-10 text-center">
+          <HiOutlineLockClosed className="h-10 w-10 text-amber-500 mx-auto mb-3" />
+          <p className="text-[16px] font-semibold text-amber-800">Evaluation Period is Closed</p>
+          <p className="text-[13px] text-amber-600 mt-2 max-w-md mx-auto">
+            The evaluation has not been started yet. Please wait for the admin to open the evaluation period.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       {/* Header */}
@@ -57,6 +98,17 @@ const StudentDashboard = ({ user }) => {
         <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
           Welcome, {user?.name}
         </h1>
+        {activePeriod && (
+          <p className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full border border-blue-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            {activePeriod.academic_year} · {activePeriod.semester} Semester
+          </p>
+        )}
+        {(user?.year_level || user?.section || user?.department) && (
+          <p className="mt-2 block text-[13px] text-psu-muted">
+            {user.department} · {user.year_level} · Section {user.section}
+          </p>
+        )}
       </div>
 
       {/* Pending — entire row is a link */}
@@ -82,6 +134,9 @@ const StudentDashboard = ({ user }) => {
                     <p className="text-[14px] font-medium text-psu-text">{instructor.name}</p>
                     <p className="text-[12px] text-psu-muted mt-0.5">
                       {instructor.subject} · {instructor.department}
+                      {instructor.studentSection && (
+                        <span className="ml-1 text-psu-primary font-medium">· Section {instructor.studentSection}</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -112,6 +167,9 @@ const StudentDashboard = ({ user }) => {
                     <p className="text-[14px] font-medium text-psu-text">{instructor.name}</p>
                     <p className="text-[12px] text-psu-muted mt-0.5">
                       {instructor.subject} · {instructor.department}
+                      {instructor.studentSection && (
+                        <span className="ml-1 text-psu-primary font-medium">· Section {instructor.studentSection}</span>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -154,17 +212,23 @@ const StudentDashboard = ({ user }) => {
 // ── Faculty view ──────────────────────────────────────────────────
 const FacultyDashboard = ({ user }) => {
   const [data, setData] = useState(null);
+  const [activePeriod, setActivePeriod] = useState(null);
+  const [evaluationOpen, setEvaluationOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await dashboardService.getFacultyDashboard();
-        setData(res.data);
+        const [dashRes, periodRes] = await Promise.all([
+          dashboardService.getFacultyDashboard(),
+          academicPeriodService.getActive(),
+        ]);
+        setData(dashRes.data);
+        const active = periodRes.data.active || null;
+        setActivePeriod(active);
+        setEvaluationOpen(!!active?.evaluation_open);
       } catch {
-        setData({
-          subjects: [],
-        });
+        setData({ subjects: [] });
       } finally {
         setLoading(false);
       }
@@ -190,7 +254,31 @@ const FacultyDashboard = ({ user }) => {
         <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
           Welcome, {user?.name}
         </h1>
+        {activePeriod && (
+          <p className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full border border-blue-100">
+            <span className={`w-1.5 h-1.5 rounded-full ${evaluationOpen ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`} />
+            {activePeriod.academic_year} · {activePeriod.semester} Semester
+            {evaluationOpen ? ' — Evaluation in progress' : ''}
+          </p>
+        )}
       </div>
+
+      {/* View Report link */}
+      <Link
+        to="/reports"
+        className="flex items-center justify-between bg-white border border-psu-border rounded-xl px-6 py-4 mb-6 hover:border-psu-primary hover:shadow-sm transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <HiOutlineChartBar className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[14px] font-semibold text-psu-text">View My Report</p>
+            <p className="text-[12px] text-psu-muted">See your evaluation results and feedback</p>
+          </div>
+        </div>
+        <HiArrowRight className="h-4 w-4 text-psu-muted group-hover:text-psu-primary transition-colors" />
+      </Link>
 
       {/* Subjects & population */}
       <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-3">Subjects & Population</p>
@@ -245,7 +333,37 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText]       = useState('');
   const [resetting, setResetting]           = useState(false);
-  const [resetResult, setResetResult]       = useState(null); // { success, message }
+  const [resetResult, setResetResult]       = useState(null);
+  const [evalOpen, setEvalOpen]             = useState(false);
+  const [toggling, setToggling]             = useState(false);
+  const [activePeriod, setActivePeriod]     = useState(null);
+
+  // Fetch active period to get evaluation_open status
+  useEffect(() => {
+    const fetchPeriod = async () => {
+      try {
+        const res = await academicPeriodService.getActive();
+        const active = res.data.active || null;
+        setActivePeriod(active);
+        setEvalOpen(!!active?.evaluation_open);
+      } catch {
+        setActivePeriod(null);
+      }
+    };
+    fetchPeriod();
+  }, []);
+
+  const handleToggleEvaluation = async () => {
+    setToggling(true);
+    try {
+      const res = await academicPeriodService.toggleEvaluation(!evalOpen);
+      setEvalOpen(!!res.data.evaluation_open);
+    } catch (err) {
+      console.error('Toggle evaluation error:', err);
+    } finally {
+      setToggling(false);
+    }
+  };
 
   const handleReset = async () => {
     setResetting(true);
@@ -283,6 +401,42 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
           <h1 className="text-3xl font-bold text-white tracking-tight">
             Welcome back, {user?.name}
           </h1>
+        </div>
+      </div>
+
+      {/* Evaluation Control */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              evalOpen ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+            }`}>
+              {evalOpen ? <HiOutlineLockOpen className="h-5 w-5" /> : <HiOutlineLockClosed className="h-5 w-5" />}
+            </div>
+            <div>
+              <p className="text-[14px] font-semibold text-slate-900">Evaluation Period</p>
+              <p className="text-[12px] text-slate-500 mt-0.5">
+                {activePeriod
+                  ? `${activePeriod.academic_year} · ${activePeriod.semester} Semester`
+                  : 'No active academic period'}
+                {' — '}
+                <span className={`font-semibold ${evalOpen ? 'text-green-600' : 'text-amber-600'}`}>
+                  {evalOpen ? 'Open' : 'Closed'}
+                </span>
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleToggleEvaluation}
+            disabled={toggling || !activePeriod}
+            className={`flex-shrink-0 rounded-lg px-5 py-2.5 text-[13px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              evalOpen
+                ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            {toggling ? 'Updating...' : evalOpen ? 'Close Evaluation' : 'Start Evaluation'}
+          </button>
         </div>
       </div>
 
@@ -392,6 +546,7 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
         <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Quick Links</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
+            { label: 'Faculty Directory', desc: 'View all faculty by department', to: '/faculty', icon: HiOutlineUserGroup, accent: 'bg-psu-gold/15 text-amber-600 group-hover:bg-amber-500 group-hover:text-white' },
             { label: 'Reports', desc: 'View analytics',   to: '/reports', icon: HiOutlineChartBar,  accent: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'       },
           ].map(item => (
             <Link key={item.label} to={item.to} className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center space-x-4 hover:border-slate-300 hover:shadow-md transition-all">

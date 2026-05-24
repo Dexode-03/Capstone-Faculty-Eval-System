@@ -11,11 +11,20 @@ const authService = {
   changePassword: (data) => api.post('/auth/change-password', data),
 
   // Admin account management CRUD operations
-  getAllAccounts: (role) => api.get(`/auth/admin/accounts?role=${role}`),
+  getAllAccounts: (role, filters = {}) => {
+    const params = new URLSearchParams({ role });
+    if (filters.department) params.append('department', filters.department);
+    if (filters.year_level) params.append('year_level', filters.year_level);
+    if (filters.section) params.append('section', filters.section);
+    if (filters.search) params.append('search', filters.search);
+    return api.get(`/auth/admin/accounts?${params.toString()}`);
+  },
   getAccountById: (id, role) => api.get(`/auth/admin/accounts/${id}?role=${role}`),
   createAccount: (data) => api.post('/auth/admin/accounts', data),
   updateAccount: (id, role, data) => api.put(`/auth/admin/accounts/${id}?role=${role}`, data),
   deleteAccount: (id, role) => api.delete(`/auth/admin/accounts/${id}?role=${role}`),
+  getFacultyAssignments: (id) => api.get(`/auth/admin/faculty-assignments/${id}`),
+  getAllFacultyAssignments: () => api.get('/auth/admin/faculty-assignments'),
 };
 
 export default authService;

@@ -9,6 +9,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const evaluationRoutes = require('./routes/evaluationRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
+const academicPeriodRoutes = require('./routes/academicPeriodRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +28,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/evaluation', evaluationRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);
+app.use('/api/academic-periods', academicPeriodRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

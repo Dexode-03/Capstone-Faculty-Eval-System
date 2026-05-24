@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import authService from '../services/authService';
 import subjectService from '../services/subjectService';
+import academicPeriodService from '../services/academicPeriodService';
 import useAuth from '../hooks/useAuth';
 
 export default function EditAccount() {
@@ -19,10 +20,14 @@ export default function EditAccount() {
     year_level: '',
     section: '',
   });
+  // Enriched faculty subject assignments: { [subject_id]: { section, year_level, semester } }
+  const [subjectAssignments, setSubjectAssignments] = useState({});
   const [subjects, setSubjects] = useState([]);
+  const [activeSemester, setActiveSemester] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [allAssignments, setAllAssignments] = useState([]);
 
   // Check if user is admin
   useEffect(() => {
@@ -41,8 +46,38 @@ export default function EditAccount() {
 
   const fetchSubjects = async () => {
     try {
+      let activeSem = null;
+      try {
+        const activeRes = await academicPeriodService.getActive();
+        const activePeriod = activeRes.data.active || activeRes.data.data || activeRes.data;
+        if (activePeriod && activePeriod.semester) {
+          activeSem = activePeriod.semester;
+          setActiveSemester(activeSem);
+        }
+      } catch (err) {
+        console.error('Error fetching active academic period:', err);
+      }
+
       const res = await subjectService.getAll();
-      setSubjects(res.data.subjects || res.data || []);
+      const allSubjects = res.data.subjects || res.data || [];
+
+      if (activeSem) {
+        const filtered = allSubjects.filter(
+          (s) => s.semester === 'both' || s.semester === activeSem
+        );
+        setSubjects(filtered);
+      } else {
+        setSubjects(allSubjects);
+      }
+
+      // Fetch all current faculty assignments
+      try {
+        const assignRes = await authService.getAllFacultyAssignments();
+        const assignments = assignRes.data.assignments || [];
+        setAllAssignments(assignments);
+      } catch (err) {
+        console.error('Error fetching all faculty assignments:', err);
+      }
     } catch (err) {
       console.error('Error fetching subjects:', err);
     }
@@ -68,6 +103,35 @@ export default function EditAccount() {
         year_level: account.year_level || '',
         section: account.section || '',
       });
+
+      // If faculty, fetch enriched subject assignments
+      if (role === 'faculty') {
+        try {
+          const assignRes = await authService.getFacultyAssignments(id);
+          const assignments = assignRes.data.assignments || [];
+          const assignMap = {};
+          assignments.forEach(a => {
+            if (!assignMap[a.subject_id]) {
+              assignMap[a.subject_id] = {
+                sections: [],
+                year_level: a.year_level || '',
+                semester: a.semester || 'both',
+              };
+            }
+            if (a.section) {
+              assignMap[a.subject_id].sections.push(a.section);
+            }
+          });
+          setSubjectAssignments(assignMap);
+        } catch {
+          // Fallback: initialize empty assignments for each subject
+          const assignMap = {};
+          parsedSubjectIds.forEach(sid => {
+            assignMap[sid] = { sections: [], year_level: '', semester: 'both' };
+          });
+          setSubjectAssignments(assignMap);
+        }
+      }
     } catch (err) {
       setError(err.message || 'Error fetching account');
       console.error('Error fetching account:', err);
@@ -82,6 +146,41 @@ export default function EditAccount() {
       ...prev,
       [name]: value,
     }));
+  };
+
+  // Handle faculty subject assignment detail changes
+  const handleAssignmentChange = (subjectId, field, value) => {
+    setSubjectAssignments(prev => ({
+      ...prev,
+      [subjectId]: {
+        ...(prev[subjectId] || { sections: [], year_level: '', semester: 'both' }),
+        [field]: value,
+      },
+    }));
+  };
+
+  // Handle subject checkbox toggle for faculty
+  const handleFacultySubjectToggle = (subjectId, checked) => {
+    setFormData(prev => ({
+      ...prev,
+      subject_ids: checked
+        ? [...prev.subject_ids, subjectId]
+        : prev.subject_ids.filter(id => id !== subjectId),
+    }));
+    if (checked) {
+      // Initialize assignment details
+      setSubjectAssignments(prev => ({
+        ...prev,
+        [subjectId]: prev[subjectId] || { sections: [], year_level: '', semester: 'both' },
+      }));
+    } else {
+      // Remove assignment details
+      setSubjectAssignments(prev => {
+        const copy = { ...prev };
+        delete copy[subjectId];
+        return copy;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -111,8 +210,50 @@ export default function EditAccount() {
       if (formData.email) submitData.email = formData.email.trim();
       
       if (role === 'faculty') {
+        // Enforce duplicate validation on submission, ignoring assignments of the current faculty
+        const finalAssignments = [];
+        for (const sid of formData.subject_ids) {
+          const matchingSubject = subjects.find(sub => sub.id === sid);
+          const sections = subjectAssignments[sid]?.sections || [];
+          
+          if (sections.length === 0) {
+            // Default to "All Sections" (section: null)
+            const conflict = allAssignments.find(
+              (a) => a.subject_id === sid && !a.section && a.faculty_id !== parseInt(id)
+            );
+            if (conflict) {
+              setError(`Subject "${matchingSubject?.code || ''}" (All Sections) is already assigned to ${conflict.faculty_name}.`);
+              setLoading(false);
+              return;
+            }
+            finalAssignments.push({
+              subject_id: sid,
+              section: null,
+              year_level: matchingSubject?.year_level || null,
+              semester: matchingSubject?.semester || 'both',
+            });
+          } else {
+            for (const sec of sections) {
+              const conflict = allAssignments.find(
+                (a) => a.subject_id === sid && a.section?.toLowerCase() === sec.toLowerCase() && a.faculty_id !== parseInt(id)
+              );
+              if (conflict) {
+                setError(`Section "${sec}" for subject "${matchingSubject?.code || ''}" is already assigned to ${conflict.faculty_name}.`);
+                setLoading(false);
+                return;
+              }
+              finalAssignments.push({
+                subject_id: sid,
+                section: sec,
+                year_level: matchingSubject?.year_level || null,
+                semester: matchingSubject?.semester || 'both',
+              });
+            }
+          }
+        }
+
         if (formData.department) submitData.department = formData.department.trim();
-        submitData.subject_ids = formData.subject_ids;
+        submitData.subject_assignments = finalAssignments;
       }
 
       if (role === 'student') {
@@ -136,6 +277,15 @@ export default function EditAccount() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get faculty assigned to a specific section of a subject (excluding current faculty)
+  const getAssignedFaculty = (subjectId, sec) => {
+    if (!sec) return null;
+    const match = allAssignments.find(
+      (a) => a.subject_id === subjectId && a.section?.toLowerCase() === sec.toLowerCase() && a.faculty_id !== parseInt(id)
+    );
+    return match ? match.faculty_name : null;
   };
 
   // Show nothing while auth is loading
@@ -280,8 +430,93 @@ export default function EditAccount() {
               </>
             )}
 
-            {/* Subjects (checkboxes) */}
-            {(role === 'faculty' || role === 'student') && (
+            {/* ── Subjects (Faculty: enriched with section/year_level/semester) ── */}
+            {role === 'faculty' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Subject Assignments
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Check subjects and specify section, year level, and semester for each.
+                  Leave section empty for "All Sections".
+                </p>
+                <div className="border border-gray-300 rounded-lg overflow-hidden divide-y divide-gray-200">
+                  {subjects.length === 0 ? (
+                    <p className="text-sm text-gray-400 p-3">No subjects available</p>
+                  ) : (
+                    subjects.map((s) => {
+                      const isChecked = formData.subject_ids.includes(s.id);
+                      const assign = subjectAssignments[s.id] || { section: '', year_level: '', semester: 'both' };
+                      return (
+                        <div key={s.id} className="bg-white">
+                          {/* Subject checkbox row */}
+                          <label className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => handleFacultySubjectToggle(s.id, e.target.checked)}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium text-gray-700">{s.code} — {s.name}</span>
+                          </label>
+                          {/* Expanded assignment details (only when checked) */}
+                          {isChecked && (
+                            <div className="px-4 pb-4 pt-1 ml-7 bg-blue-50/50 border-t border-gray-100">
+                              <div className="grid grid-cols-1 gap-3">
+                                <div>
+                                  <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-2">
+                                    Sections
+                                  </label>
+                                  <div className="grid grid-cols-2 gap-2 bg-white p-3 border border-gray-200 rounded-md">
+                                    {['A', 'B', 'C', 'D'].map(sec => {
+                                      const isSecChecked = (assign.sections || []).includes(sec);
+                                      const assignedTo = getAssignedFaculty(s.id, sec);
+                                      return (
+                                        <label key={sec} className={`flex items-center gap-2 text-sm p-1 rounded hover:bg-gray-50 ${assignedTo ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 cursor-pointer'}`}>
+                                          <input
+                                            type="checkbox"
+                                            checked={isSecChecked}
+                                            disabled={!!assignedTo}
+                                            onChange={(e) => {
+                                              const checked = e.target.checked;
+                                              setSubjectAssignments(prev => {
+                                                const currentSections = prev[s.id]?.sections || [];
+                                                const newSections = checked
+                                                  ? [...currentSections, sec]
+                                                  : currentSections.filter(x => x !== sec);
+                                                return {
+                                                  ...prev,
+                                                  [s.id]: {
+                                                    ...(prev[s.id] || { sections: [], year_level: '', semester: 'both' }),
+                                                    sections: newSections
+                                                  }
+                                                };
+                                              });
+                                            }}
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                          />
+                                          <span className="font-medium">
+                                            Section {sec} {assignedTo ? `(Taken by ${assignedTo})` : ''}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                  <p className="text-[10px] text-gray-500 mt-1">If no sections are checked, this defaults to "All Sections".</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Subjects (Student: simple checkboxes) */}
+            {role === 'student' && (
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Subjects

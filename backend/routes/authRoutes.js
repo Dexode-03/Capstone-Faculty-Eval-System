@@ -13,6 +13,8 @@ const {
   adminCreateAccount,
   adminUpdateAccount,
   adminDeleteAccount,
+  getFacultyAssignments,
+  getAllFacultyAssignments,
 } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 
@@ -31,5 +33,7 @@ router.get('/admin/accounts/:id', authenticate, getAccountById);
 router.post('/admin/accounts', authenticate, adminCreateAccount);
 router.put('/admin/accounts/:id', authenticate, adminUpdateAccount);
 router.delete('/admin/accounts/:id', authenticate, adminDeleteAccount);
+router.get('/admin/faculty-assignments', authenticate, getAllFacultyAssignments);
+router.get('/admin/faculty-assignments/:id', authenticate, getFacultyAssignments);
 
 module.exports = router;

@@ -2,12 +2,12 @@ const { pool } = require('../config/db');
 
 const Evaluation = {
   // Create a new evaluation
-  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score }) => {
+  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id }) => {
     const [result] = await pool.execute(
       `INSERT INTO evaluations
-         (student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [student_id, anonymous_student_ref || null, faculty_id, rating, comment, strengths || null, weaknesses || null, sentiment, sentiment_score]
+         (student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [student_id, anonymous_student_ref || null, faculty_id, rating, comment, strengths || null, weaknesses || null, sentiment, sentiment_score, academic_period_id || null]
     );
     return result;
   },

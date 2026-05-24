@@ -62,9 +62,9 @@ const User = {
     } else if (role === 'faculty') {
       const [rows] = await pool.execute(
         `SELECT f.id, f.name, f.email, f.department, f.email_verified, f.created_at,
-                GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
-                GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
-                GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names
+                GROUP_CONCAT(DISTINCT s.id ORDER BY s.id) as subject_ids,
+                GROUP_CONCAT(DISTINCT s.code ORDER BY s.id) as subject_codes,
+                GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names
          FROM faculty f
          LEFT JOIN faculty_subjects fs ON fs.faculty_id = f.id
          LEFT JOIN subjects s ON s.id = fs.subject_id
@@ -194,6 +194,108 @@ const User = {
   deleteById: async (id, role) => {
     const table = role === 'admin' ? 'admins' : role === 'faculty' ? 'faculty' : 'students';
     const [result] = await pool.execute(`DELETE FROM ${table} WHERE id = ?`, [id]);
+    return result;
+  },
+
+  // Find all accounts by role with optional filters (Phase 1)
+  findAllByRoleFiltered: async (role, filters = {}) => {
+    const { department, year_level, section, search } = filters;
+    const params = [];
+
+    if (role === 'admin') {
+      let query = 'SELECT id, name, email, email_verified, created_at, updated_at FROM admins WHERE 1=1';
+      if (search) {
+        query += ' AND (name LIKE ? OR email LIKE ?)';
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      query += ' ORDER BY created_at DESC';
+      const [rows] = await pool.execute(query, params);
+      return rows;
+    }
+
+    if (role === 'faculty') {
+      let query = `SELECT f.id, f.name, f.email, f.department,
+               GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+               GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+               GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+               f.email_verified, f.created_at, f.updated_at
+               FROM faculty f
+               LEFT JOIN faculty_subjects fs ON fs.faculty_id = f.id
+               LEFT JOIN subjects s ON s.id = fs.subject_id
+               WHERE 1=1`;
+      if (department) {
+        query += ' AND f.department = ?';
+        params.push(department);
+      }
+      if (search) {
+        query += ' AND (f.name LIKE ? OR f.email LIKE ?)';
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      query += ' GROUP BY f.id ORDER BY f.created_at DESC';
+      const [rows] = await pool.execute(query, params);
+      return rows;
+    }
+
+    if (role === 'student') {
+      let query = `SELECT st.id, st.name, st.email, st.year_level, st.section, st.department,
+               GROUP_CONCAT(s.id ORDER BY s.id) as subject_ids,
+               GROUP_CONCAT(s.code ORDER BY s.id) as subject_codes,
+               GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+               st.email_verified, st.created_at, st.updated_at
+               FROM students st
+               LEFT JOIN student_subjects ss ON ss.student_id = st.id
+               LEFT JOIN subjects s ON s.id = ss.subject_id
+               WHERE 1=1`;
+      if (department) {
+        query += ' AND st.department = ?';
+        params.push(department);
+      }
+      if (year_level) {
+        query += ' AND st.year_level = ?';
+        params.push(year_level);
+      }
+      if (section) {
+        query += ' AND st.section = ?';
+        params.push(section);
+      }
+      if (search) {
+        query += ' AND (st.name LIKE ? OR st.email LIKE ?)';
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      query += ' GROUP BY st.id ORDER BY st.created_at DESC';
+      const [rows] = await pool.execute(query, params);
+      return rows;
+    }
+
+    return [];
+  },
+
+  // Get distinct filter values for populating dropdowns (Phase 1)
+  getDistinctFilterValues: async (role) => {
+    const result = { departments: [], yearLevels: [], sections: [] };
+
+    if (role === 'faculty') {
+      const [depts] = await pool.execute(
+        'SELECT DISTINCT department FROM faculty WHERE department IS NOT NULL AND department != \'\' ORDER BY department ASC'
+      );
+      result.departments = depts.map(r => r.department);
+    } else if (role === 'student') {
+      const [depts] = await pool.execute(
+        'SELECT DISTINCT department FROM students WHERE department IS NOT NULL AND department != \'\' ORDER BY department ASC'
+      );
+      result.departments = depts.map(r => r.department);
+
+      const [years] = await pool.execute(
+        'SELECT DISTINCT year_level FROM students WHERE year_level IS NOT NULL AND year_level != \'\' ORDER BY year_level ASC'
+      );
+      result.yearLevels = years.map(r => r.year_level);
+
+      const [sects] = await pool.execute(
+        'SELECT DISTINCT section FROM students WHERE section IS NOT NULL AND section != \'\' ORDER BY section ASC'
+      );
+      result.sections = sects.map(r => r.section);
+    }
+
     return result;
   },
 };
