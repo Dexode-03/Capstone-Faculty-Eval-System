@@ -408,9 +408,11 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
         weightedSentiments: { positive: 0, neutral: 0, negative: 0 },
         strengths:  [],
         weaknesses: [],
+        evaluations: [],
       };
     }
     facultyMap[fid].ratings.push(e.rating);
+    facultyMap[fid].evaluations.push(e);
     facultyMap[fid].sentiments[e.sentiment]++;
     const { label, probability } = dominantSentimentFromProbabilities(sentimentProbabilities(e));
     facultyMap[fid].weightedSentiments[label] += probability;
@@ -578,6 +580,15 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
       const positiveRate = totalEvals > 0 ? Math.round((f.sentiments.positive / totalEvals) * 100) : 0;
       const neutralRate = totalEvals > 0 ? Math.round((f.sentiments.neutral / totalEvals) * 100) : 0;
       const negativeRate = totalEvals > 0 ? Math.round((f.sentiments.negative / totalEvals) * 100) : 0;
+      const recommendations = generateRecommendations(f.evaluations).slice(0, 4);
+      const topStrengths = f.strengths
+        .map(text => String(text).trim())
+        .filter(Boolean)
+        .slice(0, 3);
+      const topWeaknesses = f.weaknesses
+        .map(text => String(text).trim())
+        .filter(Boolean)
+        .slice(0, 3);
       return {
         id: f.id,
         name: f.name,
@@ -587,6 +598,9 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
         positiveRate,
         neutralRate,
         negativeRate,
+        recommendations,
+        topStrengths,
+        topWeaknesses,
       };
     })
     .sort((a, b) => b.averageRating - a.averageRating);

@@ -95,26 +95,37 @@ const Faculty = {
 
   // Set subjects for a faculty member (replaces all existing)
   // Accepts either:
-  //   - Plain IDs: [1, 2, 3]
-  //   - Enriched objects: [{ subject_id: 1, section: 'A', year_level: '4th Year', semester: '1st' }]
+  //   - Plain IDs: ['sub_xxxxxx', ...]
+  //   - Enriched objects: [{ subject_id: 'sub_xxxxxx', section: 'A', year_level: '4th Year', semester: '1st' }]
   setSubjects: async (facultyId, subjectData) => {
     // Remove old assignments
-    await pool.execute('DELETE FROM faculty_subjects WHERE faculty_id = ?', [facultyId]);
+    await pool.execute('DELETE FROM faculty_subjects WHERE faculty_id = ?', [String(facultyId)]);
     // Insert new assignments
     if (subjectData && subjectData.length > 0) {
-      const values = subjectData.map(item => {
+      const values = [];
+      const params = [];
+
+      subjectData.forEach(item => {
         if (typeof item === 'object' && item !== null && item.subject_id !== undefined) {
           // Enriched format
-          const sid = parseInt(item.subject_id);
-          const section = item.section ? `'${item.section}'` : 'NULL';
-          return `(${parseInt(facultyId)}, ${sid}, ${section})`;
+          const sid = String(item.subject_id).trim();
+          if (!sid) return;
+          values.push('(?, ?, ?)');
+          params.push(String(facultyId), sid, item.section || null);
         } else {
           // Plain ID format (backward compatible)
-          return `(${parseInt(facultyId)}, ${parseInt(item)}, NULL)`;
+          const sid = String(item).trim();
+          if (!sid) return;
+          values.push('(?, ?, ?)');
+          params.push(String(facultyId), sid, null);
         }
-      }).join(', ');
+      });
+
+      if (values.length === 0) return;
+
       await pool.execute(
-        `INSERT INTO faculty_subjects (faculty_id, subject_id, section) VALUES ${values}`
+        `INSERT INTO faculty_subjects (faculty_id, subject_id, section) VALUES ${values.join(', ')}`,
+        params
       );
     }
   },

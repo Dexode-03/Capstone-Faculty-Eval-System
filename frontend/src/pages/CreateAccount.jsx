@@ -8,6 +8,13 @@ import useAuth from '../hooks/useAuth';
 export default function CreateAccount() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const departmentOptions = [
+    'Computer Science',
+    'Information Technology',
+    'Engineering',
+    'Education',
+    'Business Administration',
+  ];
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -77,6 +84,42 @@ export default function CreateAccount() {
     if (user?.role === 'admin') fetchSubjectsAndActivePeriod();
   }, [user]);
 
+  const subjectMatchesActiveSemester = (subject) =>
+    !activeSemester || subject.semester === 'both' || subject.semester === activeSemester;
+
+  const subjectMatchesStudentFilters = (subject, data = formData) => {
+    const selectedDepartment = (data.department || '').trim().toLowerCase();
+    const subjectDepartment = (subject?.department || '').trim().toLowerCase();
+
+    return Boolean(
+      subject &&
+      selectedDepartment &&
+      subjectDepartment === selectedDepartment &&
+      subject.year_level === data.year_level &&
+      subjectMatchesActiveSemester(subject)
+    );
+  };
+
+  const subjectMatchesFacultyFilters = (subject, data = formData) => {
+    const selectedDepartment = (data.department || '').trim().toLowerCase();
+    const subjectDepartment = (subject?.department || '').trim().toLowerCase();
+
+    return Boolean(
+      subject &&
+      selectedDepartment &&
+      subjectDepartment === selectedDepartment &&
+      subjectMatchesActiveSemester(subject)
+    );
+  };
+
+  const availableFacultySubjects = formData.role === 'faculty'
+    ? subjects.filter((subject) => subjectMatchesFacultyFilters(subject))
+    : [];
+
+  const availableStudentSubjects = formData.role === 'student'
+    ? subjects.filter((subject) => subjectMatchesStudentFilters(subject))
+    : [];
+
   // Show nothing while auth is loading
   if (authLoading) {
     return null;
@@ -89,10 +132,51 @@ export default function CreateAccount() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+    const nextData = {
+      ...formData,
       [name]: value,
-    }));
+    };
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+      if ((name === 'year_level' || name === 'department' || name === 'role') && updated.role === 'student') {
+        // Keep selections aligned with the student's department, year level, and active semester.
+        const filteredSids = prev.subject_ids.filter(sid => {
+          const s = subjects.find(sub => sub.id === sid);
+          return subjectMatchesStudentFilters(s, updated);
+        });
+        updated.subject_ids = filteredSids;
+      }
+      if ((name === 'department' || name === 'role') && updated.role === 'faculty') {
+        updated.subject_ids = prev.subject_ids.filter(sid => {
+          const s = subjects.find(sub => sub.id === sid);
+          return subjectMatchesFacultyFilters(s, updated);
+        });
+      }
+      return updated;
+    });
+
+    if (name === 'department' || name === 'role') {
+      setSubjectAssignments(prev => {
+        if (nextData.role !== 'faculty') {
+          return {};
+        }
+
+        const copy = {};
+
+        Object.entries(prev).forEach(([subjectId, assignment]) => {
+          const subject = subjects.find(sub => String(sub.id) === String(subjectId));
+          if (subjectMatchesFacultyFilters(subject, nextData)) {
+            copy[subjectId] = assignment;
+          }
+        });
+
+        return copy;
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -145,7 +229,12 @@ export default function CreateAccount() {
       if (formData.role === 'faculty') {
         // Enforce duplicate validation on submission
         const finalAssignments = [];
-        for (const sid of formData.subject_ids) {
+        const validFacultySubjectIds = formData.subject_ids.filter((sid) => {
+          const subject = subjects.find((sub) => sub.id === sid);
+          return subjectMatchesFacultyFilters(subject);
+        });
+
+        for (const sid of validFacultySubjectIds) {
           const matchingSubject = subjects.find(sub => sub.id === sid);
           const sections = subjectAssignments[sid]?.sections || [];
           
@@ -193,13 +282,19 @@ export default function CreateAccount() {
         if (formData.year_level) submitData.year_level = formData.year_level;
         if (formData.section) submitData.section = formData.section.trim();
         if (formData.department) submitData.department = formData.department.trim();
-        if (formData.subject_ids.length > 0) {
-          submitData.subject_ids = formData.subject_ids.map(Number);
+        const validSubjectIds = formData.subject_ids
+          .filter((sid) => {
+            const subject = subjects.find((sub) => String(sub.id) === String(sid));
+            return subjectMatchesStudentFilters(subject);
+          });
+
+        if (validSubjectIds.length > 0) {
+          submitData.subject_ids = validSubjectIds;
         }
       }
 
       // Create account
-      const result = await authService.createAccount(submitData);
+      await authService.createAccount(submitData);
       setSuccessMessage(
         `${formData.role.charAt(0).toUpperCase() + formData.role.slice(1)} account created successfully!`
       );
@@ -330,7 +425,6 @@ export default function CreateAccount() {
               >
                 <option value="faculty">Faculty</option>
                 <option value="student">Student</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
 
@@ -340,14 +434,17 @@ export default function CreateAccount() {
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Department
                 </label>
-                <input
-                  type="text"
+                <select
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  placeholder="e.g., Computer Science"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                >
+                  <option value="">Select Department</option>
+                  {departmentOptions.map((department) => (
+                    <option key={department} value={department}>{department}</option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -376,14 +473,18 @@ export default function CreateAccount() {
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       Section
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="section"
                       value={formData.section}
                       onChange={handleChange}
-                      placeholder="e.g., A"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    >
+                      <option value="">Select Section</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
                   </div>
                 </div>
 
@@ -391,14 +492,17 @@ export default function CreateAccount() {
                   <label className="block text-sm font-medium text-gray-900 mb-2">
                     Department
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="department"
                     value={formData.department}
                     onChange={handleChange}
-                    placeholder="e.g., Computer Science"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="">Select Department</option>
+                    {departmentOptions.map((department) => (
+                      <option key={department} value={department}>{department}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             )}
@@ -414,10 +518,12 @@ export default function CreateAccount() {
                   Leave section empty for "All Sections".
                 </p>
                 <div className="border border-gray-300 rounded-lg overflow-hidden divide-y divide-gray-200">
-                  {subjects.length === 0 ? (
-                    <p className="text-sm text-gray-400 p-3">No subjects available</p>
+                  {!formData.department ? (
+                    <p className="text-sm text-gray-400 p-3">Please select a department to view subjects</p>
+                  ) : availableFacultySubjects.length === 0 ? (
+                    <p className="text-sm text-gray-400 p-3">No subjects available for this department and semester</p>
                   ) : (
-                    subjects.map((s) => {
+                    availableFacultySubjects.map((s) => {
                       const isChecked = formData.subject_ids.includes(s.id);
                       const assign = subjectAssignments[s.id] || { sections: [], year_level: '', semester: 'both' };
                       return (
@@ -513,10 +619,12 @@ export default function CreateAccount() {
                   Subjects
                 </label>
                 <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
-                  {subjects.length === 0 ? (
-                    <p className="text-sm text-gray-400">No subjects available</p>
+                  {!formData.department || !formData.year_level ? (
+                    <p className="text-sm text-gray-400">Please select a department and year level to view subjects</p>
+                  ) : availableStudentSubjects.length === 0 ? (
+                    <p className="text-sm text-gray-400">No subjects available for this department, year level, and semester</p>
                   ) : (
-                    subjects.map((s) => (
+                    availableStudentSubjects.map((s) => (
                       <label key={s.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"

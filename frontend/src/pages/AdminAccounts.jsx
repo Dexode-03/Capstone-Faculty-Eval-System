@@ -65,7 +65,13 @@ export default function AdminAccounts() {
       const result = await authService.getAllAccounts(role, filters);
       setAccounts(result.data.data || []);
       if (result.data.filters) {
-        setFilterOptions(result.data.filters);
+        const newFilters = result.data.filters;
+        setFilterOptions(newFilters);
+        
+        // Auto-select first options if not set
+        setDepartment(prev => prev || newFilters.departments?.[0] || '');
+        setYearLevel(prev => prev || newFilters.yearLevels?.[0] || '');
+        setSection(prev => prev || newFilters.sections?.[0] || '');
       }
     } catch (err) {
       console.error('Error fetching accounts:', err);
@@ -126,7 +132,12 @@ export default function AdminAccounts() {
     return null;
   }
 
-  const activeFilterCount = [department, yearLevel, section, search].filter(Boolean).length;
+  const activeFilterCount = [
+    search,
+    department && filterOptions.departments[0] !== department ? department : '',
+    yearLevel && filterOptions.yearLevels[0] !== yearLevel ? yearLevel : '',
+    section && filterOptions.sections[0] !== section ? section : ''
+  ].filter(Boolean).length;
 
   return (
     <div>
@@ -174,7 +185,6 @@ export default function AdminAccounts() {
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Departments</option>
                 {filterOptions.departments.map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -191,7 +201,6 @@ export default function AdminAccounts() {
                 onChange={(e) => setYearLevel(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Year Levels</option>
                 {filterOptions.yearLevels.map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
@@ -208,7 +217,6 @@ export default function AdminAccounts() {
                 onChange={(e) => setSection(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">All Sections</option>
                 {filterOptions.sections.map(s => (
                   <option key={s} value={s}>Section {s}</option>
                 ))}
@@ -246,7 +254,13 @@ export default function AdminAccounts() {
             <span className="text-gray-300">·</span>
             <span className="text-[12px] text-gray-500">{accounts.length} result{accounts.length !== 1 ? 's' : ''}</span>
             <button
-              onClick={() => { setDepartment(''); setYearLevel(''); setSection(''); setSearch(''); setSearchInput(''); }}
+              onClick={() => {
+                setDepartment(filterOptions.departments[0] || '');
+                setYearLevel(filterOptions.yearLevels[0] || '');
+                setSection(filterOptions.sections[0] || '');
+                setSearch('');
+                setSearchInput('');
+              }}
               className="text-[12px] text-blue-600 hover:text-blue-800 font-medium ml-auto"
             >
               Clear filters

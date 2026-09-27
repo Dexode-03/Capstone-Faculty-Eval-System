@@ -12,6 +12,13 @@ export default function EditAccount() {
   const role = searchParams.get('role') || 'faculty';
   
   const { user, loading: authLoading } = useAuth();
+  const departmentOptions = [
+    'Computer Science',
+    'Information Technology',
+    'Engineering',
+    'Education',
+    'Business Administration',
+  ];
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -92,7 +99,7 @@ export default function EditAccount() {
       
       // Parse subject_ids from comma-separated string (from GROUP_CONCAT)
       const parsedSubjectIds = account.subject_ids
-        ? account.subject_ids.split(',').map(Number)
+        ? account.subject_ids.split(',').map(s => s.trim()).filter(Boolean)
         : [];
 
       setFormData({
@@ -140,23 +147,47 @@ export default function EditAccount() {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const subjectMatchesActiveSemester = (subject) =>
+    !activeSemester || subject.semester === 'both' || subject.semester === activeSemester;
+
+  const subjectMatchesStudentFilters = (subject, data = formData) => {
+    const selectedDepartment = (data.department || '').trim().toLowerCase();
+    const subjectDepartment = (subject?.department || '').trim().toLowerCase();
+
+    return Boolean(
+      subject &&
+      selectedDepartment &&
+      subjectDepartment === selectedDepartment &&
+      subject.year_level === data.year_level &&
+      subjectMatchesActiveSemester(subject)
+    );
   };
 
-  // Handle faculty subject assignment detail changes
-  const handleAssignmentChange = (subjectId, field, value) => {
-    setSubjectAssignments(prev => ({
-      ...prev,
-      [subjectId]: {
-        ...(prev[subjectId] || { sections: [], year_level: '', semester: 'both' }),
-        [field]: value,
-      },
-    }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: value,
+      };
+      if (name === 'department' && role === 'faculty') {
+        const newDept = (value || '').trim().toLowerCase();
+        const filteredSids = prev.subject_ids.filter(sid => {
+          const s = subjects.find(sub => sub.id === sid);
+          return s && (s.department || '').trim().toLowerCase() === newDept;
+        });
+        updated.subject_ids = filteredSids;
+      }
+      if ((name === 'year_level' || name === 'department') && role === 'student') {
+        // Keep selections aligned with the student's department, year level, and active semester.
+        const filteredSids = prev.subject_ids.filter(sid => {
+          const s = subjects.find(sub => sub.id === sid);
+          return subjectMatchesStudentFilters(s, updated);
+        });
+        updated.subject_ids = filteredSids;
+      }
+      return updated;
+    });
   };
 
   // Handle subject checkbox toggle for faculty
@@ -219,7 +250,7 @@ export default function EditAccount() {
           if (sections.length === 0) {
             // Default to "All Sections" (section: null)
             const conflict = allAssignments.find(
-              (a) => a.subject_id === sid && !a.section && a.faculty_id !== parseInt(id)
+              (a) => a.subject_id === sid && !a.section && String(a.faculty_id) !== String(id)
             );
             if (conflict) {
               setError(`Subject "${matchingSubject?.code || ''}" (All Sections) is already assigned to ${conflict.faculty_name}.`);
@@ -235,7 +266,7 @@ export default function EditAccount() {
           } else {
             for (const sec of sections) {
               const conflict = allAssignments.find(
-                (a) => a.subject_id === sid && a.section?.toLowerCase() === sec.toLowerCase() && a.faculty_id !== parseInt(id)
+                (a) => a.subject_id === sid && a.section?.toLowerCase() === sec.toLowerCase() && String(a.faculty_id) !== String(id)
               );
               if (conflict) {
                 setError(`Section "${sec}" for subject "${matchingSubject?.code || ''}" is already assigned to ${conflict.faculty_name}.`);
@@ -260,7 +291,10 @@ export default function EditAccount() {
         if (formData.year_level) submitData.year_level = formData.year_level;
         if (formData.section) submitData.section = formData.section.trim();
         if (formData.department) submitData.department = formData.department.trim();
-        submitData.subject_ids = formData.subject_ids;
+        submitData.subject_ids = formData.subject_ids.filter((sid) => {
+          const subject = subjects.find((sub) => String(sub.id) === String(sid));
+          return subjectMatchesStudentFilters(subject);
+        });
       }
 
       // Update account
@@ -283,10 +317,21 @@ export default function EditAccount() {
   const getAssignedFaculty = (subjectId, sec) => {
     if (!sec) return null;
     const match = allAssignments.find(
-      (a) => a.subject_id === subjectId && a.section?.toLowerCase() === sec.toLowerCase() && a.faculty_id !== parseInt(id)
+      (a) => a.subject_id === subjectId && a.section?.toLowerCase() === sec.toLowerCase() && String(a.faculty_id) !== String(id)
     );
     return match ? match.faculty_name : null;
   };
+
+  const availableStudentSubjects = role === 'student'
+    ? subjects.filter((subject) => subjectMatchesStudentFilters(subject))
+    : [];
+
+  const availableFacultySubjects = role === 'faculty'
+    ? subjects.filter((subject) => {
+        if (!formData.department) return false;
+        return (subject.department || '').trim().toLowerCase() === formData.department.trim().toLowerCase();
+      })
+    : [];
 
   // Show nothing while auth is loading
   if (authLoading) {
@@ -367,14 +412,17 @@ export default function EditAccount() {
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Department
                 </label>
-                <input
-                  type="text"
+                <select
                   name="department"
                   value={formData.department}
                   onChange={handleChange}
-                  placeholder="e.g., Computer Science"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                >
+                  <option value="">Select Department</option>
+                  {departmentOptions.map((department) => (
+                    <option key={department} value={department}>{department}</option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -403,14 +451,18 @@ export default function EditAccount() {
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       Section
                     </label>
-                    <input
-                      type="text"
+                    <select
                       name="section"
                       value={formData.section}
                       onChange={handleChange}
-                      placeholder="e.g., A"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    >
+                      <option value="">Select Section</option>
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
                   </div>
                 </div>
 
@@ -418,14 +470,19 @@ export default function EditAccount() {
                   <label className="block text-sm font-medium text-gray-900 mb-2">
                     Department
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="department"
                     value={formData.department}
                     onChange={handleChange}
-                    placeholder="e.g., Computer Science"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Education">Education</option>
+                    <option value="Business Administration">Business Administration</option>
+                  </select>
                 </div>
               </>
             )}
@@ -441,10 +498,12 @@ export default function EditAccount() {
                   Leave section empty for "All Sections".
                 </p>
                 <div className="border border-gray-300 rounded-lg overflow-hidden divide-y divide-gray-200">
-                  {subjects.length === 0 ? (
-                    <p className="text-sm text-gray-400 p-3">No subjects available</p>
+                  {!formData.department ? (
+                    <p className="text-sm text-gray-400 p-3">Please select a department to view subjects</p>
+                  ) : availableFacultySubjects.length === 0 ? (
+                    <p className="text-sm text-gray-400 p-3">No subjects available for this department</p>
                   ) : (
-                    subjects.map((s) => {
+                    availableFacultySubjects.map((s) => {
                       const isChecked = formData.subject_ids.includes(s.id);
                       const assign = subjectAssignments[s.id] || { section: '', year_level: '', semester: 'both' };
                       return (
@@ -522,10 +581,12 @@ export default function EditAccount() {
                   Subjects
                 </label>
                 <div className="border border-gray-300 rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
-                  {subjects.length === 0 ? (
-                    <p className="text-sm text-gray-400">No subjects available</p>
+                  {!formData.department || !formData.year_level ? (
+                    <p className="text-sm text-gray-400">Please select a department and year level to view subjects</p>
+                  ) : availableStudentSubjects.length === 0 ? (
+                    <p className="text-sm text-gray-400">No subjects available for this department, year level, and semester</p>
                   ) : (
-                    subjects.map((s) => (
+                    availableStudentSubjects.map((s) => (
                       <label key={s.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
                         <input
                           type="checkbox"

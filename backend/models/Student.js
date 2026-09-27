@@ -124,10 +124,24 @@ const Student = {
 
   // Set subjects for a student (replaces all existing)
   setSubjects: async (studentId, subjectIds) => {
-    await pool.execute('DELETE FROM student_subjects WHERE student_id = ?', [studentId]);
+    await pool.execute('DELETE FROM student_subjects WHERE student_id = ?', [String(studentId)]);
     if (subjectIds && subjectIds.length > 0) {
-      const values = subjectIds.map(sid => `(${parseInt(studentId)}, ${parseInt(sid)})`).join(', ');
-      await pool.execute(`INSERT INTO student_subjects (student_id, subject_id) VALUES ${values}`);
+      const values = [];
+      const params = [];
+
+      subjectIds.forEach(sid => {
+        const subjectId = String(sid).trim();
+        if (!subjectId) return;
+        values.push('(?, ?)');
+        params.push(String(studentId), subjectId);
+      });
+
+      if (values.length === 0) return;
+
+      await pool.execute(
+        `INSERT INTO student_subjects (student_id, subject_id) VALUES ${values.join(', ')}`,
+        params
+      );
     }
   },
 

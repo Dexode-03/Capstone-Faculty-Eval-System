@@ -76,9 +76,9 @@ INSERT INTO `admins` (`id`, `name`, `email`, `password`, `email_verified`, `veri
 
 CREATE TABLE `evaluations` (
   `id` int(11) NOT NULL,
-  `student_id` int(11) NOT NULL,
+  `student_id` varchar(36) NOT NULL,
   `anonymous_student_ref` varchar(255) DEFAULT NULL,
-  `faculty_id` int(11) NOT NULL,
+  `faculty_id` varchar(36) NOT NULL,
   `rating` int(11) NOT NULL CHECK (`rating` >= 1 and `rating` <= 5),
   `comment` text NOT NULL,
   `strengths` text DEFAULT NULL,
@@ -86,8 +86,8 @@ CREATE TABLE `evaluations` (
   `sentiment` enum('positive','neutral','negative') NOT NULL,
   `sentiment_score` decimal(5,2) DEFAULT 0.00,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `student_id_new` int(11) DEFAULT NULL,
-  `faculty_id_new` int(11) DEFAULT NULL,
+  `student_id_new` varchar(36) DEFAULT NULL,
+  `faculty_id_new` varchar(36) DEFAULT NULL,
   `academic_period_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -96,7 +96,7 @@ CREATE TABLE `evaluations` (
 --
 
 INSERT INTO `evaluations` (`id`, `student_id`, `anonymous_student_ref`, `faculty_id`, `rating`, `comment`, `strengths`, `weaknesses`, `sentiment`, `sentiment_score`, `created_at`, `student_id_new`, `faculty_id_new`) VALUES
-(13, 14, 'v1.q436BzTdxl1jiyM2.Cjq3ND8YiB0MPNcMbd0jjg.Y04Ytb--FZWukOzS6pnFhIwBcJ4T-zH3MHsEcQuE2xdWPmfb2eRrgXI6', 3, 4, 'No comments provided.', NULL, NULL, 'neutral', 0.00, '2026-05-01 14:36:19', NULL, NULL);
+(13, '23-AS-0005', 'v1.q436BzTdxl1jiyM2.Cjq3ND8YiB0MPNcMbd0jjg.Y04Ytb--FZWukOzS6pnFhIwBcJ4T-zH3MHsEcQuE2xdWPmfb2eRrgXI6', 'ASIN-000002', 4, 'No comments provided.', NULL, NULL, 'neutral', 0.00, '2026-05-01 14:36:19', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -182,7 +182,7 @@ INSERT INTO `evaluation_responses` (`id`, `evaluation_id`, `question_id`, `ratin
 --
 
 CREATE TABLE `faculty` (
-  `id` int(11) NOT NULL,
+  `id` varchar(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -198,8 +198,8 @@ CREATE TABLE `faculty` (
 --
 
 INSERT INTO `faculty` (`id`, `name`, `email`, `password`, `department`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
-(2, 'Dr. Maria Santos', 'faculty@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09'),
-(3, 'Prof. Juan Dela Cruz', 'faculty2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09');
+('ASIN-000001', 'Dr. Maria Santos', 'faculty@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09'),
+('ASIN-000002', 'Prof. Juan Dela Cruz', 'faculty2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 10:37:09');
 
 -- --------------------------------------------------------
 
@@ -209,7 +209,7 @@ INSERT INTO `faculty` (`id`, `name`, `email`, `password`, `department`, `email_v
 
 CREATE TABLE `faculty_subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `faculty_id` int(11) NOT NULL,
+  `faculty_id` varchar(36) NOT NULL,
   `subject_id` int(11) NOT NULL,
   `section` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -225,8 +225,8 @@ CREATE TABLE `faculty_subjects` (
 --
 
 INSERT INTO `faculty_subjects` (`faculty_id`, `subject_id`, `section`) VALUES
-(2, 1, NULL),
-(3, 3, NULL);
+('ASIN-000001', 1, NULL),
+('ASIN-000002', 3, NULL);
 
 -- --------------------------------------------------------
 
@@ -249,7 +249,7 @@ CREATE TABLE `password_resets` (
 --
 
 CREATE TABLE `students` (
-  `id` int(11) NOT NULL,
+  `id` varchar(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
@@ -267,11 +267,11 @@ CREATE TABLE `students` (
 --
 
 INSERT INTO `students` (`id`, `name`, `email`, `password`, `year_level`, `section`, `department`, `email_verified`, `verification_token`, `created_at`, `updated_at`) VALUES
-(4, 'Raymond Heras', 'student1@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:36'),
-(5, 'Hero Reyes', 'student2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:24'),
-(11, 'Mark Len', 'student3@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 03:45:05', '2026-05-01 11:10:51'),
-(13, 'Jordan Dave Caparas', 'student4@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 04:01:06', '2026-05-01 11:11:04'),
-(14, 'Junard Chua', 'student5@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Information Technology', 1, NULL, '2026-03-15 13:14:30', '2026-05-01 11:11:20');
+('23-AS-0001', 'Raymond Heras', 'student1@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Computer Science', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:36'),
+('23-AS-0002', 'Hero Reyes', 'student2@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-14 05:03:09', '2026-05-01 11:10:24'),
+('23-AS-0003', 'Mark Len', 'student3@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 03:45:05', '2026-05-01 11:10:51'),
+('23-AS-0004', 'Jordan Dave Caparas', 'student4@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'B', 'Information Technology', 1, NULL, '2026-03-15 04:01:06', '2026-05-01 11:11:04'),
+('23-AS-0005', 'Junard Chua', 'student5@psu.edu.ph', '$2a$10$6FqkT/bQ2tw3TRiM81XSy.YCg9U.HBgXx6cTlhZbvNhQH2CWV1jy.', '4th Year', 'A', 'Information Technology', 1, NULL, '2026-03-15 13:14:30', '2026-05-01 11:11:20');
 
 -- --------------------------------------------------------
 
@@ -281,9 +281,9 @@ INSERT INTO `students` (`id`, `name`, `email`, `password`, `year_level`, `sectio
 
 CREATE TABLE `student_subjects` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `student_id` int(11) NOT NULL,
+  `student_id` varchar(36) NOT NULL,
   `subject_id` int(11) NOT NULL,
-  `faculty_id` int(11) DEFAULT NULL,
+  `faculty_id` varchar(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_student_subject` (`student_id`, `subject_id`),
   FOREIGN KEY (`student_id`) REFERENCES `students`(`id`) ON DELETE CASCADE,
@@ -296,11 +296,11 @@ CREATE TABLE `student_subjects` (
 --
 
 INSERT INTO `student_subjects` (`student_id`, `subject_id`) VALUES
-(4, 1),
-(5, 3),
-(11, 3),
-(13, 3),
-(14, 3);
+('23-AS-0001', 1),
+('23-AS-0002', 3),
+('23-AS-0003', 3),
+('23-AS-0004', 3),
+('23-AS-0005', 3);
 
 -- --------------------------------------------------------
 
@@ -323,16 +323,66 @@ CREATE TABLE `subjects` (
 --
 
 INSERT INTO `subjects` (`id`, `code`, `name`, `department`, `semester`, `year_level`, `created_at`) VALUES
-(1, 'CS101', 'Computer Programming 1', 'Computer Science', '1st', '1st Year', '2026-05-01 10:33:01'),
-(2, 'CS102', 'Data Structures', 'Computer Science', '2nd', '1st Year', '2026-05-01 10:33:01'),
-(3, 'IT101', 'Information Assurance and Security', 'Information Technology', '1st', '1st Year', '2026-05-01 10:33:01'),
-(4, 'IT102', 'Network Administration', 'Information Technology', '2nd', '1st Year', '2026-05-01 10:33:01'),
-(5, 'CS201', 'Operating Systems', 'Computer Science', '1st', '2nd Year', '2026-05-01 10:33:01'),
-(6, 'IT201', 'Web Development', 'Information Technology', '1st', '2nd Year', '2026-05-01 10:33:01'),
-(7, 'ENG101', 'Engineering Mathematics', 'Engineering', '1st', '1st Year', '2026-05-01 10:33:01'),
-(8, 'ENG201', 'Thermodynamics', 'Engineering', '2nd', '2nd Year', '2026-05-01 10:33:01'),
-(9, 'EDU101', 'Principles of Teaching', 'Education', '1st', '1st Year', '2026-05-01 10:33:01'),
-(10, 'BA101', 'Financial Management', 'Business Administration', '1st', '1st Year', '2026-05-01 10:33:01');
+(1, 'CS101', 'Computer Programming 1', 'Computer Science', 'both', '1st Year', '2026-05-01 10:33:01'),
+(2, 'CS102', 'Data Structures', 'Computer Science', 'both', '1st Year', '2026-05-01 10:33:01'),
+(3, 'IT101', 'Information Assurance and Security', 'Information Technology', 'both', '1st Year', '2026-05-01 10:33:01'),
+(4, 'IT102', 'Network Administration', 'Information Technology', 'both', '1st Year', '2026-05-01 10:33:01'),
+(5, 'CS201', 'Operating Systems', 'Computer Science', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(6, 'IT201', 'Web Development', 'Information Technology', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(7, 'ENG101', 'Engineering Mathematics', 'Engineering', 'both', '1st Year', '2026-05-01 10:33:01'),
+(8, 'ENG201', 'Thermodynamics', 'Engineering', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(9, 'EDU101', 'Principles of Teaching', 'Education', 'both', '1st Year', '2026-05-01 10:33:01'),
+(10, 'BA101', 'Financial Management', 'Business Administration', 'both', '1st Year', '2026-05-01 10:33:01'),
+(11, 'CS103', 'Discrete Structures', 'Computer Science', 'both', '1st Year', '2026-05-01 10:33:01'),
+(12, 'CS202', 'Database Systems', 'Computer Science', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(13, 'CS203', 'Object-Oriented Programming', 'Computer Science', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(14, 'CS301', 'Software Engineering', 'Computer Science', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(15, 'CS302', 'Computer Networks', 'Computer Science', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(16, 'CS303', 'Web Application Development', 'Computer Science', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(17, 'CS401', 'Artificial Intelligence', 'Computer Science', 'both', '4th Year', '2026-05-01 10:33:01'),
+(18, 'CS402', 'Capstone Project 1', 'Computer Science', 'both', '4th Year', '2026-05-01 10:33:01'),
+(19, 'CS403', 'Information Security', 'Computer Science', 'both', '4th Year', '2026-05-01 10:33:01'),
+(20, 'IT103', 'Computer Hardware Servicing', 'Information Technology', 'both', '1st Year', '2026-05-01 10:33:01'),
+(21, 'IT202', 'Systems Integration and Architecture', 'Information Technology', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(22, 'IT203', 'Human Computer Interaction', 'Information Technology', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(23, 'IT301', 'Mobile Application Development', 'Information Technology', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(24, 'IT302', 'Database Administration', 'Information Technology', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(25, 'IT303', 'Cloud Computing', 'Information Technology', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(26, 'IT401', 'IT Project Management', 'Information Technology', 'both', '4th Year', '2026-05-01 10:33:01'),
+(27, 'IT402', 'Capstone Project', 'Information Technology', 'both', '4th Year', '2026-05-01 10:33:01'),
+(28, 'IT403', 'Cybersecurity Operations', 'Information Technology', 'both', '4th Year', '2026-05-01 10:33:01'),
+(29, 'ENG102', 'Engineering Drawing', 'Engineering', 'both', '1st Year', '2026-05-01 10:33:01'),
+(30, 'ENG103', 'Physics for Engineers', 'Engineering', 'both', '1st Year', '2026-05-01 10:33:01'),
+(31, 'ENG202', 'Engineering Mechanics', 'Engineering', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(32, 'ENG203', 'Materials Science', 'Engineering', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(33, 'ENG301', 'Fluid Mechanics', 'Engineering', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(34, 'ENG302', 'Electrical Circuits', 'Engineering', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(35, 'ENG303', 'Control Systems', 'Engineering', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(36, 'ENG401', 'Engineering Design Project', 'Engineering', 'both', '4th Year', '2026-05-01 10:33:01'),
+(37, 'ENG402', 'Project Management for Engineers', 'Engineering', 'both', '4th Year', '2026-05-01 10:33:01'),
+(38, 'ENG403', 'Engineering Ethics', 'Engineering', 'both', '4th Year', '2026-05-01 10:33:01'),
+(39, 'EDU102', 'Child and Adolescent Development', 'Education', 'both', '1st Year', '2026-05-01 10:33:01'),
+(40, 'EDU103', 'Educational Technology', 'Education', 'both', '1st Year', '2026-05-01 10:33:01'),
+(41, 'EDU201', 'Curriculum Development', 'Education', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(42, 'EDU202', 'Assessment of Learning', 'Education', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(43, 'EDU203', 'Facilitating Learner-Centered Teaching', 'Education', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(44, 'EDU301', 'Classroom Management', 'Education', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(45, 'EDU302', 'Inclusive Education', 'Education', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(46, 'EDU303', 'Teaching Internship Preparation', 'Education', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(47, 'EDU401', 'Practice Teaching', 'Education', 'both', '4th Year', '2026-05-01 10:33:01'),
+(48, 'EDU402', 'Action Research in Education', 'Education', 'both', '4th Year', '2026-05-01 10:33:01'),
+(49, 'EDU403', 'Educational Leadership', 'Education', 'both', '4th Year', '2026-05-01 10:33:01'),
+(50, 'BA102', 'Principles of Management', 'Business Administration', 'both', '1st Year', '2026-05-01 10:33:01'),
+(51, 'BA103', 'Business Mathematics', 'Business Administration', 'both', '1st Year', '2026-05-01 10:33:01'),
+(52, 'BA201', 'Marketing Management', 'Business Administration', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(53, 'BA202', 'Business Law', 'Business Administration', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(54, 'BA203', 'Managerial Accounting', 'Business Administration', 'both', '2nd Year', '2026-05-01 10:33:01'),
+(55, 'BA301', 'Human Resource Management', 'Business Administration', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(56, 'BA302', 'Operations Management', 'Business Administration', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(57, 'BA303', 'Entrepreneurship', 'Business Administration', 'both', '3rd Year', '2026-05-01 10:33:01'),
+(58, 'BA401', 'Strategic Management', 'Business Administration', 'both', '4th Year', '2026-05-01 10:33:01'),
+(59, 'BA402', 'Business Research', 'Business Administration', 'both', '4th Year', '2026-05-01 10:33:01'),
+(60, 'BA403', 'Business Ethics and Corporate Governance', 'Business Administration', 'both', '4th Year', '2026-05-01 10:33:01');
 
 --
 -- Indexes for dumped tables
@@ -425,10 +475,10 @@ ALTER TABLE `evaluation_responses`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=222;
 
 --
--- AUTO_INCREMENT for table `faculty`
+-- VARCHAR primary key for table `faculty`
 --
 ALTER TABLE `faculty`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` varchar(36) NOT NULL;
 
 --
 -- AUTO_INCREMENT for table `password_resets`
@@ -437,16 +487,16 @@ ALTER TABLE `password_resets`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `students`
+-- VARCHAR primary key for table `students`
 --
 ALTER TABLE `students`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` varchar(36) NOT NULL;
 
 --
 -- AUTO_INCREMENT for table `subjects`
 --
 ALTER TABLE `subjects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- Constraints for dumped tables

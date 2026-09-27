@@ -234,7 +234,15 @@ const getFacultyEvaluations = async (req, res) => {
       categoryAveragesFormatted[cat] = parseFloat((data.total / data.count).toFixed(2));
     });
 
-    const recentFeedback = evaluations.slice(0, 10).map(e => ({
+    const questionAverages = questionAvgs.map(q => ({
+      id: q.id,
+      question: q.question,
+      category: SHORT_CATEGORY[q.category] || q.category,
+      averageWeightedMean: parseFloat(parseFloat(q.avg_rating).toFixed(2)),
+      totalResponses: parseInt(q.total, 10) || 0,
+    }));
+
+    const allFeedback = evaluations.map(e => ({
       id:         e.id,
       comment:    e.comment,
       strengths:  e.strengths  || null,
@@ -243,6 +251,7 @@ const getFacultyEvaluations = async (req, res) => {
       sentiment:  e.sentiment,
       date:       e.created_at,
     }));
+    const recentFeedback = allFeedback.slice(0, 10);
 
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
 
@@ -252,6 +261,8 @@ const getFacultyEvaluations = async (req, res) => {
       totalEvaluations: evaluations.length,
       sentimentOverview,
       categoryAverages: categoryAveragesFormatted,
+      questionAverages,
+      allFeedback,
       recentFeedback,
       recommendations,
       subjectAssignments,
@@ -292,7 +303,7 @@ const getEnrolledInstructors = async (req, res) => {
 
     // Parse student's subject_ids (comes as comma-separated string from GROUP_CONCAT)
     const studentSubjectIds = student.subject_ids
-      ? student.subject_ids.split(',').map(Number)
+      ? student.subject_ids.split(',').map(s => s.trim()).filter(Boolean)
       : [];
 
     let facultyList = [];
@@ -337,7 +348,7 @@ const getEnrolledInstructors = async (req, res) => {
 
     // Mark which faculty have already been evaluated by this student
     const myEvaluations = await Evaluation.findByStudentId(student_id);
-    const evaluatedIds  = new Set(myEvaluations.map(e => Number(e.faculty_id)));
+    const evaluatedIds  = new Set(myEvaluations.map(e => String(e.faculty_id)));
 
     const instructors = facultyList.map(f => ({
       id:              f.id,
@@ -347,7 +358,7 @@ const getEnrolledInstructors = async (req, res) => {
       subjectCode:     f.subject_codes || null,
       section:         f.assigned_sections || null,
       studentSection:  student.section || null,
-      evaluated:       evaluatedIds.has(Number(f.id)),
+      evaluated:       evaluatedIds.has(String(f.id)),
     }));
 
     res.json({ instructors });
@@ -426,7 +437,15 @@ const getMyFacultyReport = async (req, res) => {
       categoryAveragesFormatted[cat] = parseFloat((data.total / data.count).toFixed(2));
     });
 
-    const recentFeedback = evaluations.slice(0, 10).map(e => ({
+    const questionAverages = questionAvgs.map(q => ({
+      id: q.id,
+      question: q.question,
+      category: SHORT_CATEGORY[q.category] || q.category,
+      averageWeightedMean: parseFloat(parseFloat(q.avg_rating).toFixed(2)),
+      totalResponses: parseInt(q.total, 10) || 0,
+    }));
+
+    const allFeedback = evaluations.map(e => ({
       id:         e.id,
       comment:    e.comment,
       strengths:  e.strengths  || null,
@@ -435,6 +454,7 @@ const getMyFacultyReport = async (req, res) => {
       sentiment:  e.sentiment,
       date:       e.created_at,
     }));
+    const recentFeedback = allFeedback.slice(0, 10);
 
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
 
@@ -444,6 +464,8 @@ const getMyFacultyReport = async (req, res) => {
       totalEvaluations: evaluations.length,
       sentimentOverview,
       categoryAverages: categoryAveragesFormatted,
+      questionAverages,
+      allFeedback,
       recentFeedback,
       recommendations,
       subjectAssignments,
@@ -466,8 +488,8 @@ const getFacultySubjectSectionReport = async (req, res) => {
       return res.status(400).json({ message: 'subject_id and section are required.' });
     }
 
-    const facultyId = parseInt(id);
-    if (req.user.role === 'faculty' && req.user.id !== facultyId) {
+    const facultyId = id;
+    if (req.user.role === 'faculty' && String(req.user.id) !== String(facultyId)) {
       return res.status(403).json({ message: 'Access denied. You can only view your own report.' });
     }
     if (req.user.role !== 'admin' && req.user.role !== 'faculty') {

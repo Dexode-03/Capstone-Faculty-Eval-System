@@ -1,4 +1,29 @@
+const crypto = require('crypto');
 const { pool } = require('../config/db');
+
+// Generate unique faculty ID in format: fac_xxxxxx (6 hex chars)
+const generateFacultyId = async () => {
+  let id;
+  let exists = true;
+  while (exists) {
+    id = `fac_${crypto.randomBytes(3).toString('hex')}`;
+    const [rows] = await pool.execute('SELECT id FROM faculty WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) exists = false;
+  }
+  return id;
+};
+
+// Generate unique student ID in format: std_xxxxxx (6 hex chars)
+const generateStudentId = async () => {
+  let id;
+  let exists = true;
+  while (exists) {
+    id = `std_${crypto.randomBytes(3).toString('hex')}`;
+    const [rows] = await pool.execute('SELECT id FROM students WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) exists = false;
+  }
+  return id;
+};
 
 const User = {
   // Create a new admin
@@ -12,20 +37,22 @@ const User = {
 
   // Create a new faculty (no subject_id — use Faculty.setSubjects after)
   createFaculty: async ({ name, email, password, department, verification_token }) => {
+    const id = await generateFacultyId();
     const [result] = await pool.execute(
-      'INSERT INTO faculty (name, email, password, department, verification_token) VALUES (?, ?, ?, ?, ?)',
-      [name, email, password, department, verification_token]
+      'INSERT INTO faculty (id, name, email, password, department, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, name, email, password, department, verification_token]
     );
-    return result;
+    return { ...result, insertId: id };
   },
 
   // Create a new student (no subject_id — use Student.setSubjects after)
   createStudent: async ({ name, email, password, year_level, section, department, verification_token }) => {
+    const id = await generateStudentId();
     const [result] = await pool.execute(
-      'INSERT INTO students (name, email, password, year_level, section, department, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, password, year_level, section, department, verification_token]
+      'INSERT INTO students (id, name, email, password, year_level, section, department, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, name, email, password, year_level, section, department, verification_token]
     );
-    return result;
+    return { ...result, insertId: id };
   },
 
   // Generic create method (determine role and create accordingly)

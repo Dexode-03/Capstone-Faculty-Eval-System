@@ -82,34 +82,30 @@ const FacultyReport = () => {
         ? `${activePeriod.semester} of SY ${activePeriod.academic_year}`
         : 'Active Semester';
 
+      // ── Category prefix map (stored category → Roman-numeral display) ─
+      const CATEGORY_PREFIX = {
+        'A. Management of Teaching and Learning': 'IV.A.',
+        'B. Content Knowledge, Pedagogy and Technology': 'IV.B.',
+        'C. Commitment and Transparency': 'IV.C.',
+      };
+
       // ── Word doc borders ──────────────────────────────────────────────
-      const borderNone = { style: BorderStyle.NONE, size: 0, color: 'auto' };
-      const borderSingle = { style: BorderStyle.SINGLE, size: 4, color: 'D1D5DB' }; // 0.5 pt
-      const borderDouble = { style: BorderStyle.DOUBLE, size: 12, color: '111827' }; // double line
+      const borderNone   = { style: BorderStyle.NONE,   size: 0,  color: 'auto'   };
+      const borderThin   = { style: BorderStyle.SINGLE, size: 4,  color: '999999' };
+      const borderMedium = { style: BorderStyle.SINGLE, size: 8,  color: '333333' };
+      const borderThick  = { style: BorderStyle.SINGLE, size: 12, color: '000000' };
 
-      const noBorders = {
-        top: borderNone,
-        bottom: borderNone,
-        left: borderNone,
-        right: borderNone,
-      };
+      const noBorders = { top: borderNone, bottom: borderNone, left: borderNone, right: borderNone };
 
-      const cellHeaderBorders = {
-        top: borderSingle,
-        bottom: borderSingle,
-        left: borderNone,
-        right: borderNone,
-      };
+      const thinAllBorders = { top: borderThin, bottom: borderThin, left: borderThin, right: borderThin };
 
-      const cellTotalBorders = {
-        top: borderSingle,
-        bottom: borderDouble,
-        left: borderNone,
-        right: borderNone,
-      };
+      const headerCellBorders = { top: borderMedium, bottom: borderMedium, left: borderThin, right: borderThin };
+
+      const totalCellBorders = { top: borderMedium, bottom: borderThick, left: borderThin, right: borderThin };
 
       // ── Cell Helper ───────────────────────────────────────────────
       const createCell = (text, width, options = {}) => {
+        const verticalAlign = options.verticalAlign || 'center';
         return new TableCell({
           children: [
             new Paragraph({
@@ -124,12 +120,13 @@ const FacultyReport = () => {
                 }),
               ],
               alignment: options.align || AlignmentType.LEFT,
-              spacing: { before: 80, after: 80 },
+              spacing: { before: 60, after: 60 },
             }),
           ],
           width: { size: width, type: WidthType.PERCENTAGE },
           borders: options.borders || noBorders,
           columnSpan: options.columnSpan || undefined,
+          verticalAlign: verticalAlign,
           shading: options.shading ? { type: ShadingType.CLEAR, fill: options.shading } : undefined,
         });
       };
@@ -139,11 +136,11 @@ const FacultyReport = () => {
         new Paragraph({
           children: [
             new TextRun({
-              text: 'Pangasinan State University',
+              text: 'PANGASINAN STATE UNIVERSITY',
               bold: true,
               size: 28,
               font: 'Calibri',
-              color: '1E40B0', // PSU blue
+              color: '000000',
             }),
           ],
           alignment: AlignmentType.CENTER,
@@ -154,9 +151,9 @@ const FacultyReport = () => {
             new TextRun({
               text: 'STUDENT EVALUATION ON TEACHING',
               bold: true,
-              size: 22,
+              size: 24,
               font: 'Calibri',
-              color: '111827',
+              color: '000000',
             }),
           ],
           alignment: AlignmentType.CENTER,
@@ -166,36 +163,44 @@ const FacultyReport = () => {
           children: [
             new TextRun({
               text: semesterStr,
-              italic: true,
+              bold: true,
               size: 20,
               font: 'Calibri',
-              color: '4B5563',
+              color: '000000',
             }),
           ],
           alignment: AlignmentType.CENTER,
-          spacing: { after: 200 },
+          spacing: { after: 240 },
         }),
       ];
 
-      // ── Metadata Table builder ────────────────────────────────────
-      const buildMetadataTable = () => {
-        const psuFacultyId = `(ASIN-${String(faculty.id).padStart(6, '0')})`;
+      // ── Metadata block builder ────────────────────────────────────
+      const buildMetadataBlock = () => {
+        const psuFacultyId = faculty.id || '';
         return new Table({
           rows: [
             new TableRow({
               children: [
-                createCell('Faculty:', 15, { bold: true }),
-                createCell(`${psuFacultyId} - ${faculty.name.toUpperCase()}`, 50, { bold: true }),
-                createCell('Section:', 20, { bold: true }),
-                createCell(section.toUpperCase(), 15),
+                createCell('Faculty ID:', 18, { bold: true }),
+                createCell(psuFacultyId, 32),
+                createCell('Subject Code:', 18, { bold: true }),
+                createCell(subject.code, 32),
               ],
             }),
             new TableRow({
               children: [
-                createCell('Subject:', 15, { bold: true }),
-                createCell(`${subject.code} - ${subject.name}`, 50),
-                createCell('Respondents / Enrolled:', 20, { bold: true }),
-                createCell(`${respondentCount} / ${enrolledCount}`, 15),
+                createCell('Faculty Name:', 18, { bold: true }),
+                createCell(faculty.name.toUpperCase(), 32, { bold: true }),
+                createCell('Description:', 18, { bold: true }),
+                createCell(subject.name, 32),
+              ],
+            }),
+            new TableRow({
+              children: [
+                createCell('Section:', 18, { bold: true }),
+                createCell(section.toUpperCase(), 32),
+                createCell('No. of Respondents:', 18, { bold: true }),
+                createCell(`${respondentCount} / ${enrolledCount} enrolled`, 32),
               ],
             }),
           ],
@@ -204,105 +209,120 @@ const FacultyReport = () => {
         });
       };
 
-      // ── Children container for the document ───────────────────────
-      const children = [];
-
-      // Add Page 1 Headers & Metadata
-      children.push(...buildPSUHeader());
-      children.push(buildMetadataTable());
-
-      // Spacing before table
-      children.push(new Paragraph({ spacing: { before: 200, after: 100 } }));
-
-      // ── Ratings Table ─────────────────────────────────────────────
-      const tableHeaderRow = new TableRow({
-        children: [
-          createCell('No.', 5, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('Question', 45, { bold: true, borders: cellHeaderBorders }),
-          createCell('5', 6, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('4', 6, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('3', 6, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('2', 6, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('1', 6, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('Total Score', 10, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-          createCell('Average', 10, { bold: true, align: AlignmentType.CENTER, borders: cellHeaderBorders }),
-        ],
+      // ── Group ratings by category ─────────────────────────────────
+      const categoryGroups = [];
+      let currentGroup = null;
+      ratings.forEach((row) => {
+        if (!currentGroup || currentGroup.category !== row.category) {
+          currentGroup = { category: row.category, description: row.category_description, questions: [] };
+          categoryGroups.push(currentGroup);
+        }
+        currentGroup.questions.push(row);
       });
 
-      const tableRows = [tableHeaderRow];
+      // ── Build document children ───────────────────────────────────
+      const children = [];
 
-      // Group questions by category
-      let currentCategory = '';
-      let questionIndex = 1;
+      // Header + Metadata
+      children.push(...buildPSUHeader());
+      children.push(buildMetadataBlock());
+      children.push(new Paragraph({ spacing: { before: 300, after: 100 } }));
 
-      ratings.forEach((row) => {
-        if (row.category !== currentCategory) {
-          currentCategory = row.category;
-          // Add category heading row spanning all 9 columns
-          const formattedCat = currentCategory.toUpperCase();
-          let catHeading = formattedCat;
-          if (formattedCat.startsWith('A.')) catHeading = `I. A. ${formattedCat.substring(2).trim()}`;
-          else if (formattedCat.startsWith('B.')) catHeading = `I. B. ${formattedCat.substring(2).trim()}`;
-          else if (formattedCat.startsWith('C.')) catHeading = `I. C. ${formattedCat.substring(2).trim()}`;
-          else if (!formattedCat.startsWith('I.')) catHeading = `I. ${formattedCat}`;
+      // ── Single Unified Questionnaire Table ────────────────────────
+      const tableRows = [];
+
+      // Table header row (5 columns)
+      tableRows.push(
+        new TableRow({
+          children: [
+            createCell('No.', 6, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'E8E8E8' }),
+            createCell('Question', 52, { bold: true, borders: headerCellBorders, shading: 'E8E8E8' }),
+            createCell('No. of Evaluators', 14, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'E8E8E8' }),
+            createCell('Sum of Ratings', 14, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'E8E8E8' }),
+            createCell('Average', 14, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'E8E8E8' }),
+          ],
+        })
+      );
+
+      let totalAvgSum = 0;
+      let totalQuestions = 0;
+
+      categoryGroups.forEach((group, groupIdx) => {
+        const prefix = CATEGORY_PREFIX[group.category] || `IV.${String.fromCharCode(65 + groupIdx)}.`;
+        const categoryLabel = group.category.replace(/^[A-Z]\.\s*/, '');
+        const headingText = `${prefix} ${categoryLabel.toUpperCase()}`;
+
+        // Subtle section header divider row inside the single unified table
+        tableRows.push(
+          new TableRow({
+            children: [
+              createCell(headingText, 100, {
+                bold: true,
+                size: 20,
+                columnSpan: 5,
+                borders: headerCellBorders,
+                shading: 'EAEAEA',
+              }),
+            ],
+          })
+        );
+
+        // Question rows
+        group.questions.forEach((row) => {
+          const evaluators = row.response_count;
+          const sumOfRatings = row.total_score;
+          const avg = evaluators > 0 ? (sumOfRatings / evaluators).toFixed(2) : '0.00';
+
+          totalAvgSum += evaluators > 0 ? (sumOfRatings / evaluators) : 0;
+          totalQuestions += 1;
+
+          const qNum = row.sort_order || totalQuestions;
+          const isOddRow = totalQuestions % 2 === 1;
+          const rowBorders = thinAllBorders;
+          const rowShading = isOddRow ? 'F9FAFB' : undefined;
 
           tableRows.push(
             new TableRow({
               children: [
-                createCell(catHeading, 100, {
-                  bold: true,
-                  size: 22,
-                  color: '1E40B0', // PSU blue
-                  columnSpan: 9,
-                }),
+                createCell(qNum, 6, { align: AlignmentType.CENTER, borders: rowBorders, shading: rowShading }),
+                createCell(row.question, 52, { borders: rowBorders, shading: rowShading }),
+                createCell(evaluators, 14, { align: AlignmentType.CENTER, borders: rowBorders, shading: rowShading }),
+                createCell(sumOfRatings, 14, { align: AlignmentType.CENTER, borders: rowBorders, shading: rowShading }),
+                createCell(avg, 14, { align: AlignmentType.CENTER, borders: rowBorders, shading: rowShading }),
               ],
             })
           );
-        }
-
-        // Add question row
-        tableRows.push(
-          new TableRow({
-            children: [
-              createCell(questionIndex++, 5, { align: AlignmentType.CENTER }),
-              createCell(row.question, 45),
-              createCell(row.rating_5, 6, { align: AlignmentType.CENTER }),
-              createCell(row.rating_4, 6, { align: AlignmentType.CENTER }),
-              createCell(row.rating_3, 6, { align: AlignmentType.CENTER }),
-              createCell(row.rating_2, 6, { align: AlignmentType.CENTER }),
-              createCell(row.rating_1, 6, { align: AlignmentType.CENTER }),
-              createCell(row.total_score, 10, { align: AlignmentType.CENTER }),
-              createCell(row.avg_rating, 10, { align: AlignmentType.CENTER }),
-            ],
-          })
-        );
+        });
       });
 
-      // Sums for Totals row
-      const sum5 = ratings.reduce((sum, r) => sum + r.rating_5, 0);
-      const sum4 = ratings.reduce((sum, r) => sum + r.rating_4, 0);
-      const sum3 = ratings.reduce((sum, r) => sum + r.rating_3, 0);
-      const sum2 = ratings.reduce((sum, r) => sum + r.rating_2, 0);
-      const sum1 = ratings.reduce((sum, r) => sum + r.rating_1, 0);
-      const grandTotalScore = ratings.reduce((sum, r) => sum + r.total_score, 0);
-      const totalRatingsCount = ratings.reduce((sum, r) => sum + r.response_count, 0);
-      const overallAvg = totalRatingsCount > 0 ? (grandTotalScore / totalRatingsCount).toFixed(2) : '0.00';
+      // Overall Total Average row at the very bottom (only the average is displayed)
+      const overallAvg = totalQuestions > 0
+        ? (totalAvgSum / totalQuestions).toFixed(2)
+        : '0.00';
 
-      const totalRow = new TableRow({
-        children: [
-          createCell('', 5, { borders: cellTotalBorders }),
-          createCell('OVERALL AVERAGE / TOTAL', 45, { bold: true, borders: cellTotalBorders }),
-          createCell(sum5, 6, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(sum4, 6, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(sum3, 6, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(sum2, 6, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(sum1, 6, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(grandTotalScore, 10, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-          createCell(overallAvg, 10, { bold: true, align: AlignmentType.CENTER, borders: cellTotalBorders }),
-        ],
-      });
-      tableRows.push(totalRow);
+      tableRows.push(
+        new TableRow({
+          children: [
+            createCell('OVERALL TOTAL AVERAGE', 86, {
+              bold: true,
+              size: 22,
+              columnSpan: 4,
+              align: AlignmentType.LEFT,
+              borders: totalCellBorders,
+              shading: 'E8E8E8',
+            }),
+            createCell(overallAvg, 14, {
+              bold: true,
+              size: 22,
+              align: AlignmentType.CENTER,
+              borders: totalCellBorders,
+              shading: 'E8E8E8',
+            }),
+          ],
+        })
+      );
 
+      // Add the single unified table
       children.push(
         new Table({
           rows: tableRows,
@@ -315,7 +335,7 @@ const FacultyReport = () => {
 
       // Page 2 Headers & Metadata
       children.push(...buildPSUHeader());
-      children.push(buildMetadataTable());
+      children.push(buildMetadataBlock());
 
       // Spacing
       children.push(new Paragraph({ spacing: { before: 200, after: 100 } }));
@@ -325,11 +345,11 @@ const FacultyReport = () => {
         new Paragraph({
           children: [
             new TextRun({
-              text: 'Comments / Suggestions',
+              text: 'COMMENTS / SUGGESTIONS',
               bold: true,
               size: 24,
               font: 'Calibri',
-              color: '1E40B0',
+              color: '000000',
             }),
           ],
           spacing: { before: 100, after: 200 },
@@ -345,7 +365,7 @@ const FacultyReport = () => {
               bold: true,
               size: 20,
               font: 'Calibri',
-              color: '1E40B0',
+              color: '000000',
             }),
           ],
           spacing: { before: 100, after: 100 },
@@ -369,12 +389,12 @@ const FacultyReport = () => {
           })
         );
       } else {
-        strengthComments.forEach(c => {
+        strengthComments.forEach((c, idx) => {
           children.push(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `• ${c.strengths.trim()}`,
+                  text: `${idx + 1}. ${c.strengths.trim()}`,
                   size: 20,
                   font: 'Calibri',
                 }),
@@ -397,7 +417,7 @@ const FacultyReport = () => {
               bold: true,
               size: 20,
               font: 'Calibri',
-              color: 'EF4444',
+              color: '000000',
             }),
           ],
           spacing: { before: 100, after: 100 },
@@ -421,12 +441,12 @@ const FacultyReport = () => {
           })
         );
       } else {
-        weaknessComments.forEach(c => {
+        weaknessComments.forEach((c, idx) => {
           children.push(
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `• ${c.weaknesses.trim()}`,
+                  text: `${idx + 1}. ${c.weaknesses.trim()}`,
                   size: 20,
                   font: 'Calibri',
                 }),
@@ -439,13 +459,20 @@ const FacultyReport = () => {
 
       // ── Generate & Download ───────────────────────────────────────
       const doc = new Document({
-        sections: [{ children }],
+        sections: [{
+          properties: {
+            page: {
+              margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            },
+          },
+          children,
+        }],
       });
 
       const blob = await Packer.toBlob(doc);
       saveAs(
         blob,
-        `Evaluation-Summary-${faculty.name.replace(/\s+/g, '_')}-${subject.code}-${section}.docx`
+        `SET-Report-${faculty.name.replace(/\s+/g, '_')}-${subject.code}-${section}.docx`
       );
     } catch (err) {
       console.error(err);

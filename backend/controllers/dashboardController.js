@@ -131,7 +131,7 @@ const getFacultyDashboard = async (req, res) => {
 
     // Parse subject_ids from GROUP_CONCAT result
     const subjectIds = faculty.subject_ids
-      ? faculty.subject_ids.split(',').map(Number)
+      ? faculty.subject_ids.split(',').map(s => s.trim()).filter(Boolean)
       : [];
 
     if (subjectIds.length === 0) {

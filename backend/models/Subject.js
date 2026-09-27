@@ -1,4 +1,17 @@
+const crypto = require('crypto');
 const { pool } = require('../config/db');
+
+// Generate unique subject ID in format: sub_xxxxxx (6 hex chars)
+const generateSubjectId = async () => {
+  let id;
+  let exists = true;
+  while (exists) {
+    id = `sub_${crypto.randomBytes(3).toString('hex')}`;
+    const [rows] = await pool.execute('SELECT id FROM subjects WHERE id = ? LIMIT 1', [id]);
+    if (rows.length === 0) exists = false;
+  }
+  return id;
+};
 
 const Subject = {
   // Get all subjects
@@ -38,11 +51,12 @@ const Subject = {
 
   // Create a new subject
   create: async ({ code, name, department, semester, year_level }) => {
+    const id = await generateSubjectId();
     const [result] = await pool.execute(
-      'INSERT INTO subjects (code, name, department, semester, year_level) VALUES (?, ?, ?, ?, ?)',
-      [code, name, department, semester || 'both', year_level || null]
+      'INSERT INTO subjects (id, code, name, department, semester, year_level) VALUES (?, ?, ?, ?, ?, ?)',
+      [id, code, name, department, semester || 'both', year_level || null]
     );
-    return result;
+    return { ...result, insertId: id };
   },
 
   // Update a subject

@@ -1,6 +1,84 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { pool, testConnection } = require('./config/db');
 require('dotenv').config();
+
+// Generate prefixed string IDs: fac_xxxxxx, std_xxxxxx, sub_xxxxxx
+const seedFacultyId = () => `fac_${crypto.randomBytes(3).toString('hex')}`;
+const seedStudentId = () => `std_${crypto.randomBytes(3).toString('hex')}`;
+const seedSubjectId = () => `sub_${crypto.randomBytes(3).toString('hex')}`;
+
+const subjectCatalog = [
+  // Computer Science
+  ['CS101', 'Computer Programming 1', 'Computer Science', 'both', '1st Year'],
+  ['CS102', 'Data Structures', 'Computer Science', 'both', '1st Year'],
+  ['CS103', 'Discrete Structures', 'Computer Science', 'both', '1st Year'],
+  ['CS201', 'Operating Systems', 'Computer Science', 'both', '2nd Year'],
+  ['CS202', 'Database Systems', 'Computer Science', 'both', '2nd Year'],
+  ['CS203', 'Object-Oriented Programming', 'Computer Science', 'both', '2nd Year'],
+  ['CS301', 'Software Engineering', 'Computer Science', 'both', '3rd Year'],
+  ['CS302', 'Computer Networks', 'Computer Science', 'both', '3rd Year'],
+  ['CS303', 'Web Application Development', 'Computer Science', 'both', '3rd Year'],
+  ['CS401', 'Artificial Intelligence', 'Computer Science', 'both', '4th Year'],
+  ['CS402', 'Capstone Project 1', 'Computer Science', 'both', '4th Year'],
+  ['CS403', 'Information Security', 'Computer Science', 'both', '4th Year'],
+
+  // Information Technology
+  ['IT101', 'Information Assurance and Security', 'Information Technology', 'both', '1st Year'],
+  ['IT102', 'Network Administration', 'Information Technology', 'both', '1st Year'],
+  ['IT103', 'Computer Hardware Servicing', 'Information Technology', 'both', '1st Year'],
+  ['IT201', 'Web Development', 'Information Technology', 'both', '2nd Year'],
+  ['IT202', 'Systems Integration and Architecture', 'Information Technology', 'both', '2nd Year'],
+  ['IT203', 'Human Computer Interaction', 'Information Technology', 'both', '2nd Year'],
+  ['IT301', 'Mobile Application Development', 'Information Technology', 'both', '3rd Year'],
+  ['IT302', 'Database Administration', 'Information Technology', 'both', '3rd Year'],
+  ['IT303', 'Cloud Computing', 'Information Technology', 'both', '3rd Year'],
+  ['IT401', 'IT Project Management', 'Information Technology', 'both', '4th Year'],
+  ['IT402', 'Capstone Project', 'Information Technology', 'both', '4th Year'],
+  ['IT403', 'Cybersecurity Operations', 'Information Technology', 'both', '4th Year'],
+
+  // Engineering
+  ['ENG101', 'Engineering Mathematics', 'Engineering', 'both', '1st Year'],
+  ['ENG102', 'Engineering Drawing', 'Engineering', 'both', '1st Year'],
+  ['ENG103', 'Physics for Engineers', 'Engineering', 'both', '1st Year'],
+  ['ENG201', 'Thermodynamics', 'Engineering', 'both', '2nd Year'],
+  ['ENG202', 'Engineering Mechanics', 'Engineering', 'both', '2nd Year'],
+  ['ENG203', 'Materials Science', 'Engineering', 'both', '2nd Year'],
+  ['ENG301', 'Fluid Mechanics', 'Engineering', 'both', '3rd Year'],
+  ['ENG302', 'Electrical Circuits', 'Engineering', 'both', '3rd Year'],
+  ['ENG303', 'Control Systems', 'Engineering', 'both', '3rd Year'],
+  ['ENG401', 'Engineering Design Project', 'Engineering', 'both', '4th Year'],
+  ['ENG402', 'Project Management for Engineers', 'Engineering', 'both', '4th Year'],
+  ['ENG403', 'Engineering Ethics', 'Engineering', 'both', '4th Year'],
+
+  // Education
+  ['EDU101', 'Principles of Teaching', 'Education', 'both', '1st Year'],
+  ['EDU102', 'Child and Adolescent Development', 'Education', 'both', '1st Year'],
+  ['EDU103', 'Educational Technology', 'Education', 'both', '1st Year'],
+  ['EDU201', 'Curriculum Development', 'Education', 'both', '2nd Year'],
+  ['EDU202', 'Assessment of Learning', 'Education', 'both', '2nd Year'],
+  ['EDU203', 'Facilitating Learner-Centered Teaching', 'Education', 'both', '2nd Year'],
+  ['EDU301', 'Classroom Management', 'Education', 'both', '3rd Year'],
+  ['EDU302', 'Inclusive Education', 'Education', 'both', '3rd Year'],
+  ['EDU303', 'Teaching Internship Preparation', 'Education', 'both', '3rd Year'],
+  ['EDU401', 'Practice Teaching', 'Education', 'both', '4th Year'],
+  ['EDU402', 'Action Research in Education', 'Education', 'both', '4th Year'],
+  ['EDU403', 'Educational Leadership', 'Education', 'both', '4th Year'],
+
+  // Business Administration
+  ['BA101', 'Financial Management', 'Business Administration', 'both', '1st Year'],
+  ['BA102', 'Principles of Management', 'Business Administration', 'both', '1st Year'],
+  ['BA103', 'Business Mathematics', 'Business Administration', 'both', '1st Year'],
+  ['BA201', 'Marketing Management', 'Business Administration', 'both', '2nd Year'],
+  ['BA202', 'Business Law', 'Business Administration', 'both', '2nd Year'],
+  ['BA203', 'Managerial Accounting', 'Business Administration', 'both', '2nd Year'],
+  ['BA301', 'Human Resource Management', 'Business Administration', 'both', '3rd Year'],
+  ['BA302', 'Operations Management', 'Business Administration', 'both', '3rd Year'],
+  ['BA303', 'Entrepreneurship', 'Business Administration', 'both', '3rd Year'],
+  ['BA401', 'Strategic Management', 'Business Administration', 'both', '4th Year'],
+  ['BA402', 'Business Research', 'Business Administration', 'both', '4th Year'],
+  ['BA403', 'Business Ethics and Corporate Governance', 'Business Administration', 'both', '4th Year'],
+];
 
 const seed = async () => {
   await testConnection();
@@ -17,21 +95,19 @@ const seed = async () => {
     [adminHash]
   );
 
-  // ── 2. Subjects (10 across 5 departments) ─────────────────────────
+  // ── 2. Subjects (60 across 5 departments: 3 per year level) ─────────
   console.log('Seeding subjects...');
+  const subjectPlaceholders = subjectCatalog.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+  const subjectValues = subjectCatalog.flatMap(s => [seedSubjectId(), s[0], s[1], s[2], s[3], s[4]]);
   await pool.execute(
-    `INSERT INTO subjects (code, name, department, semester, year_level) VALUES
-      ('CS101', 'Computer Programming 1', 'Computer Science', '1st', '1st Year'),
-      ('CS102', 'Data Structures', 'Computer Science', '2nd', '1st Year'),
-      ('CS201', 'Operating Systems', 'Computer Science', '1st', '2nd Year'),
-      ('IT101', 'Information Assurance and Security', 'Information Technology', '1st', '1st Year'),
-      ('IT102', 'Network Administration', 'Information Technology', '2nd', '1st Year'),
-      ('IT201', 'Web Development', 'Information Technology', '1st', '2nd Year'),
-      ('ENG101', 'Engineering Mathematics', 'Engineering', '1st', '1st Year'),
-      ('ENG201', 'Thermodynamics', 'Engineering', '2nd', '2nd Year'),
-      ('EDU101', 'Principles of Teaching', 'Education', '1st', '1st Year'),
-      ('BA101', 'Financial Management', 'Business Administration', '1st', '1st Year')
-    ON DUPLICATE KEY UPDATE name=VALUES(name), semester=VALUES(semester), year_level=VALUES(year_level)`
+    `INSERT INTO subjects (id, code, name, department, semester, year_level)
+     VALUES ${subjectPlaceholders}
+     ON DUPLICATE KEY UPDATE
+       name=VALUES(name),
+       department=VALUES(department),
+       semester=VALUES(semester),
+       year_level=VALUES(year_level)`,
+    subjectValues
   );
 
   // Get subject IDs by code for later use
@@ -76,10 +152,10 @@ const seed = async () => {
 
   for (const f of facultyData) {
     await pool.execute(
-      `INSERT INTO faculty (name, email, password, department, email_verified)
-       VALUES (?, ?, ?, ?, TRUE)
+      `INSERT INTO faculty (id, name, email, password, department, email_verified)
+       VALUES (?, ?, ?, ?, ?, TRUE)
        ON DUPLICATE KEY UPDATE name=VALUES(name), department=VALUES(department)`,
-      [f.name, f.email, hash, f.dept]
+      [seedFacultyId(), f.name, f.email, hash, f.dept]
     );
   }
 
@@ -179,10 +255,10 @@ const seed = async () => {
 
   for (const s of studentData) {
     await pool.execute(
-      `INSERT INTO students (name, email, password, year_level, section, department, email_verified)
-       VALUES (?, ?, ?, ?, ?, ?, TRUE)
+      `INSERT INTO students (id, name, email, password, year_level, section, department, email_verified)
+       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
        ON DUPLICATE KEY UPDATE name=VALUES(name), year_level=VALUES(year_level), section=VALUES(section), department=VALUES(department)`,
-      [s.name, s.email, hash, s.yr, s.sec, s.dept]
+      [seedStudentId(), s.name, s.email, hash, s.yr, s.sec, s.dept]
     );
   }
 
@@ -232,9 +308,8 @@ const seed = async () => {
   console.log('    Education .................. 4');
   console.log('    Business Administration .... 4');
   console.log('──────────────────────────────────────────────');
-  console.log('  SUBJECTS (10):');
-  console.log('    CS101, CS102, CS201, IT101, IT102, IT201');
-  console.log('    ENG101, ENG201, EDU101, BA101');
+  console.log(`  SUBJECTS (${subjectCatalog.length}):`);
+  console.log('    12 per department, 3 per year level');
   console.log('══════════════════════════════════════════════\n');
 
   process.exit(0);
