@@ -5,6 +5,7 @@ const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const AcademicPeriod = require('../models/AcademicPeriod');
 const Subject = require('../models/Subject');
+const { pool } = require('../config/db');
 const {
   buildAnonymousRespondentRef,
   buildDecoupledSentimentText,
@@ -72,24 +73,8 @@ const isSpam = (text) => {
  */
 const submitEvaluation = async (req, res) => {
   try {
-    // Gate: evaluation must be open
-    const evalOpen = await AcademicPeriod.isEvaluationOpen();
-    if (!evalOpen) {
-      return res.status(403).json({ message: 'Evaluation is currently closed. Please wait for the admin to open the evaluation period.' });
-    }
-
     const { faculty_id, responses } = req.body;
     const student_id = req.user.id;
-
-    const strengths  = sanitizeText(req.body.strengths);
-    const weaknesses = sanitizeText(req.body.weaknesses);
-
-    if (strengths && isSpam(strengths)) {
-      return res.status(400).json({ message: 'Strengths field appears to contain spam or repeated text. Please provide meaningful feedback.' });
-    }
-    if (weaknesses && isSpam(weaknesses)) {
-      return res.status(400).json({ message: 'Weaknesses field appears to contain spam or repeated text. Please provide meaningful feedback.' });
-    }
 
     if (!faculty_id) {
       return res.status(400).json({ message: 'Faculty is required.' });
@@ -103,27 +88,86 @@ const submitEvaluation = async (req, res) => {
       return res.status(404).json({ message: 'Faculty member not found.' });
     }
 
-    const ratedResponses = responses.filter(r => r.rating !== undefined);
-    for (const r of ratedResponses) {
-      if (!r.question_id || r.rating < 1 || r.rating > 5) {
+    // ── Pre-submission checks (strictly ordered per Task 1.2) ─────────
+    // 1. Check student is enrolled with that faculty
+    const isEnrolled = await Student.isEnrolledWithFaculty(student_id, faculty_id);
+    if (!isEnrolled) {
+      return res.status(403).json({
+        message: 'Access denied. You can only evaluate faculty members for courses you are enrolled in.',
+      });
+    }
+
+    // 2. Check there is exactly one active period with evaluation_open = 1
+    const activePeriods = await AcademicPeriod.findActivePeriods();
+    if (!activePeriods || activePeriods.length !== 1 || activePeriods[0].evaluation_open !== 1) {
+      return res.status(403).json({
+        message: 'Evaluation is currently closed. Please wait for the admin to open the evaluation period.',
+      });
+    }
+    const activePeriod = activePeriods[0];
+
+    // 3. Check no evaluation exists yet for this student, faculty, and period
+    const alreadyEvaluated = await Evaluation.existsForStudentFacultyPeriod(
+      student_id,
+      faculty_id,
+      activePeriod.id
+    );
+    if (alreadyEvaluated) {
+      return res.status(409).json({
+        message: 'You have already submitted an evaluation for this faculty member in this academic period.',
+      });
+    }
+
+    // ── Feedback content sanitization and spam detection ──────────────
+    const strengths  = sanitizeText(req.body.strengths);
+    const weaknesses = sanitizeText(req.body.weaknesses);
+
+    if (strengths && isSpam(strengths)) {
+      return res.status(400).json({ message: 'Strengths field appears to contain spam or repeated text. Please provide meaningful feedback.' });
+    }
+    if (weaknesses && isSpam(weaknesses)) {
+      return res.status(400).json({ message: 'Weaknesses field appears to contain spam or repeated text. Please provide meaningful feedback.' });
+    }
+
+    // ── Validate all active rating questions have a score between 1 and 5 ──
+    const allQuestions = await EvaluationQuestion.findAllActive();
+    const activeRatingQuestions = allQuestions.filter(q => q.question_type === 'rating');
+
+    const submittedRatingsMap = new Map();
+    for (const r of responses) {
+      if (r && r.question_id !== undefined && r.rating !== undefined) {
+        submittedRatingsMap.set(String(r.question_id), Number(r.rating));
+      }
+    }
+
+    for (const q of activeRatingQuestions) {
+      const val = submittedRatingsMap.get(String(q.id));
+      if (val === undefined || !Number.isInteger(val) || val < 1 || val > 5) {
         return res.status(400).json({
-          message: 'All rated questions must have a rating between 1 and 5.',
+          message: `An answer (1 to 5) is required for every active rating question. Missing or invalid response for: "${q.question}".`,
         });
       }
     }
-    if (ratedResponses.length === 0) {
+
+    const ratedResponses = responses.filter(r => r.rating !== undefined);
+    for (const r of ratedResponses) {
+      const numRating = Number(r.rating);
+      if (!r.question_id || !Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
+        return res.status(400).json({
+          message: 'All rated questions must have an integer rating between 1 and 5.',
+        });
+      }
+    }
+    if (activeRatingQuestions.length === 0 && ratedResponses.length === 0) {
       return res.status(400).json({ message: 'At least one rated response is required.' });
     }
 
-    const avgRating     = ratedResponses.reduce((sum, r) => sum + r.rating, 0) / ratedResponses.length;
+    const avgRating     = ratedResponses.reduce((sum, r) => sum + Number(r.rating), 0) / ratedResponses.length;
     const overallRating = Math.round(avgRating * 10) / 10;
 
     const strengthsSentiment  = strengths  ? analyzeSentiment(strengths)  : null;
     const weaknessesSentiment = weaknesses ? analyzeSentiment(weaknesses) : null;
 
-    // Programmatic decoupling per field:
-    // strengths and weaknesses are analyzed separately, then aggregated
-    // using confidence-weighted polarity.
     const toSignedProbability = (result) => {
       if (!result) return 0;
       if (result.label === 'positive') return result.confidence;
@@ -150,49 +194,61 @@ const submitEvaluation = async (req, res) => {
       confidence: parseFloat(finalConfidence.toFixed(4)),
     };
 
-    // Programmatic decoupling: sentiment engine receives text-only content.
-    // Student metadata is encrypted separately and never forwarded to analysis.
     const commentForSentiment = buildDecoupledSentimentText({ strengths, weaknesses });
     const anonymous_student_ref = buildAnonymousRespondentRef({ studentId: student_id });
 
-    // Get active academic period to stamp on the evaluation
-    const activePeriod = await AcademicPeriod.getActive();
+    // ── Database transaction (atomic evaluation + responses) ───────────
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    const result = await Evaluation.create({
-      student_id,
-      anonymous_student_ref,
-      faculty_id,
-      rating:          Math.round(overallRating),
-      comment:         commentForSentiment,
-      strengths,
-      weaknesses,
-      sentiment:       sentimentResult.label,
-      sentiment_score: sentimentResult.score,
-      academic_period_id: activePeriod ? activePeriod.id : null,
-    });
+      const result = await Evaluation.create({
+        student_id,
+        anonymous_student_ref,
+        faculty_id,
+        rating:          Math.round(overallRating),
+        comment:         commentForSentiment,
+        strengths,
+        weaknesses,
+        sentiment:       sentimentResult.label,
+        sentiment_score: sentimentResult.score,
+        academic_period_id: activePeriod.id,
+      }, connection);
 
-    const evaluationId = result.insertId;
+      const evaluationId = result.insertId;
 
-    const allResponses = [...responses];
-    const hasTextInResponses = responses.some(r => r.text_response !== undefined);
-    if (!hasTextInResponses) {
-      const allQuestions = await EvaluationQuestion.findAllActive();
-      const openEndedQs  = allQuestions.filter(q => q.question_type === 'text');
-      if (openEndedQs.length >= 1 && strengths !== undefined) {
-        allResponses.push({ question_id: openEndedQs[0].id, text_response: strengths || '' });
+      const allResponses = [...responses];
+      const hasTextInResponses = responses.some(r => r.text_response !== undefined);
+      if (!hasTextInResponses) {
+        const openEndedQs  = allQuestions.filter(q => q.question_type === 'text');
+        if (openEndedQs.length >= 1 && strengths !== undefined) {
+          allResponses.push({ question_id: openEndedQs[0].id, text_response: strengths || '' });
+        }
+        if (openEndedQs.length >= 2 && weaknesses !== undefined) {
+          allResponses.push({ question_id: openEndedQs[1].id, text_response: weaknesses || '' });
+        }
       }
-      if (openEndedQs.length >= 2 && weaknesses !== undefined) {
-        allResponses.push({ question_id: openEndedQs[1].id, text_response: weaknesses || '' });
+
+      await EvaluationResponse.createBulk(evaluationId, allResponses, connection);
+
+      await connection.commit();
+
+      res.status(201).json({
+        message:           'Evaluation submitted successfully.',
+        overallRating,
+        sentimentAnalysis: sentimentResult,
+      });
+    } catch (txError) {
+      await connection.rollback();
+      if (txError.code === 'ER_DUP_ENTRY') {
+        return res.status(409).json({
+          message: 'You have already submitted an evaluation for this faculty member in this academic period.',
+        });
       }
+      throw txError;
+    } finally {
+      connection.release();
     }
-
-    await EvaluationResponse.createBulk(evaluationId, allResponses);
-
-    res.status(201).json({
-      message:           'Evaluation submitted successfully.',
-      overallRating,
-      sentimentAnalysis: sentimentResult,
-    });
   } catch (error) {
     console.error('Submit evaluation error:', error);
     res.status(500).json({ message: 'Server error submitting evaluation.' });

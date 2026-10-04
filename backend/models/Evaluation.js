@@ -1,9 +1,10 @@
 const { pool } = require('../config/db');
 
 const Evaluation = {
-  // Create a new evaluation
-  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id }) => {
-    const [result] = await pool.execute(
+  // Create a new evaluation (supports optional transaction connection)
+  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id }, connection = null) => {
+    const executor = connection || pool;
+    const [result] = await executor.execute(
       `INSERT INTO evaluations
          (student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -123,6 +124,15 @@ const Evaluation = {
   deleteAll: async () => {
     const [result] = await pool.execute('DELETE FROM evaluations');
     return result;
+  },
+
+  // Check if evaluation exists for student, faculty, and period
+  existsForStudentFacultyPeriod: async (student_id, faculty_id, academic_period_id) => {
+    const [rows] = await pool.execute(
+      'SELECT id FROM evaluations WHERE student_id = ? AND faculty_id = ? AND academic_period_id = ? LIMIT 1',
+      [String(student_id), String(faculty_id), academic_period_id]
+    );
+    return rows.length > 0;
   },
 };
 

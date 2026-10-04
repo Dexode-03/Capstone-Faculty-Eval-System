@@ -1,7 +1,7 @@
 const { pool } = require('../config/db');
 
 const EvaluationResponse = {
-  createBulk: async (evaluation_id, responses) => {
+  createBulk: async (evaluation_id, responses, connection = null) => {
     if (!responses || responses.length === 0) return;
 
     // Each response is either a rated question { question_id, rating }
@@ -17,7 +17,8 @@ const EvaluationResponse = {
     const placeholders = values.map(() => '(?, ?, ?, ?)').join(', ');
     const flat = values.flat();
 
-    await pool.execute(
+    const executor = connection || pool;
+    await executor.execute(
       `INSERT INTO evaluation_responses
          (evaluation_id, question_id, rating, text_response)
        VALUES ${placeholders}`,

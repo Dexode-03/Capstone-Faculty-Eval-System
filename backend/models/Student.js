@@ -159,6 +159,18 @@ const Student = {
     const [result] = await pool.execute('DELETE FROM students WHERE id = ?', [id]);
     return result;
   },
+
+  // Check if student is enrolled with a specific faculty member
+  isEnrolledWithFaculty: async (studentId, facultyId) => {
+    const [rows] = await pool.execute(
+      `SELECT 1 FROM student_subjects ss
+       LEFT JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
+       WHERE ss.student_id = ? AND (ss.faculty_id = ? OR fs.faculty_id = ?)
+       LIMIT 1`,
+      [String(studentId), String(facultyId), String(facultyId)]
+    );
+    return rows.length > 0;
+  },
 };
 
 module.exports = Student;

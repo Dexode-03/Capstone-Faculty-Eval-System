@@ -81,6 +81,14 @@ const AcademicPeriod = {
     );
     return rows.length > 0 && rows[0].evaluation_open === 1;
   },
+
+  // Get all active academic periods
+  findActivePeriods: async () => {
+    const [rows] = await pool.execute(
+      'SELECT * FROM academic_periods WHERE is_active = 1'
+    );
+    return rows;
+  },
 };
 
 module.exports = AcademicPeriod;
