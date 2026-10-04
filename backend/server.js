@@ -53,10 +53,14 @@ app.use((err, req, res, next) => {
 // Start server
 const startServer = async () => {
   await testConnection();
-  app.listen(PORT, () => {
+  return app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV}`);
   });
 };
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;

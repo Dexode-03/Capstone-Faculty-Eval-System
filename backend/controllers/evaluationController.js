@@ -206,6 +206,17 @@ const getFacultyEvaluations = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Access control:
+    // Admin can view any faculty report;
+    // Faculty can view only their own report;
+    // Students and other roles are denied.
+    if (req.user.role === 'faculty' && String(req.user.id) !== String(id)) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own report.' });
+    }
+    if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+      return res.status(403).json({ message: 'Access denied. Insufficient permissions.' });
+    }
+
     const faculty = await Faculty.findById(id);
     if (!faculty) {
       return res.status(404).json({ message: 'Faculty member not found.' });
