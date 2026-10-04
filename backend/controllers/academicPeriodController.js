@@ -49,6 +49,11 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Semester must be 1st or 2nd.' });
     }
 
+    const duplicate = await AcademicPeriod.findByYearAndSemester(academic_year, semester);
+    if (duplicate) {
+      return res.status(409).json({ message: `Academic period for ${academic_year} ${semester} Semester already exists.` });
+    }
+
     const result = await AcademicPeriod.create({ academic_year, semester, start_date, end_date });
     res.status(201).json({
       success: true,
@@ -79,9 +84,18 @@ const update = async (req, res) => {
       return res.status(404).json({ message: 'Academic period not found.' });
     }
 
+    const newYear = academic_year || existing.academic_year;
+    const newSem  = semester || existing.semester;
+    if (newYear !== existing.academic_year || newSem !== existing.semester) {
+      const duplicate = await AcademicPeriod.findByYearAndSemester(newYear, newSem);
+      if (duplicate && duplicate.id !== Number(id)) {
+        return res.status(409).json({ message: `Academic period for ${newYear} ${newSem} Semester already exists.` });
+      }
+    }
+
     await AcademicPeriod.update(id, {
-      academic_year: academic_year || existing.academic_year,
-      semester: semester || existing.semester,
+      academic_year: newYear,
+      semester: newSem,
       start_date: start_date !== undefined ? start_date : existing.start_date,
       end_date: end_date !== undefined ? end_date : existing.end_date,
     });
