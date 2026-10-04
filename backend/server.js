@@ -50,8 +50,33 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error.' });
 });
 
+// Validate critical security environment variables at startup
+const validateSecurityEnv = () => {
+  const jwtSecret = process.env.JWT_SECRET;
+  const encryptionKey = process.env.PRIVACY_ENCRYPTION_KEY;
+
+  if (!jwtSecret || jwtSecret.trim() === '') {
+    throw new Error('FATAL: JWT_SECRET environment variable is missing or empty. Server cannot start.');
+  }
+
+  if (!encryptionKey || encryptionKey.trim() === '') {
+    throw new Error('FATAL: PRIVACY_ENCRYPTION_KEY environment variable is missing or empty. Server cannot start.');
+  }
+
+  if (jwtSecret.trim() === encryptionKey.trim()) {
+    throw new Error('FATAL: PRIVACY_ENCRYPTION_KEY must not be identical to JWT_SECRET. Use a distinct secret for privacy encryption.');
+  }
+};
+
 // Start server
 const startServer = async () => {
+  try {
+    validateSecurityEnv();
+  } catch (envErr) {
+    console.error(envErr.message);
+    process.exit(1);
+  }
+
   await testConnection();
   return app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
@@ -63,4 +88,5 @@ if (require.main === module) {
   startServer();
 }
 
+app.validateSecurityEnv = validateSecurityEnv;
 module.exports = app;

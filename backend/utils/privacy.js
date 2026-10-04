@@ -4,7 +4,13 @@ require('dotenv').config();
 const ALGO = 'aes-256-gcm';
 
 const getEncryptionKey = () => {
-  const raw = process.env.PRIVACY_ENCRYPTION_KEY || process.env.JWT_SECRET || '';
+  const raw = process.env.PRIVACY_ENCRYPTION_KEY;
+  if (!raw || raw.trim() === '') {
+    throw new Error('FATAL: PRIVACY_ENCRYPTION_KEY is required and missing from environment variables.');
+  }
+  if (process.env.JWT_SECRET && raw.trim() === process.env.JWT_SECRET.trim()) {
+    throw new Error('FATAL: PRIVACY_ENCRYPTION_KEY must not be identical to JWT_SECRET.');
+  }
   return crypto.createHash('sha256').update(raw).digest();
 };
 
@@ -30,6 +36,26 @@ const encryptMetadata = (metadata) => {
   ].join('.');
 };
 
+const decryptMetadata = (token) => {
+  if (!token || typeof token !== 'string' || !token.startsWith('v1.')) {
+    throw new Error('Invalid or unsupported token format');
+  }
+  const parts = token.split('.');
+  if (parts.length !== 4) {
+    throw new Error('Invalid token structure');
+  }
+  const [, ivB64, tagB64, encB64] = parts;
+  const key = getEncryptionKey();
+  const iv = Buffer.from(ivB64, 'base64url');
+  const tag = Buffer.from(tagB64, 'base64url');
+  const enc = Buffer.from(encB64, 'base64url');
+
+  const decipher = crypto.createDecipheriv(ALGO, key, iv);
+  decipher.setAuthTag(tag);
+  const decrypted = Buffer.concat([decipher.update(enc), decipher.final()]);
+  return JSON.parse(decrypted.toString('utf8'));
+};
+
 const buildAnonymousRespondentRef = ({ studentId }) => {
   const token = encryptMetadata({
     sid: studentId,
@@ -46,6 +72,8 @@ const buildDecoupledSentimentText = ({ strengths, weaknesses }) => {
 
 module.exports = {
   encryptMetadata,
+  decryptMetadata,
   buildAnonymousRespondentRef,
   buildDecoupledSentimentText,
+  getEncryptionKey,
 };
