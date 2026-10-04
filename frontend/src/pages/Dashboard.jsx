@@ -332,6 +332,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText]       = useState('');
+  const [adminPassword, setAdminPassword]   = useState('');
+  const [backupConfirmed, setBackupConfirmed] = useState(false);
   const [resetting, setResetting]           = useState(false);
   const [resetResult, setResetResult]       = useState(null);
   const [evalOpen, setEvalOpen]             = useState(false);
@@ -368,7 +370,12 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
   const handleReset = async () => {
     setResetting(true);
     try {
-      const res = await evaluationService.clearAllEvaluations();
+      const res = await evaluationService.clearAllEvaluations({
+        password: adminPassword,
+        confirmation_phrase: confirmText,
+        backup_confirmed: backupConfirmed,
+        backup_timestamp: new Date().toISOString(),
+      });
       setResetResult({ success: true, message: res.data.message });
       // Refresh parent stats
       if (onStatsRefresh) onStatsRefresh();
@@ -385,6 +392,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
   const closeModal = () => {
     setShowResetModal(false);
     setConfirmText('');
+    setAdminPassword('');
+    setBackupConfirmed(false);
     setResetResult(null);
   };
 
@@ -636,19 +645,48 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
                   </div>
                 </div>
 
-                {/* Confirm input */}
-                <div className="px-6 py-4">
-                  <label className="block text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Type <span className="font-bold text-red-600">RESET</span> to confirm
-                  </label>
-                  <input
-                    type="text"
-                    value={confirmText}
-                    onChange={e => setConfirmText(e.target.value)}
-                    placeholder="RESET"
-                    autoFocus
-                    className="w-full py-2 border-0 border-b-2 border-slate-200 bg-transparent text-[14px] text-slate-900 placeholder-slate-300 focus:border-red-500 transition-colors outline-none"
-                  />
+                {/* Secure Confirm Inputs */}
+                <div className="px-6 py-3 space-y-4">
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700 uppercase tracking-wider mb-1.5">
+                      Admin Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={adminPassword}
+                      onChange={e => setAdminPassword(e.target.value)}
+                      placeholder="Enter your administrator password"
+                      autoFocus
+                      className="w-full py-2 px-3 border border-slate-300 rounded-lg text-[13px] text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-medium text-slate-700 uppercase tracking-wider mb-1.5">
+                      Type <span className="font-bold text-red-600">DELETE ALL EVALUATIONS</span> to confirm
+                    </label>
+                    <input
+                      type="text"
+                      value={confirmText}
+                      onChange={e => setConfirmText(e.target.value)}
+                      placeholder="DELETE ALL EVALUATIONS"
+                      className="w-full py-2 px-3 border border-slate-300 rounded-lg text-[13px] text-slate-900 placeholder-slate-400 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="pt-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={backupConfirmed}
+                        onChange={e => setBackupConfirmed(e.target.checked)}
+                        className="mt-0.5 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="text-[12px] text-slate-600 leading-snug">
+                        I confirm that a database backup has been taken before executing this irreversible deletion.
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -662,7 +700,7 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
                   </button>
                   <button
                     onClick={handleReset}
-                    disabled={confirmText !== 'RESET' || resetting}
+                    disabled={confirmText !== 'DELETE ALL EVALUATIONS' || !adminPassword || !backupConfirmed || resetting}
                     className="bg-red-600 text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {resetting ? (

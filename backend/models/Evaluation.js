@@ -121,8 +121,9 @@ const Evaluation = {
   },
 
   // Delete all evaluations (admin reset)
-  deleteAll: async () => {
-    const [result] = await pool.execute('DELETE FROM evaluations');
+  deleteAll: async (connection = null) => {
+    const executor = connection || pool;
+    const [result] = await executor.execute('DELETE FROM evaluations');
     return result;
   },
 

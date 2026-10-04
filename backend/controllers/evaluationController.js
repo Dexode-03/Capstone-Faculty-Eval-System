@@ -5,6 +5,7 @@ const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const AcademicPeriod = require('../models/AcademicPeriod');
 const Subject = require('../models/Subject');
+const bcrypt = require('bcryptjs');
 const { pool } = require('../config/db');
 const {
   buildAnonymousRespondentRef,
@@ -452,16 +453,96 @@ const getSystemAnalysis = async (req, res) => {
 
 /**
  * DELETE /api/evaluation/clear-all
+ * Dangerous operation: Permanently clears all evaluations and evaluation responses.
+ * Safeguards:
+ *   1. Gated by ALLOW_BULK_DELETE=true env variable (default off, never on in production)
+ *   2. Requires admin password re-entry
+ *   3. Requires typed confirmation phrase "DELETE ALL EVALUATIONS"
+ *   4. Requires backup confirmation flag or valid timestamp
+ *   5. Executes inside an atomic database transaction
+ *   6. Logs audit trail with admin id, email, timestamp, and record count
  */
 const clearAllEvaluations = async (req, res) => {
   try {
+    // 1. Guard with server environment variable (default off, never on in production)
+    if (process.env.ALLOW_BULK_DELETE !== 'true') {
+      return res.status(403).json({
+        message: 'Bulk deletion is disabled on this server. Set ALLOW_BULK_DELETE=true in the server environment to enable.',
+      });
+    }
+
+    const {
+      password,
+      confirmation_phrase,
+      backup_confirmed,
+      backup_timestamp,
+    } = req.body || {};
+
+    // 2. Require admin password re-entry
+    if (!password) {
+      return res.status(400).json({
+        message: 'Admin password re-entry is required to execute bulk deletion.',
+      });
+    }
+
+    const [adminRows] = await pool.execute(
+      'SELECT id, password, email FROM admins WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (!adminRows || adminRows.length === 0) {
+      return res.status(403).json({ message: 'Admin account not found.' });
+    }
+
+    const admin = adminRows[0];
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid admin password.' });
+    }
+
+    // 3. Require typed confirmation phrase
+    const REQUIRED_PHRASE = 'DELETE ALL EVALUATIONS';
+    if (!confirmation_phrase || confirmation_phrase.trim() !== REQUIRED_PHRASE) {
+      return res.status(400).json({
+        message: `Typed confirmation phrase does not match. You must type "${REQUIRED_PHRASE}" exactly.`,
+      });
+    }
+
+    // 4. Require backup confirmation flag or timestamp
+    const hasBackupFlag = backup_confirmed === true || backup_confirmed === 'true';
+    const hasBackupTimestamp = !!(backup_timestamp && !isNaN(Date.parse(backup_timestamp)));
+    if (!hasBackupFlag && !hasBackupTimestamp) {
+      return res.status(400).json({
+        message: 'A confirmed backup flag (backup_confirmed: true) or a valid backup timestamp is required before bulk deletion.',
+      });
+    }
+
+    // 5. Atomic deletion inside database transaction
     const evalCount = await Evaluation.count();
-    await EvaluationResponse.deleteAll();
-    await Evaluation.deleteAll();
-    res.json({
-      message:      `Successfully cleared ${evalCount} evaluation(s) and all associated responses.`,
-      deletedCount: evalCount,
-    });
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+      await EvaluationResponse.deleteAll(connection);
+      await Evaluation.deleteAll(connection);
+      await connection.commit();
+
+      // 6. Structured audit log
+      console.warn(
+        `[AUDIT] BULK EVALUATION DELETE executed by Admin ID="${req.user.id}" (${admin.email}) at ${new Date().toISOString()}. ` +
+        `Deleted ${evalCount} evaluation(s). Backup: ${backup_timestamp || 'confirmed_flag'}.`
+      );
+
+      res.json({
+        message: `Successfully cleared ${evalCount} evaluation(s) and all associated responses.`,
+        deletedCount: evalCount,
+      });
+    } catch (txError) {
+      await connection.rollback();
+      throw txError;
+    } finally {
+      connection.release();
+    }
   } catch (error) {
     console.error('Clear evaluations error:', error);
     res.status(500).json({ message: 'Server error clearing evaluation data.' });

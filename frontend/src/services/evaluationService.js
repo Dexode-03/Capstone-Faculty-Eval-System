@@ -8,7 +8,7 @@ const evaluationService = {
   getEnrolledInstructors: ()          => api.get('/evaluation/enrolled-instructors'),
   getSystemAnalysis:      ()          => api.get('/evaluation/analysis'),
   getMyFacultyReport:     ()          => api.get('/evaluation/my-report'),
-  clearAllEvaluations:    ()          => api.delete('/evaluation/clear-all'),
+  clearAllEvaluations:    (payload)   => api.delete('/evaluation/clear-all', { data: payload }),
   getSubjectSectionReport:(facultyId, subjectId, section) => api.get(`/evaluation/faculty/${facultyId}/subject-section-report`, { params: { subject_id: subjectId, section } }),
 };
 

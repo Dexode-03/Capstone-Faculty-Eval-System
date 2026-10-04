@@ -55,8 +55,9 @@ const EvaluationResponse = {
     return rows;
   },
   // Delete all evaluation responses (admin reset)
-  deleteAll: async () => {
-    const [result] = await pool.execute('DELETE FROM evaluation_responses');
+  deleteAll: async (connection = null) => {
+    const executor = connection || pool;
+    const [result] = await executor.execute('DELETE FROM evaluation_responses');
     return result;
   },
 };
