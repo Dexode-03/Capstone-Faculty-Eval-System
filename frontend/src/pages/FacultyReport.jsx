@@ -373,7 +373,22 @@ const FacultyReport = () => {
       );
 
       const strengthComments = comments.filter(c => c.strengths && c.strengths.trim());
-      if (strengthComments.length === 0) {
+      if (data.thresholdReached === false) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `• Qualitative comments are withheld to protect student anonymity (threshold of ${data.minThreshold || 5} respondents not yet reached; ${respondentCount} submitted).`,
+                italic: true,
+                size: 20,
+                font: 'Calibri',
+                color: '6B7280',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      } else if (strengthComments.length === 0) {
         children.push(
           new Paragraph({
             children: [
@@ -425,7 +440,22 @@ const FacultyReport = () => {
       );
 
       const weaknessComments = comments.filter(c => c.weaknesses && c.weaknesses.trim());
-      if (weaknessComments.length === 0) {
+      if (data.thresholdReached === false) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `• Qualitative comments are withheld to protect student anonymity (threshold of ${data.minThreshold || 5} respondents not yet reached; ${respondentCount} submitted).`,
+                italic: true,
+                size: 20,
+                font: 'Calibri',
+                color: '6B7280',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      } else if (weaknessComments.length === 0) {
         children.push(
           new Paragraph({
             children: [
@@ -641,6 +671,29 @@ const FacultyReport = () => {
         </div>
       </div>
 
+      {/* Anonymity Threshold Notice */}
+      {report.thresholdReached === false && (
+        <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50/80 p-5 flex items-start gap-3.5">
+          <HiOutlineLockClosed className="h-6 w-6 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-[14px] font-semibold text-blue-900">
+              Student Anonymity Safeguard Active
+            </h3>
+            <p className="text-[13px] text-blue-800 mt-1 leading-relaxed">
+              To protect student respondent anonymity, individual written comments, sentiment distribution, and recommendations are only visible once at least <strong>{report.minThreshold || 5} evaluations</strong> have been submitted.
+            </p>
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="text-[12px] font-semibold text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
+                {report.totalEvaluations} of {report.minThreshold || 5} responses collected
+              </span>
+              <span className="text-[12px] text-blue-600">
+                ({Math.round((report.totalEvaluations / (report.minThreshold || 5)) * 100)}%)
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Export Subject Report Summary card */}
       {subjectAssignments.length > 0 && (
         <div className="border border-psu-border bg-white rounded-lg p-5 mb-8">
@@ -719,30 +772,40 @@ const FacultyReport = () => {
           </p>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              { key: 'positive', label: 'Positive', count: report.sentimentOverview.positive, icon: HiEmojiHappy },
-              { key: 'neutral', label: 'Neutral', count: report.sentimentOverview.neutral, icon: HiMinusCircle },
-              { key: 'negative', label: 'Negative', count: report.sentimentOverview.negative, icon: HiEmojiSad },
-            ].map((item) => {
-              const rate = pct(item.count);
-              return (
-                <div
-                  key={item.key}
-                  className="rounded-lg px-4 py-4 text-white"
-                  style={{ backgroundColor: heatBg(item.key, rate) }}
-                  title={`${item.count} / ${total} (${rate}%)`}
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-wider opacity-95 inline-flex items-center gap-1">
-                    <item.icon className="h-3.5 w-3.5" />
-                    {item.label}
-                  </p>
-                  <p className="text-2xl font-bold tabular-nums mt-1">{rate}%</p>
-                  <p className="text-[11px] opacity-95 mt-1">{item.count} of {total}</p>
-                </div>
-              );
-            })}
-          </div>
+          {report.thresholdReached === false ? (
+            <div className="py-8 text-center bg-slate-50/70 rounded-lg border border-dashed border-psu-border">
+              <HiOutlineLockClosed className="h-7 w-7 text-slate-400 mx-auto mb-2" />
+              <p className="text-[13px] font-medium text-psu-text">Sentiment Distribution Protected</p>
+              <p className="text-[12px] text-psu-muted mt-1 max-w-sm mx-auto">
+                Sentiment breakdown requires at least {report.minThreshold || 5} submitted evaluations to preserve student anonymity ({report.totalEvaluations} collected).
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { key: 'positive', label: 'Positive', count: report.sentimentOverview.positive, icon: HiEmojiHappy },
+                { key: 'neutral', label: 'Neutral', count: report.sentimentOverview.neutral, icon: HiMinusCircle },
+                { key: 'negative', label: 'Negative', count: report.sentimentOverview.negative, icon: HiEmojiSad },
+              ].map((item) => {
+                const rate = pct(item.count);
+                return (
+                  <div
+                    key={item.key}
+                    className="rounded-lg px-4 py-4 text-white"
+                    style={{ backgroundColor: heatBg(item.key, rate) }}
+                    title={`${item.count} / ${total} (${rate}%)`}
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-wider opacity-95 inline-flex items-center gap-1">
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.label}
+                    </p>
+                    <p className="text-2xl font-bold tabular-nums mt-1">{rate}%</p>
+                    <p className="text-[11px] opacity-95 mt-1">{item.count} of {total}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -752,26 +815,40 @@ const FacultyReport = () => {
           <HiOutlineLightBulb className="h-4 w-4 text-psu-muted" />
           <h2 className="text-[13px] font-semibold text-psu-text">Prescriptive Recommendations</h2>
         </div>
-        <div className="divide-y divide-psu-border">
-          {report.recommendations.map((rec, i) => {
-            const isPositive = rec.toLowerCase().includes('excellent') ||
-                               rec.toLowerCase().includes('strong') ||
-                               rec.toLowerCase().includes('appreciate') ||
-                               rec.toLowerCase().includes('maintain') ||
-                               rec.toLowerCase().includes('nominating') ||
-                               rec.toLowerCase().includes('recognition');
-            return (
-              <div key={i} className="px-6 py-4 flex items-start gap-3">
-                {isPositive ? (
-                  <HiOutlineCheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                ) : (
-                  <HiOutlineExclamation className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                )}
-                <p className="text-[14px] text-psu-text leading-relaxed">{rec}</p>
-              </div>
-            );
-          })}
-        </div>
+        {report.thresholdReached === false ? (
+          <div className="p-8 text-center bg-slate-50/70 border-dashed">
+            <HiOutlineLockClosed className="h-7 w-7 text-slate-400 mx-auto mb-2" />
+            <p className="text-[13px] font-medium text-psu-text">Recommendations Protected</p>
+            <p className="text-[12px] text-psu-muted mt-1 max-w-sm mx-auto">
+              Actionable recommendations unlock once at least {report.minThreshold || 5} evaluations are submitted ({report.totalEvaluations} collected).
+            </p>
+          </div>
+        ) : report.recommendations.length === 0 ? (
+          <div className="px-6 py-8 text-center text-psu-muted text-[13px]">
+            No prescriptive recommendations generated.
+          </div>
+        ) : (
+          <div className="divide-y divide-psu-border">
+            {report.recommendations.map((rec, i) => {
+              const isPositive = rec.toLowerCase().includes('excellent') ||
+                                 rec.toLowerCase().includes('strong') ||
+                                 rec.toLowerCase().includes('appreciate') ||
+                                 rec.toLowerCase().includes('maintain') ||
+                                 rec.toLowerCase().includes('nominating') ||
+                                 rec.toLowerCase().includes('recognition');
+              return (
+                <div key={i} className="px-6 py-4 flex items-start gap-3">
+                  {isPositive ? (
+                    <HiOutlineCheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                  ) : (
+                    <HiOutlineExclamation className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+                  )}
+                  <p className="text-[14px] text-psu-text leading-relaxed">{rec}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Recent feedback */}
@@ -780,37 +857,51 @@ const FacultyReport = () => {
           <HiOutlineChat className="h-4 w-4 text-psu-muted" />
           <h2 className="text-[13px] font-semibold text-psu-text">Recent Feedback</h2>
         </div>
-        <div className="divide-y divide-psu-border">
-          {report.recentFeedback.map(item => (
-            <div key={item.id} className="px-6 py-5">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-psu-primary/10 text-psu-primary text-[13px] font-bold tabular-nums flex-shrink-0">
-                  {item.rating}
-                </span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <SentimentBadge label={item.sentiment} />
-                  <span className="text-[11px] text-psu-muted tabular-nums">
-                    {new Date(item.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+        {report.thresholdReached === false ? (
+          <div className="p-8 text-center bg-slate-50/70">
+            <HiOutlineLockClosed className="h-7 w-7 text-slate-400 mx-auto mb-2" />
+            <p className="text-[13px] font-medium text-psu-text">Student Feedback Protected</p>
+            <p className="text-[12px] text-psu-muted mt-1 max-w-sm mx-auto">
+              Written comments and feedback are withheld until at least {report.minThreshold || 5} evaluations are reached ({report.totalEvaluations} collected).
+            </p>
+          </div>
+        ) : report.recentFeedback.length === 0 ? (
+          <div className="px-6 py-8 text-center text-psu-muted text-[13px]">
+            No qualitative feedback comments submitted.
+          </div>
+        ) : (
+          <div className="divide-y divide-psu-border">
+            {report.recentFeedback.map(item => (
+              <div key={item.id} className="px-6 py-5">
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-psu-primary/10 text-psu-primary text-[13px] font-bold tabular-nums flex-shrink-0">
+                    {item.rating}
                   </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <SentimentBadge label={item.sentiment} />
+                    <span className="text-[11px] text-psu-muted tabular-nums">
+                      {new Date(item.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Strengths</p>
+                    <p className="text-[14px] text-psu-text leading-relaxed">
+                      {item.strengths?.trim() ? item.strengths : 'No strengths provided.'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Weaknesses</p>
+                    <p className="text-[14px] text-psu-text leading-relaxed">
+                      {item.weaknesses?.trim() ? item.weaknesses : 'No weaknesses provided.'}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div>
-                  <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Strengths</p>
-                  <p className="text-[14px] text-psu-text leading-relaxed">
-                    {item.strengths?.trim() ? item.strengths : 'No strengths provided.'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold text-psu-muted uppercase tracking-wider mb-1">Weaknesses</p>
-                  <p className="text-[14px] text-psu-text leading-relaxed">
-                    {item.weaknesses?.trim() ? item.weaknesses : 'No weaknesses provided.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

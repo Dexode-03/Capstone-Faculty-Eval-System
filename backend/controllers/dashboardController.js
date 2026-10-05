@@ -127,8 +127,15 @@ const getFacultyDashboard = async (req, res) => {
 
     const evaluations = await Evaluation.findByFacultyId(facultyId);
     const avgRating   = await Evaluation.getAverageRating(facultyId);
+
+    // Minimum response threshold to protect student anonymity
+    const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
+    const thresholdReached = evaluations.length >= minThreshold;
+
     const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
-    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+    if (thresholdReached) {
+      evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+    }
 
     // Parse subject_ids from GROUP_CONCAT result
     const subjectIds = faculty.subject_ids
@@ -139,6 +146,8 @@ const getFacultyDashboard = async (req, res) => {
       return res.json({
         overallRating:     0,
         totalEvaluations:  evaluations.length,
+        thresholdReached,
+        minThreshold,
         sentimentOverview,
         subjects:          [],
       });
@@ -183,6 +192,8 @@ const getFacultyDashboard = async (req, res) => {
     res.json({
       overallRating:     avgRating ? parseFloat(parseFloat(avgRating).toFixed(1)) : 0,
       totalEvaluations:  evaluations.length,
+      thresholdReached,
+      minThreshold,
       sentimentOverview,
       subjects,
     });

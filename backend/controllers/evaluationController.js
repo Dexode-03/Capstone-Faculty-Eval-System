@@ -290,10 +290,34 @@ const getFacultyEvaluations = async (req, res) => {
     const evaluations     = await Evaluation.findByFacultyId(id);
     const avgRating       = await Evaluation.getAverageRating(id);
     const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(id);
-    const recommendations = generateRecommendations(evaluations);
 
-    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
-    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+    // Minimum response threshold to protect student anonymity
+    const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
+    const thresholdReached = evaluations.length >= minThreshold;
+
+    let sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
+    let recommendations = [];
+    let allFeedback = [];
+    let recentFeedback = [];
+
+    if (thresholdReached) {
+      evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+      recommendations = generateRecommendations(evaluations);
+      allFeedback = evaluations.map(e => ({
+        id:         e.id,
+        comment:    e.comment,
+        strengths:  e.strengths  || null,
+        weaknesses: e.weaknesses || null,
+        rating:     e.rating,
+        sentiment:  e.sentiment,
+        date:       e.created_at,
+      }));
+      recentFeedback = allFeedback.slice(0, 10);
+    }
+
+    const thresholdMessage = thresholdReached
+      ? null
+      : `Threshold not met. At least ${minThreshold} evaluations are required to view comments, sentiment breakdown, and recommendations (${evaluations.length}/${minThreshold} submitted).`;
 
     const categoryAverages = {};
     questionAvgs.forEach(q => {
@@ -318,23 +342,15 @@ const getFacultyEvaluations = async (req, res) => {
       totalResponses: parseInt(q.total, 10) || 0,
     }));
 
-    const allFeedback = evaluations.map(e => ({
-      id:         e.id,
-      comment:    e.comment,
-      strengths:  e.strengths  || null,
-      weaknesses: e.weaknesses || null,
-      rating:     e.rating,
-      sentiment:  e.sentiment,
-      date:       e.created_at,
-    }));
-    const recentFeedback = allFeedback.slice(0, 10);
-
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
 
     res.json({
       faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
       totalEvaluations: evaluations.length,
+      thresholdReached,
+      minThreshold,
+      thresholdMessage,
       sentimentOverview,
       categoryAverages: categoryAveragesFormatted,
       questionAverages,
@@ -574,10 +590,34 @@ const getMyFacultyReport = async (req, res) => {
     const evaluations     = await Evaluation.findByFacultyId(facultyId);
     const avgRating       = await Evaluation.getAverageRating(facultyId);
     const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(facultyId);
-    const recommendations = generateRecommendations(evaluations);
 
-    const sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
-    evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+    // Minimum response threshold to protect student anonymity
+    const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
+    const thresholdReached = evaluations.length >= minThreshold;
+
+    let sentimentOverview = { positive: 0, neutral: 0, negative: 0 };
+    let recommendations = [];
+    let allFeedback = [];
+    let recentFeedback = [];
+
+    if (thresholdReached) {
+      evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
+      recommendations = generateRecommendations(evaluations);
+      allFeedback = evaluations.map(e => ({
+        id:         e.id,
+        comment:    e.comment,
+        strengths:  e.strengths  || null,
+        weaknesses: e.weaknesses || null,
+        rating:     e.rating,
+        sentiment:  e.sentiment,
+        date:       e.created_at,
+      }));
+      recentFeedback = allFeedback.slice(0, 10);
+    }
+
+    const thresholdMessage = thresholdReached
+      ? null
+      : `Threshold not met. At least ${minThreshold} evaluations are required to view comments, sentiment breakdown, and recommendations (${evaluations.length}/${minThreshold} submitted).`;
 
     const categoryAverages = {};
     questionAvgs.forEach(q => {
@@ -602,23 +642,15 @@ const getMyFacultyReport = async (req, res) => {
       totalResponses: parseInt(q.total, 10) || 0,
     }));
 
-    const allFeedback = evaluations.map(e => ({
-      id:         e.id,
-      comment:    e.comment,
-      strengths:  e.strengths  || null,
-      weaknesses: e.weaknesses || null,
-      rating:     e.rating,
-      sentiment:  e.sentiment,
-      date:       e.created_at,
-    }));
-    const recentFeedback = allFeedback.slice(0, 10);
-
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
 
     res.json({
       faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
       totalEvaluations: evaluations.length,
+      thresholdReached,
+      minThreshold,
+      thresholdMessage,
       sentimentOverview,
       categoryAverages: categoryAveragesFormatted,
       questionAverages,
@@ -745,6 +777,20 @@ const getFacultySubjectSectionReport = async (req, res) => {
       [facultyId, activePeriod.id, section, subject_id]
     );
 
+    const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
+    const thresholdReached = respondentCount >= minThreshold;
+
+    const comments = thresholdReached
+      ? commentsRows.map(row => ({
+          strengths: row.strengths ? row.strengths.trim() : null,
+          weaknesses: row.weaknesses ? row.weaknesses.trim() : null,
+        })).filter(c => c.strengths || c.weaknesses)
+      : [];
+
+    const thresholdMessage = thresholdReached
+      ? null
+      : `Threshold not met. At least ${minThreshold} respondents are required to view comments (${respondentCount}/${minThreshold} submitted).`;
+
     res.json({
       faculty,
       subject,
@@ -752,6 +798,9 @@ const getFacultySubjectSectionReport = async (req, res) => {
       activePeriod,
       enrolledCount,
       respondentCount,
+      thresholdReached,
+      minThreshold,
+      thresholdMessage,
       ratings: ratingsRows.map(row => ({
         ...row,
         rating_5: parseInt(row.rating_5),
@@ -763,10 +812,7 @@ const getFacultySubjectSectionReport = async (req, res) => {
         avg_rating: parseFloat(row.avg_rating || 0).toFixed(2),
         response_count: parseInt(row.response_count),
       })),
-      comments: commentsRows.map(row => ({
-        strengths: row.strengths ? row.strengths.trim() : null,
-        weaknesses: row.weaknesses ? row.weaknesses.trim() : null,
-      })).filter(c => c.strengths || c.weaknesses),
+      comments,
     });
   } catch (error) {
     console.error('Get faculty subject section report error:', error);
