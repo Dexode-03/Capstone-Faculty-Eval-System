@@ -69,7 +69,7 @@ describe('Task 2.1: Separate "Who Submitted" from "What Was Said"', () => {
     orig.getConnection               = pool.getConnection;
   });
 
-  after(() => {
+  after(async () => {
     // Restore all originals
     Faculty.findById                                    = orig.facultyFindById;
     Student.isEnrolledWithFaculty                       = orig.isEnrolledWithFaculty;
@@ -85,6 +85,7 @@ describe('Task 2.1: Separate "Who Submitted" from "What Was Said"', () => {
     EvaluationResponse.deleteAll                        = orig.responseDeleteAll;
     EvaluationQuestion.findAllActive                    = orig.findAllActiveQuestions;
     pool.getConnection                                  = orig.getConnection;
+    await pool.end();
   });
 
   // ── Helper: set up a full happy-path submission stub ───────────────────

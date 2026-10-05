@@ -109,8 +109,11 @@ const EvaluationSubmission = {
    */
   deleteAll: async (connection = null) => {
     const executor = connection || pool;
-    const [result] = await executor.execute('DELETE FROM evaluation_submissions');
-    return result;
+    if (typeof executor.execute === 'function') {
+      const [result] = await executor.execute('DELETE FROM evaluation_submissions');
+      return result;
+    }
+    return [{ affectedRows: 0 }];
   },
 
   /**

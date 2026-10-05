@@ -16,6 +16,7 @@ const Navbar = () => {
 
   const navLinks = [
     { to: '/dashboard', label: 'Dashboard' },
+    { to: '/my-submissions', label: 'My Submissions', roles: ['student'] },
     { to: '/reports',   label: 'Reports',  roles: ['admin', 'faculty'] },
     { to: '/admin/accounts', label: 'Accounts', roles: ['admin'] },
     { to: '/admin/academic-periods', label: 'Semesters', roles: ['admin'] },

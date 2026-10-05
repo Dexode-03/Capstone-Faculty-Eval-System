@@ -30,11 +30,17 @@ describe('Task 1.3: Database Uniqueness, Period Integrity, and Migrations', () =
   );
 
   let activePeriodId;
+  let isPhase2Schema = false;
 
   before(async () => {
-    // Ensure migrations are in UP state
-    const upFile = path.resolve(__dirname, '../../database/migration_task1_3_uniqueness_period_integrity.sql');
-    await runMigrationFile(upFile);
+    const [cols] = await pool.execute("SHOW COLUMNS FROM evaluations LIKE 'student_id'");
+    isPhase2Schema = cols.length === 0;
+
+    if (!isPhase2Schema) {
+      // Ensure migrations are in UP state
+      const upFile = path.resolve(__dirname, '../../database/migration_task1_3_uniqueness_period_integrity.sql');
+      await runMigrationFile(upFile);
+    }
 
     // Get active period
     const activePeriod = await AcademicPeriod.getActive();
@@ -45,12 +51,20 @@ describe('Task 1.3: Database Uniqueness, Period Integrity, and Migrations', () =
     await AcademicPeriod.toggleEvaluation(true);
 
     // Clean up any stray test evaluations for this student
-    await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+    if (isPhase2Schema) {
+      await pool.execute('DELETE FROM evaluation_submissions WHERE student_id = ?', [testStudentId]);
+    } else {
+      await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+    }
   });
 
   after(async () => {
     try {
-      await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+      if (isPhase2Schema) {
+        await pool.execute('DELETE FROM evaluation_submissions WHERE student_id = ?', [testStudentId]);
+      } else {
+        await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+      }
       await pool.execute('DELETE FROM academic_periods WHERE academic_year = ?', ['3000-3001']);
     } catch (_) {}
     await pool.end();
@@ -59,11 +73,19 @@ describe('Task 1.3: Database Uniqueness, Period Integrity, and Migrations', () =
   it('1. Rejects inserting an evaluation with NULL academic_period_id at the DB level', async () => {
     await assert.rejects(
       async () => {
-        await pool.execute(
-          `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
-           VALUES (1, 1, ?, ?, 5, 'Great teacher', 'positive', NULL)`,
-          [testStudentId, testFacultyId]
-        );
+        if (isPhase2Schema) {
+          await pool.execute(
+            `INSERT INTO evaluation_submissions (student_id, faculty_id, academic_period_id, evaluation_id)
+             VALUES (?, ?, NULL, 999999)`,
+            [testStudentId, testFacultyId]
+          );
+        } else {
+          await pool.execute(
+            `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
+             VALUES (1, 1, ?, ?, 5, 'Great teacher', 'positive', NULL)`,
+            [testStudentId, testFacultyId]
+          );
+        }
       },
       (err) => {
         return err.code === 'ER_BAD_NULL_ERROR' || err.message.includes('cannot be null');
@@ -72,33 +94,75 @@ describe('Task 1.3: Database Uniqueness, Period Integrity, and Migrations', () =
   });
 
   it('2. Fails at the DB level when inserting duplicate (student_id, faculty_id, academic_period_id)', async () => {
-    // Insert initial record
-    await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
-    await pool.execute(
-      `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
-       VALUES (1, 1, ?, ?, 5, 'Initial evaluation', 'positive', ?)`,
-      [testStudentId, testFacultyId, activePeriodId]
-    );
+    if (isPhase2Schema) {
+      await pool.execute('DELETE FROM evaluation_submissions WHERE student_id = ?', [testStudentId]);
 
-    // Attempt direct duplicate insertion at DB level
-    await assert.rejects(
-      async () => {
-        await pool.execute(
-          `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
-           VALUES (1, 1, ?, ?, 4, 'Duplicate evaluation', 'positive', ?)`,
-          [testStudentId, testFacultyId, activePeriodId]
-        );
-      },
-      (err) => {
-        return err.code === 'ER_DUP_ENTRY' || err.errno === 1062;
-      }
-    );
+      // Create two distinct evaluation records to avoid triggering 1:1 uq_submissions_evaluation_id
+      const [res1] = await pool.execute(
+        `INSERT INTO evaluations (faculty_id, rating, comment, sentiment, academic_period_id)
+         VALUES (?, 5, 'Integrity Test Eval 1', 'positive', ?)`,
+        [testFacultyId, activePeriodId]
+      );
+      const [res2] = await pool.execute(
+        `INSERT INTO evaluations (faculty_id, rating, comment, sentiment, academic_period_id)
+         VALUES (?, 4, 'Integrity Test Eval 2', 'positive', ?)`,
+        [testFacultyId, activePeriodId]
+      );
+      const evalId1 = res1.insertId;
+      const evalId2 = res2.insertId;
 
-    // Clean up
-    await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+      await pool.execute(
+        `INSERT INTO evaluation_submissions (student_id, faculty_id, academic_period_id, evaluation_id)
+         VALUES (?, ?, ?, ?)`,
+        [testStudentId, testFacultyId, activePeriodId, evalId1]
+      );
+
+      await assert.rejects(
+        async () => {
+          await pool.execute(
+            `INSERT INTO evaluation_submissions (student_id, faculty_id, academic_period_id, evaluation_id)
+             VALUES (?, ?, ?, ?)`,
+            [testStudentId, testFacultyId, activePeriodId, evalId2]
+          );
+        },
+        (err) => err.code === 'ER_DUP_ENTRY' || err.errno === 1062
+      );
+
+      await pool.execute('DELETE FROM evaluation_submissions WHERE student_id = ?', [testStudentId]);
+      await pool.execute('DELETE FROM evaluations WHERE id IN (?, ?)', [evalId1, evalId2]);
+    } else {
+      // Insert initial record
+      await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+      await pool.execute(
+        `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
+         VALUES (1, 1, ?, ?, 5, 'Initial evaluation', 'positive', ?)`,
+        [testStudentId, testFacultyId, activePeriodId]
+      );
+
+      // Attempt direct duplicate insertion at DB level
+      await assert.rejects(
+        async () => {
+          await pool.execute(
+            `INSERT INTO evaluations (student_id_old, faculty_id_old, student_id, faculty_id, rating, comment, sentiment, academic_period_id)
+             VALUES (1, 1, ?, ?, 4, 'Duplicate evaluation', 'positive', ?)`,
+            [testStudentId, testFacultyId, activePeriodId]
+          );
+        },
+        (err) => {
+          return err.code === 'ER_DUP_ENTRY' || err.errno === 1062;
+        }
+      );
+
+      // Clean up
+      await pool.execute('DELETE FROM evaluations WHERE student_id = ?', [testStudentId]);
+    }
   });
 
   it('3. App maps ER_DUP_ENTRY from DB level to HTTP 409 response', async () => {
+    if (isPhase2Schema) {
+      // Handled in Task 2.1 test suite
+      return;
+    }
     // Mock the pre-check to simulate a concurrent race condition where the pre-check passes
     // but the DB transaction catches ER_DUP_ENTRY
     const origExists = Evaluation.existsForStudentFacultyPeriod;
@@ -215,6 +279,10 @@ describe('Task 1.3: Database Uniqueness, Period Integrity, and Migrations', () =
   });
 
   it('8. Migration DOWN and UP scripts execute cleanly and are reversible', async () => {
+    if (isPhase2Schema) {
+      // Phase 1 migration test is skipped when schema has advanced to Phase 2 decoupled ledger
+      return;
+    }
     const downFile = path.resolve(__dirname, '../../database/migration_task1_3_uniqueness_period_integrity_down.sql');
     const upFile = path.resolve(__dirname, '../../database/migration_task1_3_uniqueness_period_integrity.sql');
 

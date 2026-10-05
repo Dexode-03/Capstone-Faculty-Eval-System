@@ -15,6 +15,7 @@ import AdminAccounts from './pages/AdminAccounts';
 import CreateAccount from './pages/CreateAccount';
 import EditAccount from './pages/EditAccount';
 import AcademicPeriods from './pages/AcademicPeriods';
+import MySubmissions from './pages/MySubmissions';
 import useAuth from './hooks/useAuth';
 
 // Renders the correct Reports page based on the user's role
@@ -60,6 +61,14 @@ function App() {
               element={
                 <ProtectedRoute roles={['student']}>
                   <EvaluationForm />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-submissions"
+              element={
+                <ProtectedRoute roles={['student']}>
+                  <MySubmissions />
                 </ProtectedRoute>
               }
             />

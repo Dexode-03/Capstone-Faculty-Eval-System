@@ -91,24 +91,35 @@ const StudentDashboard = ({ user }) => {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">
-          My Evaluations
-        </p>
-        <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
-          Welcome, {user?.name}
-        </h1>
-        {activePeriod && (
-          <p className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full border border-blue-100">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            {activePeriod.academic_year} · {activePeriod.semester} Semester
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">
+            My Evaluations
           </p>
-        )}
-        {(user?.year_level || user?.section || user?.department) && (
-          <p className="mt-2 block text-[13px] text-psu-muted">
-            {user.department} · {user.year_level} · Section {user.section}
-          </p>
-        )}
+          <h1 className="text-3xl font-semibold text-psu-text tracking-tight">
+            Welcome, {user?.name}
+          </h1>
+          {activePeriod && (
+            <p className="mt-2 inline-flex items-center gap-2 bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full border border-blue-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              {activePeriod.academic_year} · {activePeriod.semester} Semester
+            </p>
+          )}
+          {(user?.year_level || user?.section || user?.department) && (
+            <p className="mt-2 block text-[13px] text-psu-muted">
+              {user.department} · {user.year_level} · Section {user.section}
+            </p>
+          )}
+        </div>
+        <div>
+          <Link
+            to="/my-submissions"
+            className="inline-flex items-center gap-2 px-3.5 py-2 border border-psu-border rounded-lg text-[13px] font-medium text-psu-text bg-white hover:bg-slate-50 transition-colors shadow-sm"
+          >
+            <HiOutlineClipboardCheck className="w-4 h-4 text-psu-primary" />
+            <span>My Submissions</span>
+          </Link>
+        </div>
       </div>
 
       {/* Pending — entire row is a link */}
