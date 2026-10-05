@@ -10,6 +10,7 @@ const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const AcademicPeriod = require('../models/AcademicPeriod');
 const Evaluation = require('../models/Evaluation');
+const EvaluationSubmission = require('../models/EvaluationSubmission');
 const EvaluationQuestion = require('../models/EvaluationQuestion');
 const EvaluationResponse = require('../models/EvaluationResponse');
 const { pool } = require('../config/db');
@@ -47,7 +48,7 @@ describe('Task 1.2: Validate Evaluation Submissions on the Server', () => {
     originalFacultyFindById = Faculty.findById;
     originalIsEnrolledWithFaculty = Student.isEnrolledWithFaculty;
     originalFindActivePeriods = AcademicPeriod.findActivePeriods;
-    originalExistsForStudentFacultyPeriod = Evaluation.existsForStudentFacultyPeriod;
+    originalExistsForStudentFacultyPeriod = EvaluationSubmission.existsForStudentFacultyPeriod;
     originalFindAllActiveQuestions = EvaluationQuestion.findAllActive;
     originalEvaluationCreate = Evaluation.create;
     originalResponseCreateBulk = EvaluationResponse.createBulk;
@@ -60,7 +61,7 @@ describe('Task 1.2: Validate Evaluation Submissions on the Server', () => {
     Faculty.findById = originalFacultyFindById;
     Student.isEnrolledWithFaculty = originalIsEnrolledWithFaculty;
     AcademicPeriod.findActivePeriods = originalFindActivePeriods;
-    Evaluation.existsForStudentFacultyPeriod = originalExistsForStudentFacultyPeriod;
+    EvaluationSubmission.existsForStudentFacultyPeriod = originalExistsForStudentFacultyPeriod;
     EvaluationQuestion.findAllActive = originalFindAllActiveQuestions;
     Evaluation.create = originalEvaluationCreate;
     EvaluationResponse.createBulk = originalResponseCreateBulk;
@@ -81,7 +82,8 @@ describe('Task 1.2: Validate Evaluation Submissions on the Server', () => {
     AcademicPeriod.findActivePeriods = async () => [
       { id: 1, academic_year: '2025-2026', semester: '1st', is_active: 1, evaluation_open: 1 }
     ];
-    Evaluation.existsForStudentFacultyPeriod = async () => false;
+    EvaluationSubmission.existsForStudentFacultyPeriod = async () => false;
+    EvaluationSubmission.create = async () => ({ insertId: 1 });
     EvaluationQuestion.findAllActive = async () => [
       { id: 101, question: 'Explains concepts clearly', category: 'A. Management of Teaching and Learning', question_type: 'rating', sort_order: 1 },
       { id: 102, question: 'Comes to class prepared', category: 'A. Management of Teaching and Learning', question_type: 'rating', sort_order: 2 },
@@ -150,7 +152,7 @@ describe('Task 1.2: Validate Evaluation Submissions on the Server', () => {
   });
 
   it('4. Returns 409 when evaluation already exists for this student, faculty, and period', async () => {
-    Evaluation.existsForStudentFacultyPeriod = async () => true;
+    EvaluationSubmission.existsForStudentFacultyPeriod = async () => true;
 
     const res = await request(app)
       .post('/api/evaluation/submit')
