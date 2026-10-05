@@ -109,11 +109,11 @@ const Student = {
          GROUP_CONCAT(DISTINCT s.name SEPARATOR ', ') as subject_name,
          GROUP_CONCAT(DISTINCT s.code SEPARATOR ', ') as subject_code,
          COUNT(DISTINCT st.id) as total_students,
-         COUNT(DISTINCT e.student_id) as evaluated_students
+         COUNT(DISTINCT es.student_id) as evaluated_students
        FROM students st
        LEFT JOIN student_subjects ss ON ss.student_id = st.id
        LEFT JOIN subjects s ON s.id = ss.subject_id
-       LEFT JOIN evaluations e ON e.student_id = st.id
+       LEFT JOIN evaluation_submissions es ON es.student_id = st.id
        WHERE st.department IS NOT NULL
          AND st.year_level IS NOT NULL
        GROUP BY st.department, st.year_level

@@ -1,14 +1,18 @@
 const { pool } = require('../config/db');
 
 const Evaluation = {
-  // Create a new evaluation (supports optional transaction connection)
-  create: async ({ student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id }, connection = null) => {
+  /**
+   * Create a new evaluation content row.
+   * student_id is NO LONGER stored here — it lives in evaluation_submissions.
+   * Call EvaluationSubmission.create() in the same transaction after this.
+   */
+  create: async ({ anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id }, connection = null) => {
     const executor = connection || pool;
     const [result] = await executor.execute(
       `INSERT INTO evaluations
-         (student_id, anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [student_id, anonymous_student_ref || null, faculty_id, rating, comment, strengths || null, weaknesses || null, sentiment, sentiment_score, academic_period_id || null]
+         (anonymous_student_ref, faculty_id, rating, comment, strengths, weaknesses, sentiment, sentiment_score, academic_period_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [anonymous_student_ref || null, faculty_id, rating, comment, strengths || null, weaknesses || null, sentiment, sentiment_score, academic_period_id || null]
     );
     return result;
   },
@@ -31,17 +35,12 @@ const Evaluation = {
     return rows;
   },
 
-  // Get evaluations by student ID
-  findByStudentId: async (student_id) => {
-    const [rows] = await pool.execute(
-      `SELECT e.*, f.name as faculty_name, f.department
-       FROM evaluations e
-       JOIN faculty f ON e.faculty_id = f.id
-       WHERE e.student_id = ?
-       ORDER BY e.created_at DESC`,
-      [student_id]
-    );
-    return rows;
+  /**
+   * @deprecated Moved to EvaluationSubmission.findByStudentId().
+   * student_id is no longer stored in evaluations.
+   */
+  findByStudentId: async (_student_id) => {
+    throw new Error('Evaluation.findByStudentId is removed. Use EvaluationSubmission.findByStudentId() instead.');
   },
 
   // Count total evaluations
@@ -104,20 +103,12 @@ const Evaluation = {
     return rows;
   },
 
-  // Get student population vs evaluated count grouped by department and year level
+  /**
+   * @deprecated Moved to EvaluationSubmission.getStudentPopulationByDepartment().
+   * student_id is no longer stored in evaluations.
+   */
   getStudentPopulationByDepartment: async () => {
-    const [rows] = await pool.execute(
-      `SELECT
-         s.department,
-         s.year_level,
-         COUNT(DISTINCT s.id) as total_students,
-         COUNT(DISTINCT e.student_id) as evaluated_students
-       FROM students s
-       LEFT JOIN evaluations e ON e.student_id = s.id
-       GROUP BY s.department, s.year_level
-       ORDER BY s.department ASC, s.year_level ASC`
-    );
-    return rows;
+    throw new Error('Evaluation.getStudentPopulationByDepartment is removed. Use EvaluationSubmission.getStudentPopulationByDepartment() instead.');
   },
 
   // Delete all evaluations (admin reset)
@@ -127,13 +118,12 @@ const Evaluation = {
     return result;
   },
 
-  // Check if evaluation exists for student, faculty, and period
-  existsForStudentFacultyPeriod: async (student_id, faculty_id, academic_period_id) => {
-    const [rows] = await pool.execute(
-      'SELECT id FROM evaluations WHERE student_id = ? AND faculty_id = ? AND academic_period_id = ? LIMIT 1',
-      [String(student_id), String(faculty_id), academic_period_id]
-    );
-    return rows.length > 0;
+  /**
+   * @deprecated Moved to EvaluationSubmission.existsForStudentFacultyPeriod().
+   * student_id is no longer stored in evaluations.
+   */
+  existsForStudentFacultyPeriod: async (_student_id, _faculty_id, _academic_period_id) => {
+    throw new Error('Evaluation.existsForStudentFacultyPeriod is removed. Use EvaluationSubmission.existsForStudentFacultyPeriod() instead.');
   },
 };
 

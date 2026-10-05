@@ -1,6 +1,7 @@
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 const Evaluation = require('../models/Evaluation');
+const EvaluationSubmission = require('../models/EvaluationSubmission');
 const { pool } = require('../config/db');
 
 /**
@@ -12,7 +13,7 @@ const getStats = async (req, res) => {
     const { role, id } = req.user;
 
     if (role === 'student') {
-      const myEvaluations  = await Evaluation.findByStudentId(id);
+      const myEvaluations  = await EvaluationSubmission.findByStudentId(id);
       const totalSubmitted = myEvaluations.length;
       const totalFaculty   = await Faculty.count();
 
@@ -153,12 +154,12 @@ const getFacultyDashboard = async (req, res) => {
       const [enrollmentRows] = await pool.execute(
         `SELECT
            COUNT(DISTINCT st.id) as total_students,
-           COUNT(DISTINCT e.student_id) as evaluated_students
+           COUNT(DISTINCT es.student_id) as evaluated_students
          FROM students st
          INNER JOIN student_subjects ss ON ss.student_id = st.id AND ss.subject_id = ?
-         LEFT JOIN evaluations e
-           ON e.student_id = st.id
-          AND e.faculty_id = ?`,
+         LEFT JOIN evaluation_submissions es
+           ON es.student_id = st.id
+          AND es.faculty_id = ?`,
         [sid, facultyId]
       );
 

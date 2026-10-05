@@ -1,4 +1,5 @@
 const Evaluation = require('../models/Evaluation');
+const EvaluationSubmission = require('../models/EvaluationSubmission');
 const EvaluationQuestion = require('../models/EvaluationQuestion');
 const EvaluationResponse = require('../models/EvaluationResponse');
 const Faculty = require('../models/Faculty');
@@ -107,8 +108,8 @@ const submitEvaluation = async (req, res) => {
     }
     const activePeriod = activePeriods[0];
 
-    // 3. Check no evaluation exists yet for this student, faculty, and period
-    const alreadyEvaluated = await Evaluation.existsForStudentFacultyPeriod(
+    // 3. Check no submission exists yet for this student, faculty, and period
+    const alreadyEvaluated = await EvaluationSubmission.existsForStudentFacultyPeriod(
       student_id,
       faculty_id,
       activePeriod.id
@@ -204,7 +205,6 @@ const submitEvaluation = async (req, res) => {
       await connection.beginTransaction();
 
       const result = await Evaluation.create({
-        student_id,
         anonymous_student_ref,
         faculty_id,
         rating:          Math.round(overallRating),
@@ -217,6 +217,14 @@ const submitEvaluation = async (req, res) => {
       }, connection);
 
       const evaluationId = result.insertId;
+
+      // Record submission in the identity ledger (separate from content)
+      await EvaluationSubmission.create({
+        student_id,
+        faculty_id,
+        academic_period_id: activePeriod.id,
+        evaluation_id: evaluationId,
+      }, connection);
 
       const allResponses = [...responses];
       const hasTextInResponses = responses.some(r => r.text_response !== undefined);
@@ -346,7 +354,7 @@ const getFacultyEvaluations = async (req, res) => {
  */
 const getMyEvaluations = async (req, res) => {
   try {
-    const evaluations = await Evaluation.findByStudentId(req.user.id);
+    const evaluations = await EvaluationSubmission.findByStudentId(req.user.id);
     res.json({ evaluations });
   } catch (error) {
     console.error('Get my evaluations error:', error);
@@ -415,8 +423,8 @@ const getEnrolledInstructors = async (req, res) => {
     }
 
     // Mark which faculty have already been evaluated by this student
-    const myEvaluations = await Evaluation.findByStudentId(student_id);
-    const evaluatedIds  = new Set(myEvaluations.map(e => String(e.faculty_id)));
+    const mySubmissions = await EvaluationSubmission.findByStudentId(student_id);
+    const evaluatedIds  = new Set(mySubmissions.map(e => String(e.faculty_id)));
 
     const instructors = facultyList.map(f => ({
       id:              f.id,
@@ -523,6 +531,7 @@ const clearAllEvaluations = async (req, res) => {
 
     try {
       await connection.beginTransaction();
+      await EvaluationSubmission.deleteAll(connection); // ledger first (FK child)
       await EvaluationResponse.deleteAll(connection);
       await Evaluation.deleteAll(connection);
       await connection.commit();
@@ -671,16 +680,16 @@ const getFacultySubjectSectionReport = async (req, res) => {
     );
     const enrolledCount = enrolledRows[0]?.enrolled_count || 0;
 
-    // 2. Respondents count
+    // 2. Respondents count — via identity ledger
     const [respondentRows] = await pool.execute(
-      `SELECT COUNT(DISTINCT e.student_id) as respondent_count
-       FROM evaluations e
-       INNER JOIN students st ON e.student_id = st.id
+      `SELECT COUNT(DISTINCT es.student_id) as respondent_count
+       FROM evaluation_submissions es
+       INNER JOIN students st ON es.student_id = st.id
        INNER JOIN student_subjects ss ON ss.student_id = st.id
-       WHERE e.faculty_id = ?
+       WHERE es.faculty_id = ?
          AND ss.subject_id = ?
          AND st.section = ?
-         AND e.academic_period_id = ?`,
+         AND es.academic_period_id = ?`,
       [facultyId, subject_id, section, activePeriod.id]
     );
     const respondentCount = respondentRows[0]?.respondent_count || 0;
@@ -706,7 +715,8 @@ const getFacultySubjectSectionReport = async (req, res) => {
          SELECT er.question_id, er.rating
          FROM evaluation_responses er
          INNER JOIN evaluations e ON er.evaluation_id = e.id
-         INNER JOIN students st ON e.student_id = st.id
+         INNER JOIN evaluation_submissions es ON es.evaluation_id = e.id
+         INNER JOIN students st ON es.student_id = st.id
          INNER JOIN student_subjects ss ON ss.student_id = st.id
          WHERE e.faculty_id = ?
            AND e.academic_period_id = ?
@@ -720,11 +730,12 @@ const getFacultySubjectSectionReport = async (req, res) => {
       [facultyId, activePeriod.id, section, subject_id]
     );
 
-    // 4. Comments (Strengths/Weaknesses)
+    // 4. Comments (Strengths/Weaknesses) — via identity ledger
     const [commentsRows] = await pool.execute(
       `SELECT e.strengths, e.weaknesses
        FROM evaluations e
-       INNER JOIN students st ON e.student_id = st.id
+       INNER JOIN evaluation_submissions es ON es.evaluation_id = e.id
+       INNER JOIN students st ON es.student_id = st.id
        INNER JOIN student_subjects ss ON ss.student_id = st.id
        WHERE e.faculty_id = ?
          AND e.academic_period_id = ?
