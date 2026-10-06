@@ -400,14 +400,16 @@ const getEnrolledInstructors = async (req, res) => {
 
     let facultyList = [];
     if (studentSubjectIds.length > 0) {
-      // Find faculty who teach ANY of the student's subjects,
-      // filtered by section/year_level matching and active semester
+      // Find faculty who teach ANY of the student's enrolled subjects.
+      // The student_subjects table is the source of truth for enrollment,
+      // so we do NOT filter by year_level (a 4th-year student can retake
+      // or cross-enrol in subjects designated for other year levels).
       const { pool } = require('../config/db');
       const activePeriod = await AcademicPeriod.getActive();
       const activeSemester = activePeriod ? activePeriod.semester : null;
 
       const placeholders = studentSubjectIds.map(() => '?').join(',');
-      const queryParams = [...studentSubjectIds, student.section || '', student.year_level || ''];
+      const queryParams = [...studentSubjectIds, student.section || ''];
 
       let semesterClause = '';
       if (activeSemester) {
@@ -426,7 +428,6 @@ const getEnrolledInstructors = async (req, res) => {
          INNER JOIN subjects s ON s.id = fs.subject_id
          WHERE fs.subject_id IN (${placeholders})
            AND (fs.section IS NULL OR fs.section = ?)
-           AND (s.year_level IS NULL OR s.year_level = ?)
            ${semesterClause}
          GROUP BY f.id
          ORDER BY f.name ASC`,
