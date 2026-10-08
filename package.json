@@ -1,0 +1,9 @@
+{
+  "name": "fefas-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "build": "npm run build --prefix frontend"
+  }
+}
