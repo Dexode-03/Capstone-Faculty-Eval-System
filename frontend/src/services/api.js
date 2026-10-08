@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api';
+// For split deployments (e.g. frontend on Vercel, backend on Railway),
+// set VITE_API_URL to the backend URL like "https://fefas-backend.up.railway.app/api"
+// For same-origin deployments (frontend served by Express), '/api' works as-is.
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,9 +17,6 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('✓ Token attached to request:', token.substring(0, 20) + '...');
-  } else {
-    console.warn('⚠ No token in localStorage for request:', config.url);
   }
   return config;
 });
