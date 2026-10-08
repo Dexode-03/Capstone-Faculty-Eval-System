@@ -16,6 +16,9 @@ import CreateAccount from './pages/CreateAccount';
 import EditAccount from './pages/EditAccount';
 import AcademicPeriods from './pages/AcademicPeriods';
 import MySubmissions from './pages/MySubmissions';
+import QuestionManagement from './pages/QuestionManagement';
+import RecommendationRules from './pages/RecommendationRules';
+import AuditLogs from './pages/AuditLogs';
 import useAuth from './hooks/useAuth';
 
 // Renders the correct Reports page based on the user's role
@@ -54,6 +57,9 @@ function App() {
             <Route path="/admin/accounts/create" element={<CreateAccount />} />
             <Route path="/admin/accounts/edit/:id" element={<EditAccount />} />
             <Route path="/admin/academic-periods" element={<AcademicPeriods />} />
+            <Route path="/admin/questions" element={<QuestionManagement />} />
+            <Route path="/admin/recommendation-rules" element={<RecommendationRules />} />
+            <Route path="/admin/audit-logs" element={<AuditLogs />} />
             
             {/* Students only */}
             <Route

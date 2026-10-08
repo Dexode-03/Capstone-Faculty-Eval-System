@@ -20,6 +20,9 @@ const Navbar = () => {
     { to: '/reports',   label: 'Reports',  roles: ['admin', 'faculty'] },
     { to: '/admin/accounts', label: 'Accounts', roles: ['admin'] },
     { to: '/admin/academic-periods', label: 'Semesters', roles: ['admin'] },
+    { to: '/admin/questions', label: 'Questions', roles: ['admin'] },
+    { to: '/admin/recommendation-rules', label: 'AI Rules', roles: ['admin'] },
+    { to: '/admin/audit-logs', label: 'Audit Log', roles: ['admin'] },
   ];
 
   const filteredLinks = (navLinks || []).filter(
