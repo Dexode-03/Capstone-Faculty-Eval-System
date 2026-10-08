@@ -94,4 +94,23 @@ describe('Task 3.1: Academic Period Management Validation', () => {
       res.body.message.includes('evaluation(s) are associated')
     );
   });
+
+  it('records an audit log row when admin activates an academic period', async () => {
+    const res = await request(app)
+      .put('/api/academic-periods/2/activate')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    assert.equal(res.status, 200);
+
+    const [logs] = await pool.execute(
+      `SELECT * FROM audit_log WHERE action = 'PERIOD_ACTIVATE' AND target = 'academic_period:2' ORDER BY id DESC LIMIT 1`
+    );
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].actor_role, 'admin');
+
+    // Restore period 1 back to active
+    await request(app)
+      .put('/api/academic-periods/1/activate')
+      .set('Authorization', `Bearer ${adminToken}`);
+  });
 });

@@ -1,4 +1,5 @@
 const AcademicPeriod = require('../models/AcademicPeriod');
+const AuditLog = require('../models/AuditLog');
 
 /**
  * GET /api/academic-periods
@@ -59,6 +60,16 @@ const create = async (req, res) => {
     }
 
     const result = await AcademicPeriod.create({ academic_year, semester, start_date, end_date });
+
+    await AuditLog.log({
+      actor_role: req.user.role,
+      actor_id: req.user.id,
+      action: 'PERIOD_CREATE',
+      target: `academic_period:${result.insertId}`,
+      details: { academic_year, semester, start_date, end_date },
+      ip_address: req.ip,
+    });
+
     res.status(201).json({
       success: true,
       message: 'Academic period created successfully.',
@@ -111,6 +122,18 @@ const update = async (req, res) => {
       end_date: newEndDate,
     });
 
+    await AuditLog.log({
+      actor_role: req.user.role,
+      actor_id: req.user.id,
+      action: 'PERIOD_UPDATE',
+      target: `academic_period:${id}`,
+      details: {
+        previous: { academic_year: existing.academic_year, semester: existing.semester },
+        updated: { academic_year: newYear, semester: newSem, start_date: newStartDate, end_date: newEndDate },
+      },
+      ip_address: req.ip,
+    });
+
     res.json({ success: true, message: 'Academic period updated.' });
   } catch (error) {
     console.error('Error updating academic period:', error);
@@ -136,6 +159,16 @@ const activate = async (req, res) => {
     }
 
     await AcademicPeriod.setActive(id);
+
+    await AuditLog.log({
+      actor_role: req.user.role,
+      actor_id: req.user.id,
+      action: 'PERIOD_ACTIVATE',
+      target: `academic_period:${id}`,
+      details: { academic_year: existing.academic_year, semester: existing.semester },
+      ip_address: req.ip,
+    });
+
     res.json({
       success: true,
       message: `${existing.academic_year} ${existing.semester} Semester is now active.`,
@@ -175,6 +208,16 @@ const remove = async (req, res) => {
     }
 
     await AcademicPeriod.delete(id);
+
+    await AuditLog.log({
+      actor_role: req.user.role,
+      actor_id: req.user.id,
+      action: 'PERIOD_DELETE',
+      target: `academic_period:${id}`,
+      details: { academic_year: existing.academic_year, semester: existing.semester },
+      ip_address: req.ip,
+    });
+
     res.json({ success: true, message: 'Academic period deleted.' });
   } catch (error) {
     console.error('Error deleting academic period:', error);
@@ -203,6 +246,16 @@ const toggleEvaluation = async (req, res) => {
     }
 
     await AcademicPeriod.toggleEvaluation(open);
+
+    await AuditLog.log({
+      actor_role: req.user.role,
+      actor_id: req.user.id,
+      action: 'PERIOD_TOGGLE_EVALUATION',
+      target: `academic_period:${active.id}`,
+      details: { evaluation_open: !!open },
+      ip_address: req.ip,
+    });
+
     res.json({
       success: true,
       message: open ? 'Evaluation is now open. Students can submit evaluations.' : 'Evaluation is now closed.',
