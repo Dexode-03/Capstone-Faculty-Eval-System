@@ -113,6 +113,15 @@ const AcademicPeriod = {
     }
   },
 
+  // Count evaluations linked to this academic period
+  countLinkedEvaluations: async (id) => {
+    const [rows] = await pool.execute(
+      'SELECT COUNT(*) as count FROM evaluations WHERE academic_period_id = ?',
+      [id]
+    );
+    return rows[0].count;
+  },
+
   // Delete an academic period
   delete: async (id) => {
     const [result] = await pool.execute(

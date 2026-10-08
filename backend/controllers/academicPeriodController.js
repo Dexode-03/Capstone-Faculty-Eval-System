@@ -49,6 +49,10 @@ const create = async (req, res) => {
       return res.status(400).json({ message: 'Semester must be 1st or 2nd.' });
     }
 
+    if (start_date && end_date && new Date(end_date) <= new Date(start_date)) {
+      return res.status(400).json({ message: 'End date must be after start date.' });
+    }
+
     const duplicate = await AcademicPeriod.findByYearAndSemester(academic_year, semester);
     if (duplicate) {
       return res.status(409).json({ message: `Academic period for ${academic_year} ${semester} Semester already exists.` });
@@ -84,6 +88,13 @@ const update = async (req, res) => {
       return res.status(404).json({ message: 'Academic period not found.' });
     }
 
+    const newStartDate = start_date !== undefined ? start_date : existing.start_date;
+    const newEndDate = end_date !== undefined ? end_date : existing.end_date;
+
+    if (newStartDate && newEndDate && new Date(newEndDate) <= new Date(newStartDate)) {
+      return res.status(400).json({ message: 'End date must be after start date.' });
+    }
+
     const newYear = academic_year || existing.academic_year;
     const newSem  = semester || existing.semester;
     if (newYear !== existing.academic_year || newSem !== existing.semester) {
@@ -96,8 +107,8 @@ const update = async (req, res) => {
     await AcademicPeriod.update(id, {
       academic_year: newYear,
       semester: newSem,
-      start_date: start_date !== undefined ? start_date : existing.start_date,
-      end_date: end_date !== undefined ? end_date : existing.end_date,
+      start_date: newStartDate,
+      end_date: newEndDate,
     });
 
     res.json({ success: true, message: 'Academic period updated.' });
@@ -154,6 +165,13 @@ const remove = async (req, res) => {
 
     if (existing.is_active) {
       return res.status(400).json({ message: 'Cannot delete the active academic period. Activate another one first.' });
+    }
+
+    const linkedCount = await AcademicPeriod.countLinkedEvaluations(id);
+    if (linkedCount > 0) {
+      return res.status(400).json({
+        message: `Cannot delete academic period because ${linkedCount} evaluation(s) are associated with it.`,
+      });
     }
 
     await AcademicPeriod.delete(id);
