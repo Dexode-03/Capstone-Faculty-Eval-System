@@ -231,7 +231,7 @@ const STRENGTH_KEYWORD_MAP = {
  * Generate prescriptive recommendations for a single faculty member.
  * Uses dynamic keyword extraction instead of hardcoded includes().
  */
-const generateRecommendations = (evaluations) => {
+const generateRecommendations = (evaluations, dbRules = null) => {
   const recommendations = [];
 
   if (!evaluations || evaluations.length === 0) {
@@ -255,7 +255,107 @@ const generateRecommendations = (evaluations) => {
   const negativePercent = (weightedSentiment.negative / safeTotalWeight) * 100;
   const positivePercent = (weightedSentiment.positive / safeTotalWeight) * 100;
 
-  // ── Rating-based recommendations ──────────────────────────────
+  // ── Dynamic keyword extraction from text ──────────────────────
+  const weaknessesText  = evaluations.map(e => e.weaknesses || '').join(' ');
+  const strengthsText   = evaluations.map(e => e.strengths  || '').join(' ');
+  const fallbackText    = evaluations.map(e => e.comment    || '').join(' ');
+  const weakSource      = weaknessesText || fallbackText;
+  const strongSource    = strengthsText  || fallbackText;
+
+  const weakKeywords   = extractKeywords(weakSource, 15);
+  const strongKeywords = extractKeywords(strongSource, 15);
+
+  const activeRules = Array.isArray(dbRules) && dbRules.length > 0 ? dbRules.filter(r => r.is_active !== 0) : null;
+
+  if (activeRules && activeRules.length > 0) {
+    // ── Evaluate DB Rules ─────────────────────────────────────────
+    // 1. Rating rules
+    const ratingRules = activeRules.filter(r => r.rule_type === 'rating');
+    for (const rule of ratingRules) {
+      const thresh = parseFloat(rule.threshold);
+      let match = false;
+      if (rule.operator === '<') match = avgRating < thresh;
+      else if (rule.operator === '<=') match = avgRating <= thresh;
+      else if (rule.operator === '>') match = avgRating > thresh;
+      else if (rule.operator === '>=') match = avgRating >= thresh;
+      else if (rule.operator === '=') match = Math.abs(avgRating - thresh) < 0.01;
+
+      if (match) {
+        const text = rule.recommendation_text.replace('{rating}', avgRating.toFixed(1));
+        recommendations.push(text);
+        break;
+      }
+    }
+
+    // 2. Sentiment rules
+    const sentimentRules = activeRules.filter(r => r.rule_type === 'sentiment');
+    for (const rule of sentimentRules) {
+      const thresh = parseFloat(rule.threshold);
+      const isNeg = rule.metric === 'sentiment_negative_pct';
+      const pct = isNeg ? negativePercent : positivePercent;
+      let match = false;
+      if (rule.operator === '>') match = pct > thresh;
+      else if (rule.operator === '>=') match = pct >= thresh;
+      else if (rule.operator === '<') match = pct < thresh;
+      else if (rule.operator === '<=') match = pct <= thresh;
+
+      if (match) {
+        const text = rule.recommendation_text
+          .replace('{negative_pct}', Math.round(pct))
+          .replace('{positive_pct}', Math.round(pct));
+        recommendations.push(text);
+      }
+    }
+
+    // 3. Keyword rules (weakness)
+    const weakRules = activeRules.filter(r => r.rule_type === 'weakness' && r.keywords);
+    const triggeredWeakThemes = new Set();
+    weakKeywords.forEach(({ word, count }) => {
+      for (const rule of weakRules) {
+        const kwList = rule.keywords.split(',').map(k => k.trim().toLowerCase());
+        if (kwList.includes(word) && !triggeredWeakThemes.has(rule.theme)) {
+          triggeredWeakThemes.add(rule.theme);
+          recommendations.push(`[Weakness: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`);
+          break;
+        }
+      }
+    });
+
+    // 4. Keyword rules (strength)
+    const strongRules = activeRules.filter(r => r.rule_type === 'strength' && r.keywords);
+    const triggeredStrongThemes = new Set();
+    strongKeywords.forEach(({ word, count }) => {
+      for (const rule of strongRules) {
+        const kwList = rule.keywords.split(',').map(k => k.trim().toLowerCase());
+        if (kwList.includes(word) && !triggeredStrongThemes.has(rule.theme)) {
+          triggeredStrongThemes.add(rule.theme);
+          recommendations.push(`[Strength: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`);
+          break;
+        }
+      }
+    });
+
+    // Top unmapped keywords
+    const allDbWords = new Set();
+    [...weakRules, ...strongRules].forEach(r => {
+      if (r.keywords) {
+        r.keywords.split(',').map(k => k.trim().toLowerCase()).forEach(w => allDbWords.add(w));
+      }
+    });
+    const unmappedWeak = weakKeywords
+      .filter(k => !allDbWords.has(k.word) && k.count >= 2)
+      .slice(0, 3);
+    if (unmappedWeak.length > 0) {
+      const wordList = unmappedWeak.map(k => `"${k.word}" (${k.count}x)`).join(', ');
+      recommendations.push(
+        `Additional recurring concern keywords detected: ${wordList}. Review these topics in student feedback for further action.`
+      );
+    }
+
+    return recommendations;
+  }
+
+  // ── FALLBACK: Hardcoded rules ──────────────────────────────────
   if (avgRating < 2.5) {
     recommendations.push(
       `Overall rating is critically low (${avgRating.toFixed(1)}/5). Immediate faculty development intervention is recommended, including a review of teaching methodology and classroom engagement.`
@@ -274,7 +374,6 @@ const generateRecommendations = (evaluations) => {
     );
   }
 
-  // ── Sentiment-based recommendations ───────────────────────────
   if (negativePercent > 40) {
     recommendations.push(
       `High high-probability negative sentiment detected (${Math.round(negativePercent)}%). A structured faculty development plan and follow-up evaluation within the semester is strongly recommended.`
@@ -291,24 +390,11 @@ const generateRecommendations = (evaluations) => {
     );
   }
 
-  // ── Dynamic keyword-based recommendations ─────────────────────
-  const weaknessesText  = evaluations.map(e => e.weaknesses || '').join(' ');
-  const strengthsText   = evaluations.map(e => e.strengths  || '').join(' ');
-  const fallbackText    = evaluations.map(e => e.comment    || '').join(' ');
-  const weakSource      = weaknessesText || fallbackText;
-  const strongSource    = strengthsText  || fallbackText;
-
-  // Extract top keywords from weaknesses & strengths
-  const weakKeywords   = extractKeywords(weakSource, 15);
-  const strongKeywords = extractKeywords(strongSource, 15);
-
-  // Match weakness keywords to themed recommendations
   const triggeredWeakThemes = new Set();
   weakKeywords.forEach(({ word, count }) => {
     const mapping = WEAKNESS_KEYWORD_MAP[word];
     if (mapping && !triggeredWeakThemes.has(mapping.theme)) {
       triggeredWeakThemes.add(mapping.theme);
-      // Use the first keyword in the theme that has a rec
       const rec = mapping.rec || Object.values(WEAKNESS_KEYWORD_MAP)
         .find(m => m.theme === mapping.theme && m.rec)?.rec;
       if (rec) {
@@ -317,7 +403,6 @@ const generateRecommendations = (evaluations) => {
     }
   });
 
-  // Match strength keywords to themed recommendations
   const triggeredStrongThemes = new Set();
   strongKeywords.forEach(({ word, count }) => {
     const mapping = STRENGTH_KEYWORD_MAP[word];
@@ -331,7 +416,6 @@ const generateRecommendations = (evaluations) => {
     }
   });
 
-  // ── Surface top unmapped keywords for transparency ────────────
   const allMappedWords = new Set([
     ...Object.keys(WEAKNESS_KEYWORD_MAP),
     ...Object.keys(STRENGTH_KEYWORD_MAP),
@@ -348,6 +432,7 @@ const generateRecommendations = (evaluations) => {
 
   return recommendations;
 };
+
 
 /**
  * Generate system-wide prescriptive analysis.

@@ -7,6 +7,7 @@ const Student = require('../models/Student');
 const AcademicPeriod = require('../models/AcademicPeriod');
 const Subject = require('../models/Subject');
 const AuditLog = require('../models/AuditLog');
+const RecommendationRule = require('../models/RecommendationRule');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/db');
 const {
@@ -303,7 +304,8 @@ const getFacultyEvaluations = async (req, res) => {
 
     if (thresholdReached) {
       evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
-      recommendations = generateRecommendations(evaluations);
+      const activeRules = await RecommendationRule.findAllActive().catch(() => null);
+      recommendations = generateRecommendations(evaluations, activeRules);
       allFeedback = evaluations.map(e => ({
         id:         e.id,
         comment:    e.comment,
@@ -627,7 +629,8 @@ const getMyFacultyReport = async (req, res) => {
 
     if (thresholdReached) {
       evaluations.forEach(e => { sentimentOverview[e.sentiment]++; });
-      recommendations = generateRecommendations(evaluations);
+      const activeRules = await RecommendationRule.findAllActive().catch(() => null);
+      recommendations = generateRecommendations(evaluations, activeRules);
       allFeedback = evaluations.map(e => ({
         id:         e.id,
         comment:    e.comment,
