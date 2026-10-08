@@ -10,6 +10,8 @@ const evaluationRoutes = require('./routes/evaluationRoutes');
 const facultyRoutes = require('./routes/facultyRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const academicPeriodRoutes = require('./routes/academicPeriodRoutes');
+const evaluationQuestionRoutes = require('./routes/evaluationQuestionRoutes');
+const auditLogRoutes = require('./routes/auditLogRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -26,6 +28,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/evaluation', evaluationRoutes);
+app.use('/api/evaluation-questions', evaluationQuestionRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/academic-periods', academicPeriodRoutes);

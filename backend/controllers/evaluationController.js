@@ -6,6 +6,7 @@ const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const AcademicPeriod = require('../models/AcademicPeriod');
 const Subject = require('../models/Subject');
+const AuditLog = require('../models/AuditLog');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../config/db');
 const {
@@ -344,6 +345,17 @@ const getFacultyEvaluations = async (req, res) => {
 
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
 
+    if (req.user.role === 'admin') {
+      await AuditLog.log({
+        actor_role: 'admin',
+        actor_id: req.user.id,
+        action: 'REPORT_ACCESS_FACULTY',
+        target: `faculty:${id}`,
+        details: { faculty_name: faculty.name, total_evaluations: evaluations.length },
+        ip_address: req.ip,
+      });
+    }
+
     res.json({
       faculty,
       averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
@@ -469,6 +481,18 @@ const getSystemAnalysis = async (req, res) => {
     const allEvaluations = await Evaluation.findAll();
     const allFaculty     = await Faculty.findAll();
     const analysis       = generateSystemRecommendations(allEvaluations, allFaculty);
+
+    if (req.user.role === 'admin') {
+      await AuditLog.log({
+        actor_role: 'admin',
+        actor_id: req.user.id,
+        action: 'REPORT_ACCESS_SYSTEM',
+        target: 'system_analysis',
+        details: { total_evaluations: allEvaluations.length, total_faculty: allFaculty.length },
+        ip_address: req.ip,
+      });
+    }
+
     res.json(analysis);
   } catch (error) {
     console.error('System analysis error:', error);

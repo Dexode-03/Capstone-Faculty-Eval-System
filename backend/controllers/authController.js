@@ -5,6 +5,7 @@ const User = require('../models/User');
 const Faculty = require('../models/Faculty');
 const Student = require('../models/Student');
 const PasswordReset = require('../models/PasswordReset');
+const AuditLog = require('../models/AuditLog');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/email');
 const { pool } = require('../config/db');
 require('dotenv').config();
@@ -471,6 +472,15 @@ const adminCreateAccount = async (req, res) => {
       if (sids.length > 0) await Student.setSubjects(newId, sids);
     }
 
+    await AuditLog.log({
+      actor_role: 'admin',
+      actor_id: req.user.id,
+      action: 'ACCOUNT_CREATE',
+      target: `${role}:${newId}`,
+      details: { email, name, role, department },
+      ip_address: req.ip,
+    });
+
     res.status(201).json({
       success: true,
       message: `${role.charAt(0).toUpperCase() + role.slice(1)} account created successfully.`,
@@ -572,6 +582,15 @@ const adminUpdateAccount = async (req, res) => {
       await User.updateById(id, role, filteredData);
     }
 
+    await AuditLog.log({
+      actor_role: 'admin',
+      actor_id: req.user.id,
+      action: 'ACCOUNT_UPDATE',
+      target: `${role}:${id}`,
+      details: filteredData,
+      ip_address: req.ip,
+    });
+
     res.json({ success: true, message: 'Account updated successfully.' });
   } catch (error) {
     console.error('Error updating account:', error);
@@ -611,6 +630,15 @@ const adminDeleteAccount = async (req, res) => {
 
     // Delete account
     await User.deleteById(id, role);
+
+    await AuditLog.log({
+      actor_role: 'admin',
+      actor_id: req.user.id,
+      action: 'ACCOUNT_DELETE',
+      target: `${role}:${id}`,
+      details: { email: account.email, name: account.name },
+      ip_address: req.ip,
+    });
 
     res.json({ success: true, message: 'Account deleted successfully.' });
   } catch (error) {
