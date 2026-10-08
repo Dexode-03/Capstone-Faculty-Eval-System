@@ -3,8 +3,12 @@ require('dotenv').config();
 
 // Cloud MySQL providers (TiDB, PlanetScale, Aiven) require SSL.
 // Set DB_SSL=true in your .env to enable it.
-const sslConfig = process.env.DB_SSL === 'true'
-  ? { rejectUnauthorized: true }
+const isSslEnabled = process.env.DB_SSL === 'true' || 
+  process.env.DB_SSL === '1' || 
+  (process.env.DB_HOST && process.env.DB_HOST.includes('tidbcloud.com'));
+
+const sslConfig = isSslEnabled
+  ? { minVersion: 'TLSv1.2', rejectUnauthorized: true }
   : undefined;
 
 // Create a connection pool for better performance
