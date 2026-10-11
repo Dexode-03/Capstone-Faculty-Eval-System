@@ -126,7 +126,7 @@ const seed = async () => {
     { name: 'Dr. Carmen Lim', email: 'faculty10@psu.edu.ph', dept: 'Computer Science' },
 
     // Information Technology (4)
-    { name: 'Prof. Juan Dela Cruz', email: 'faculty2@psu.edu.ph', dept: 'Information Technology' },
+    { name: 'Prof. Juan Dela Cruz', email: 'faculty@2@psu.edu.ph', dept: 'Information Technology' },
     { name: 'Dr. Lisa Garcia', email: 'faculty5@psu.edu.ph', dept: 'Information Technology' },
     { name: 'Prof. Dennis Pascual', email: 'faculty11@psu.edu.ph', dept: 'Information Technology' },
     { name: 'Dr. Grace Soriano', email: 'faculty12@psu.edu.ph', dept: 'Information Technology' },

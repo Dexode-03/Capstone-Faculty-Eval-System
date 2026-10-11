@@ -80,7 +80,7 @@ const Evaluation = {
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq
               ON eq.id = er.question_id AND eq.question_type = 'text'
-       GROUP BY e.id
+       GROUP BY e.id, f.name, f.department
        ORDER BY e.created_at DESC`
     );
     return rows;
