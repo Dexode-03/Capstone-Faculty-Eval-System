@@ -166,6 +166,37 @@ const Faculty = {
     return result;
   },
 
+  // Get count of unique students enrolled with a faculty member
+  getEnrolledStudentCount: async (facultyId) => {
+    const [rows] = await pool.execute(
+      `SELECT COUNT(DISTINCT st.id) as count
+       FROM students st
+       INNER JOIN student_subjects ss ON ss.student_id = st.id
+       INNER JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
+       WHERE fs.faculty_id = ?
+         AND (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)`,
+      [String(facultyId)]
+    );
+    return parseInt(rows[0]?.count, 10) || 0;
+  },
+
+  // Get enrolled student counts for all faculty (keyed by faculty_id)
+  getAllEnrolledStudentCounts: async () => {
+    const [rows] = await pool.execute(
+      `SELECT fs.faculty_id, COUNT(DISTINCT st.id) as count
+       FROM students st
+       INNER JOIN student_subjects ss ON ss.student_id = st.id
+       INNER JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
+       WHERE (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)
+       GROUP BY fs.faculty_id`
+    );
+    const map = {};
+    rows.forEach(r => {
+      map[r.faculty_id] = parseInt(r.count, 10) || 0;
+    });
+    return map;
+  },
+
   // Delete faculty
   delete: async (id) => {
     const [result] = await pool.execute('DELETE FROM faculty WHERE id = ?', [id]);

@@ -688,9 +688,25 @@ const Reports = () => {
                 <div>
                   <p className="text-[14px] font-medium text-psu-text">{f.name}</p>
                   <p className="text-[12px] text-psu-muted">{f.department}</p>
-                  <p className="text-[12px] text-psu-muted mt-1">
-                    Avg {f.averageRating}/5 · {f.totalEvaluations} evals
-                  </p>
+                  <div className="flex items-center gap-2 mt-1 text-[12px] text-psu-muted flex-wrap">
+                    <span>Avg {f.averageRating}/5</span>
+                    <span>·</span>
+                    <span>
+                      {f.totalEvaluations} / {f.enrolledStudents !== undefined && f.enrolledStudents !== null ? f.enrolledStudents : 'n/a'} responses
+                    </span>
+                    <span>·</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                      f.enrolledStudents > 0
+                        ? f.responseRate >= 80
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : f.responseRate >= 50
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-gray-100 text-psu-muted border border-psu-border'
+                    }`}>
+                      {f.responseRateFormatted || (f.enrolledStudents > 0 ? `${f.responseRate}%` : 'n/a')}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[11px] text-psu-primary inline-flex items-center gap-1"><HiEmojiHappy className="h-3.5 w-3.5" />{f.positiveRate}%</span>

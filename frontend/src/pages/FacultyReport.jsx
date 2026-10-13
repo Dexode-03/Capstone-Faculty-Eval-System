@@ -201,7 +201,7 @@ const FacultyReport = () => {
                 createCell('Section:', 18, { bold: true }),
                 createCell(section.toUpperCase(), 32),
                 createCell('No. of Respondents:', 18, { bold: true }),
-                createCell(`${respondentCount} / ${enrolledCount} enrolled`, 32),
+                createCell(`${respondentCount} / ${enrolledCount} enrolled (${enrolledCount > 0 ? ((respondentCount / enrolledCount) * 100).toFixed(1) + '%' : 'n/a'})`, 32),
               ],
             }),
           ],
@@ -680,13 +680,20 @@ const FacultyReport = () => {
           </div>
         </div>
         <div className="text-left sm:text-right">
-          <p className="text-[12px] text-psu-muted uppercase tracking-wider">Total evaluations</p>
-          <p className="text-3xl font-bold text-psu-text tabular-nums">{report.totalEvaluations}</p>
+          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Response Rate</p>
+          <div className="flex items-baseline justify-start sm:justify-end gap-2">
+            <span className="text-3xl font-bold text-psu-text tabular-nums">
+              {report.responseRateFormatted || (report.enrolledStudents > 0 ? `${report.responseRate}%` : 'n/a')}
+            </span>
+            <span className="text-[12px] text-psu-muted">
+              ({report.totalEvaluations}/{report.enrolledStudents !== undefined && report.enrolledStudents !== null ? report.enrolledStudents : 'n/a'})
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Top stats */}
-      <div className="grid grid-cols-1 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="border border-psu-border bg-white rounded-lg p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Average Rating</p>
           <p className="text-4xl font-bold text-psu-text tabular-nums mb-2">{report.averageRating}</p>
@@ -699,6 +706,36 @@ const FacultyReport = () => {
                 {report.verbalRating}
               </span>
             )}
+          </div>
+        </div>
+
+        <div className="border border-psu-border bg-white rounded-lg p-5">
+          <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Evaluations Received</p>
+          <p className="text-4xl font-bold text-psu-text tabular-nums mb-2">{report.totalEvaluations}</p>
+          <p className="text-[13px] text-psu-muted">
+            {report.enrolledStudents !== undefined && report.enrolledStudents !== null
+              ? `out of ${report.enrolledStudents} enrolled students`
+              : 'total submissions'}
+          </p>
+        </div>
+
+        <div className="border border-psu-border bg-white rounded-lg p-5">
+          <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Response Rate</p>
+          <p className="text-4xl font-bold text-psu-text tabular-nums mb-2">
+            {report.responseRateFormatted || (report.enrolledStudents > 0 ? `${report.responseRate}%` : 'n/a')}
+          </p>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${
+              report.enrolledStudents > 0
+                ? report.responseRate >= 80
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : report.responseRate >= 50
+                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                : 'bg-gray-100 text-psu-muted border border-psu-border'
+            }`}>
+              {report.enrolledStudents > 0 ? `${report.totalEvaluations} of ${report.enrolledStudents} students` : 'Zero enrolled students'}
+            </span>
           </div>
         </div>
       </div>

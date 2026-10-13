@@ -21,6 +21,7 @@ const {
   SHORT_CATEGORY,
 } = require('../utils/sentimentAnalyzer');
 const { getVerbalRating, RATING_SCALE } = require('../config/ratingScale');
+const { calculateResponseRate } = require('../utils/responseRate');
 
 /**
  * GET /api/evaluation/questions
@@ -347,6 +348,12 @@ const getFacultyEvaluations = async (req, res) => {
     }));
 
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
+    const enrolledStudents = await Faculty.getEnrolledStudentCount(id);
+    const activePeriod = await AcademicPeriod.getActive();
+    const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(
+      evaluations.length,
+      enrolledStudents
+    );
 
     if (req.user.role === 'admin') {
       await AuditLog.log({
@@ -363,15 +370,20 @@ const getFacultyEvaluations = async (req, res) => {
 
     res.json({
       faculty,
-      averageRating:    computedAvgRating,
-      verbalRating:     getVerbalRating(computedAvgRating),
-      ratingScale:      RATING_SCALE,
-      totalEvaluations: evaluations.length,
+      averageRating:       computedAvgRating,
+      verbalRating:        getVerbalRating(computedAvgRating),
+      ratingScale:         RATING_SCALE,
+      totalEvaluations:    evaluations.length,
+      evaluationsReceived: evaluations.length,
+      enrolledStudents,
+      responseRate,
+      responseRateFormatted,
+      academicPeriod:      activePeriod || null,
       thresholdReached,
       minThreshold,
       thresholdMessage,
       sentimentOverview,
-      categoryAverages: categoryAveragesFormatted,
+      categoryAverages:    categoryAveragesFormatted,
       questionAverages,
       allFeedback,
       recentFeedback,
@@ -487,7 +499,8 @@ const getSystemAnalysis = async (req, res) => {
   try {
     const allEvaluations = await Evaluation.findAll();
     const allFaculty     = await Faculty.findAll();
-    const analysis       = generateSystemRecommendations(allEvaluations, allFaculty);
+    const enrolledMap    = await Faculty.getAllEnrolledStudentCounts();
+    const analysis       = generateSystemRecommendations(allEvaluations, allFaculty, enrolledMap);
 
     if (req.user.role === 'admin') {
       await AuditLog.log({
@@ -676,20 +689,31 @@ const getMyFacultyReport = async (req, res) => {
     }));
 
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
+    const enrolledStudents = await Faculty.getEnrolledStudentCount(facultyId);
+    const activePeriod = await AcademicPeriod.getActive();
+    const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(
+      evaluations.length,
+      enrolledStudents
+    );
 
     const computedAvgRating = avgRating ? parseFloat(avgRating).toFixed(1) : '0.0';
 
     res.json({
       faculty,
-      averageRating:    computedAvgRating,
-      verbalRating:     getVerbalRating(computedAvgRating),
-      ratingScale:      RATING_SCALE,
-      totalEvaluations: evaluations.length,
+      averageRating:       computedAvgRating,
+      verbalRating:        getVerbalRating(computedAvgRating),
+      ratingScale:         RATING_SCALE,
+      totalEvaluations:    evaluations.length,
+      evaluationsReceived: evaluations.length,
+      enrolledStudents,
+      responseRate,
+      responseRateFormatted,
+      academicPeriod:      activePeriod || null,
       thresholdReached,
       minThreshold,
       thresholdMessage,
       sentimentOverview,
-      categoryAverages: categoryAveragesFormatted,
+      categoryAverages:    categoryAveragesFormatted,
       questionAverages,
       allFeedback,
       recentFeedback,
@@ -816,6 +840,10 @@ const getFacultySubjectSectionReport = async (req, res) => {
 
     const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
     const thresholdReached = respondentCount >= minThreshold;
+    const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(
+      respondentCount,
+      enrolledCount
+    );
 
     const comments = thresholdReached
       ? commentsRows.map(row => ({
@@ -835,6 +863,8 @@ const getFacultySubjectSectionReport = async (req, res) => {
       activePeriod,
       enrolledCount,
       respondentCount,
+      responseRate,
+      responseRateFormatted,
       thresholdReached,
       minThreshold,
       thresholdMessage,

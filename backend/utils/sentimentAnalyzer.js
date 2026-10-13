@@ -1,5 +1,6 @@
 const natural = require('natural');
 const trainingData = require('./trainingData');
+const { calculateResponseRate } = require('./responseRate');
 
 // ── Train Naive Bayes classifier on module load ───────────────────
 // Use a custom tokenizer that produces both unigrams (single words)
@@ -441,8 +442,9 @@ const generateRecommendations = (evaluations, dbRules = null) => {
  * @param {Array} allEvaluations - All evaluations with faculty_name, department,
  *                                 strengths, and weaknesses fields
  * @param {Array} facultyList    - All faculty members
+ * @param {Object} enrolledMap   - Map of faculty_id -> enrolled student count
  */
-const generateSystemRecommendations = (allEvaluations, facultyList) => {
+const generateSystemRecommendations = (allEvaluations, facultyList, enrolledMap = {}) => {
   if (!allEvaluations || allEvaluations.length === 0) {
     return {
       overallHealth:         'insufficient_data',
@@ -481,6 +483,22 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
 
   // ── Per-faculty map ───────────────────────────────────────────
   const facultyMap = {};
+  if (Array.isArray(facultyList)) {
+    facultyList.forEach(f => {
+      facultyMap[f.id] = {
+        id:         f.id,
+        name:       f.name,
+        department: f.department || 'Unknown',
+        ratings:    [],
+        sentiments: { positive: 0, neutral: 0, negative: 0 },
+        weightedSentiments: { positive: 0, neutral: 0, negative: 0 },
+        strengths:  [],
+        weaknesses: [],
+        evaluations: [],
+      };
+    });
+  }
+
   allEvaluations.forEach(e => {
     const fid = e.faculty_id;
     if (!facultyMap[fid]) {
@@ -505,11 +523,14 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
     if (e.weaknesses) facultyMap[fid].weaknesses.push(e.weaknesses);
   });
 
-  // Mean of per-faculty averages
-  const facultyAverages = Object.values(facultyMap).map(
+  // Mean of per-faculty averages (only for faculty with evaluations)
+  const evaluatedFaculty = Object.values(facultyMap).filter(f => f.ratings.length > 0);
+  const facultyAverages = evaluatedFaculty.map(
     f => f.ratings.reduce((s, r) => s + r, 0) / f.ratings.length
   );
-  const avgRating = facultyAverages.reduce((s, a) => s + a, 0) / facultyAverages.length;
+  const avgRating = facultyAverages.length > 0
+    ? facultyAverages.reduce((s, a) => s + a, 0) / facultyAverages.length
+    : 0;
 
   // ── Department analysis ───────────────────────────────────────
   const deptMap = {};
@@ -624,7 +645,7 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
   const needsAttention = [];
   const highPerformers = [];
 
-  Object.values(facultyMap).forEach(f => {
+  Object.values(facultyMap).filter(f => f.ratings.length > 0).forEach(f => {
     const fAvg    = f.ratings.reduce((s, r) => s + r, 0) / f.ratings.length;
     const fTotalWeight = f.weightedSentiments.positive + f.weightedSentiments.neutral + f.weightedSentiments.negative;
     const safeFWeight = fTotalWeight > 0 ? fTotalWeight : 1;
@@ -659,6 +680,8 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
   const facultySummary = Object.values(facultyMap)
     .map(f => {
       const totalEvals = f.ratings.length;
+      const enrolled = (enrolledMap && enrolledMap[f.id] !== undefined) ? enrolledMap[f.id] : 0;
+      const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(totalEvals, enrolled);
       const avg = totalEvals > 0
         ? parseFloat((f.ratings.reduce((s, r) => s + r, 0) / totalEvals).toFixed(2))
         : 0;
@@ -680,6 +703,9 @@ const generateSystemRecommendations = (allEvaluations, facultyList) => {
         department: f.department,
         averageRating: avg,
         totalEvaluations: totalEvals,
+        enrolledStudents: enrolled,
+        responseRate,
+        responseRateFormatted,
         positiveRate,
         neutralRate,
         negativeRate,
