@@ -20,6 +20,7 @@ const {
   generateSystemRecommendations,
   SHORT_CATEGORY,
 } = require('../utils/sentimentAnalyzer');
+const { getVerbalRating, RATING_SCALE } = require('../config/ratingScale');
 
 /**
  * GET /api/evaluation/questions
@@ -358,9 +359,13 @@ const getFacultyEvaluations = async (req, res) => {
       });
     }
 
+    const computedAvgRating = avgRating ? parseFloat(avgRating).toFixed(1) : '0.0';
+
     res.json({
       faculty,
-      averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
+      averageRating:    computedAvgRating,
+      verbalRating:     getVerbalRating(computedAvgRating),
+      ratingScale:      RATING_SCALE,
       totalEvaluations: evaluations.length,
       thresholdReached,
       minThreshold,
@@ -672,9 +677,13 @@ const getMyFacultyReport = async (req, res) => {
 
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
 
+    const computedAvgRating = avgRating ? parseFloat(avgRating).toFixed(1) : '0.0';
+
     res.json({
       faculty,
-      averageRating:    avgRating ? parseFloat(avgRating).toFixed(1) : '0.0',
+      averageRating:    computedAvgRating,
+      verbalRating:     getVerbalRating(computedAvgRating),
+      ratingScale:      RATING_SCALE,
       totalEvaluations: evaluations.length,
       thresholdReached,
       minThreshold,

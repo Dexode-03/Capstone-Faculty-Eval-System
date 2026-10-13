@@ -19,6 +19,7 @@ import {
 import { saveAs } from 'file-saver';
 import evaluationService from '../services/evaluationService';
 import facultyService from '../services/facultyService';
+import { getVerbalRating } from '../config/ratingScale';
 
 const heatBg = (sentiment, rate) => {
   const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
@@ -317,6 +318,30 @@ const FacultyReport = () => {
               align: AlignmentType.CENTER,
               borders: totalCellBorders,
               shading: 'E8E8E8',
+            }),
+          ],
+        })
+      );
+
+      // Verbal rating row
+      const verbalLabel = getVerbalRating(overallAvg);
+      tableRows.push(
+        new TableRow({
+          children: [
+            createCell('DESCRIPTIVE RATING', 86, {
+              bold: true,
+              size: 22,
+              columnSpan: 4,
+              align: AlignmentType.LEFT,
+              borders: totalCellBorders,
+              shading: 'DBEAFE',
+            }),
+            createCell(verbalLabel, 14, {
+              bold: true,
+              size: 22,
+              align: AlignmentType.CENTER,
+              borders: totalCellBorders,
+              shading: 'DBEAFE',
             }),
           ],
         })
@@ -665,9 +690,16 @@ const FacultyReport = () => {
         <div className="border border-psu-border bg-white rounded-lg p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Average Rating</p>
           <p className="text-4xl font-bold text-psu-text tabular-nums mb-2">{report.averageRating}</p>
-          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psu-primary/10 text-psu-primary text-[13px] font-semibold">
-            {report.averageRating} / 5
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psu-primary/10 text-psu-primary text-[13px] font-semibold">
+              {report.averageRating} / 5
+            </span>
+            {report.verbalRating && report.verbalRating !== 'N/A' && (
+              <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[13px] font-semibold">
+                {report.verbalRating}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

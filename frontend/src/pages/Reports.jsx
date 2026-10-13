@@ -20,6 +20,7 @@ import {
 } from 'docx';
 import { saveAs } from 'file-saver';
 import evaluationService from '../services/evaluationService';
+import { getVerbalRating } from '../config/ratingScale';
 
 const heatBg = (sentiment, rate) => {
   const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
@@ -221,16 +222,8 @@ const Reports = () => {
           verticalAlign: 'center',
         });
 
-      // University descriptive rating mapping based on official scale
-      const getRatingDescription = (score) => {
-        const num = parseFloat(score);
-        if (!num || isNaN(num) || num <= 0) return 'N/A';
-        if (num >= 4.50) return 'Outstanding';
-        if (num >= 3.50) return 'Very Satisfactory';
-        if (num >= 2.50) return 'Satisfactory';
-        if (num >= 1.50) return 'Fair';
-        return 'Poor';
-      };
+      // University descriptive rating mapping — uses shared PSU config
+      const getRatingDescription = (score) => getVerbalRating(score);
 
       // Questionnaire Section check helpers
       const isSec1 = (cat) => cat && (cat.startsWith('A.') || cat.toLowerCase().includes('management'));
