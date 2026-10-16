@@ -155,6 +155,57 @@ const AcademicPeriod = {
     );
     return rows;
   },
+
+  /**
+   * Finds the academic period immediately preceding the given (or active) period in chronological order (Task 3B.3 / FR-15).
+   * @param {Object|number|string} [currentPeriod]
+   * @returns {Promise<Object|null>}
+   */
+  getPreviousPeriod: async (currentPeriod = null) => {
+    let target = currentPeriod;
+    if (!target) {
+      target = await AcademicPeriod.getActive();
+    } else if (typeof target === 'number' || typeof target === 'string') {
+      target = await AcademicPeriod.findById(target);
+    }
+    if (!target) return null;
+
+    const all = await AcademicPeriod.findAll();
+    if (!all || all.length <= 1) return null;
+
+    const parsePeriodOrder = (p) => {
+      if (p.start_date) {
+        return new Date(p.start_date).getTime();
+      }
+      const startYear = parseInt(p.academic_year, 10) || 0;
+      let semWeight = 1;
+      const semStr = (p.semester || '').toLowerCase();
+      if (semStr.includes('2nd') || semStr.includes('second')) semWeight = 2;
+      else if (semStr.includes('mid') || semStr.includes('sum')) semWeight = 3;
+      return (startYear * 10) + semWeight;
+    };
+
+    const targetWeight = parsePeriodOrder(target);
+
+    const earlier = all.filter(p => {
+      if (String(p.id) === String(target.id)) return false;
+      const w = parsePeriodOrder(p);
+      if (w < targetWeight) return true;
+      if (w === targetWeight && Number(p.id) < Number(target.id)) return true;
+      return false;
+    });
+
+    if (earlier.length === 0) return null;
+
+    earlier.sort((a, b) => {
+      const wa = parsePeriodOrder(a);
+      const wb = parsePeriodOrder(b);
+      if (wb !== wa) return wb - wa;
+      return Number(b.id) - Number(a.id);
+    });
+
+    return earlier[0];
+  },
 };
 
 module.exports = AcademicPeriod;

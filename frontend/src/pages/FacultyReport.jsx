@@ -20,6 +20,7 @@ import { saveAs } from 'file-saver';
 import evaluationService from '../services/evaluationService';
 import facultyService from '../services/facultyService';
 import { getVerbalRating } from '../config/ratingScale';
+import { getComparisonBadgeClass } from '../utils/comparisons';
 
 const heatBg = (sentiment, rate) => {
   const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
@@ -759,6 +760,142 @@ const FacultyReport = () => {
                 ({Math.round((report.totalEvaluations / (report.minThreshold || 5)) * 100)}%)
               </span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comparative Benchmarks (FR-15, FR-19) */}
+      {report.comparisons && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Department Benchmark Card */}
+          <div className="border border-psu-border bg-white rounded-lg p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider">
+                Department Benchmark ({report.comparisons.departmentComparison?.department || faculty?.department})
+              </p>
+              {report.comparisons.departmentComparison?.qualifyingFacultyCount > 0 && (
+                <span className="text-[11px] text-psu-muted">
+                  {report.comparisons.departmentComparison.qualifyingFacultyCount} qualifying faculty
+                </span>
+              )}
+            </div>
+            {report.comparisons.departmentComparison?.departmentAverage !== null && report.comparisons.departmentComparison?.departmentAverage !== undefined ? (
+              <div>
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="text-3xl font-bold text-psu-text tabular-nums">
+                    {report.comparisons.departmentComparison.departmentAverageFormatted}
+                  </span>
+                  <span className="text-[13px] text-psu-muted">/ 5 Dept Average</span>
+                  {report.comparisons.departmentComparison.departmentVerbalRating && report.comparisons.departmentComparison.departmentVerbalRating !== 'N/A' && (
+                    <span className="text-[12px] font-medium text-psu-muted">
+                      ({report.comparisons.departmentComparison.departmentVerbalRating})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${getComparisonBadgeClass(report.comparisons.departmentComparison.differenceDirection)}`}>
+                    {report.comparisons.departmentComparison.message}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="py-2">
+                <p className="text-[13px] text-psu-muted italic">
+                  Department benchmark unavailable (minimum response threshold of {report.minThreshold || 5} evaluations not yet reached in department).
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Previous Period Comparison Card */}
+          <div className="border border-psu-border bg-white rounded-lg p-5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider">
+                Previous Academic Period
+              </p>
+              {report.comparisons.previousPeriodComparison?.previousPeriod && (
+                <span className="text-[11px] text-psu-muted">
+                  {report.comparisons.previousPeriodComparison.previousPeriod.name}
+                </span>
+              )}
+            </div>
+            {report.comparisons.previousPeriodComparison?.hasEarlierData ? (
+              <div>
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="text-3xl font-bold text-psu-text tabular-nums">
+                    {report.comparisons.previousPeriodComparison.previousPeriod.averageRating}
+                  </span>
+                  <span className="text-[13px] text-psu-muted">/ 5 Previous Rating</span>
+                  {report.comparisons.previousPeriodComparison.previousPeriod.verbalRating && report.comparisons.previousPeriodComparison.previousPeriod.verbalRating !== 'N/A' && (
+                    <span className="text-[12px] font-medium text-psu-muted">
+                      ({report.comparisons.previousPeriodComparison.previousPeriod.verbalRating})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${getComparisonBadgeClass(report.comparisons.previousPeriodComparison.ratingChangeDirection)}`}>
+                    {report.comparisons.previousPeriodComparison.message}
+                  </span>
+                  <span className="text-[12px] text-psu-muted">
+                    ({report.comparisons.previousPeriodComparison.previousPeriod.totalEvaluations} evaluations in previous period)
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="py-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-gray-100 text-psu-muted border border-psu-border">
+                  no earlier data
+                </span>
+                <p className="text-[12px] text-psu-muted mt-2">
+                  No evaluations found for this instructor in an earlier academic period.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Period History Breakdown (FR-19) */}
+      {report.comparisons?.periodHistory?.length > 1 && (
+        <div className="border border-psu-border bg-white rounded-lg p-5 mb-8">
+          <h2 className="text-[13px] font-semibold text-psu-text mb-1">Academic Period History</h2>
+          <p className="text-[12px] text-psu-muted mb-4">Performance and evaluation trends across academic periods.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-psu-border">
+                  <th className="py-2.5 text-[11px] font-semibold text-psu-muted uppercase tracking-wider">Academic Period</th>
+                  <th className="py-2.5 text-[11px] font-semibold text-psu-muted uppercase tracking-wider">Evaluations</th>
+                  <th className="py-2.5 text-[11px] font-semibold text-psu-muted uppercase tracking-wider">Average Rating</th>
+                  <th className="py-2.5 text-[11px] font-semibold text-psu-muted uppercase tracking-wider">Verbal Rating</th>
+                  <th className="py-2.5 text-[11px] font-semibold text-psu-muted uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-psu-border">
+                {report.comparisons.periodHistory.map(ph => (
+                  <tr key={ph.academic_period_id || ph.name} className="hover:bg-gray-50/50">
+                    <td className="py-3 text-[13px] font-medium text-psu-text">
+                      {ph.name}
+                      {ph.isActive && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800">
+                          ACTIVE
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 text-[13px] text-psu-text tabular-nums">{ph.totalEvaluations}</td>
+                    <td className="py-3 text-[13px] font-semibold text-psu-text tabular-nums">{ph.averageRating} / 5</td>
+                    <td className="py-3 text-[12px] font-medium text-psu-muted">{ph.verbalRating}</td>
+                    <td className="py-3 text-[12px]">
+                      {ph.thresholdReached ? (
+                        <span className="text-green-700 font-medium">Published</span>
+                      ) : (
+                        <span className="text-amber-700 font-medium">Threshold pending</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

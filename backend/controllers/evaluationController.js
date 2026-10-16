@@ -22,6 +22,7 @@ const {
 } = require('../utils/sentimentAnalyzer');
 const { getVerbalRating, RATING_SCALE } = require('../config/ratingScale');
 const { calculateResponseRate } = require('../utils/responseRate');
+const { calculateFacultyComparisons } = require('../utils/comparisons');
 
 /**
  * GET /api/evaluation/questions
@@ -368,6 +369,14 @@ const getFacultyEvaluations = async (req, res) => {
 
     const computedAvgRating = avgRating ? parseFloat(avgRating).toFixed(1) : '0.0';
 
+    const comparisons = await calculateFacultyComparisons({
+      facultyId: id,
+      department: faculty.department,
+      currentAvgRating: computedAvgRating,
+      activePeriod,
+      minThreshold,
+    });
+
     res.json({
       faculty,
       averageRating:       computedAvgRating,
@@ -379,6 +388,7 @@ const getFacultyEvaluations = async (req, res) => {
       responseRate,
       responseRateFormatted,
       academicPeriod:      activePeriod || null,
+      comparisons,
       thresholdReached,
       minThreshold,
       thresholdMessage,
@@ -698,6 +708,14 @@ const getMyFacultyReport = async (req, res) => {
 
     const computedAvgRating = avgRating ? parseFloat(avgRating).toFixed(1) : '0.0';
 
+    const comparisons = await calculateFacultyComparisons({
+      facultyId,
+      department: faculty.department,
+      currentAvgRating: computedAvgRating,
+      activePeriod,
+      minThreshold,
+    });
+
     res.json({
       faculty,
       averageRating:       computedAvgRating,
@@ -709,6 +727,7 @@ const getMyFacultyReport = async (req, res) => {
       responseRate,
       responseRateFormatted,
       academicPeriod:      activePeriod || null,
+      comparisons,
       thresholdReached,
       minThreshold,
       thresholdMessage,

@@ -690,6 +690,28 @@ const Reports = () => {
                   <p className="text-[12px] text-psu-muted">{f.department}</p>
                   <div className="flex items-center gap-2 mt-1 text-[12px] text-psu-muted flex-wrap">
                     <span>Avg {f.averageRating}/5</span>
+                    {f.verbalRating && f.verbalRating !== 'N/A' && (
+                      <>
+                        <span>·</span>
+                        <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                          {f.verbalRating}
+                        </span>
+                      </>
+                    )}
+                    {f.differenceFromDepartment !== null && f.differenceFromDepartment !== undefined && (
+                      <>
+                        <span>·</span>
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                          f.differenceFromDepartment > 0
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : f.differenceFromDepartment < 0
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {f.differenceFromDepartment > 0 ? `+${f.differenceFromDepartment.toFixed(2)}` : f.differenceFromDepartment.toFixed(2)} vs Dept
+                        </span>
+                      </>
+                    )}
                     <span>·</span>
                     <span>
                       {f.totalEvaluations} / {f.enrolledStudents !== undefined && f.enrolledStudents !== null ? f.enrolledStudents : 'n/a'} responses

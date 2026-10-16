@@ -1,6 +1,7 @@
 const natural = require('natural');
 const trainingData = require('./trainingData');
 const { calculateResponseRate } = require('./responseRate');
+const { getVerbalRating } = require('../config/ratingScale');
 
 // ── Train Naive Bayes classifier on module load ───────────────────
 // Use a custom tokenizer that produces both unigrams (single words)
@@ -677,6 +678,19 @@ const generateSystemRecommendations = (allEvaluations, facultyList, enrolledMap 
     }
   });
 
+  // ── Compute department benchmarks (excluding faculty < minThreshold) ──
+  const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
+  const deptBenchmarkMap = {};
+  Object.entries(deptMap).forEach(([dept, data]) => {
+    const qualifyingRatings = Object.values(data.facultyRatings).filter(ratings => ratings.length >= minThreshold);
+    if (qualifyingRatings.length > 0) {
+      const qualifyingAvgs = qualifyingRatings.map(ratings => ratings.reduce((s, r) => s + r, 0) / ratings.length);
+      deptBenchmarkMap[dept] = parseFloat((qualifyingAvgs.reduce((s, a) => s + a, 0) / qualifyingAvgs.length).toFixed(2));
+    } else {
+      deptBenchmarkMap[dept] = null;
+    }
+  });
+
   const facultySummary = Object.values(facultyMap)
     .map(f => {
       const totalEvals = f.ratings.length;
@@ -697,11 +711,19 @@ const generateSystemRecommendations = (allEvaluations, facultyList, enrolledMap 
         .map(text => String(text).trim())
         .filter(Boolean)
         .slice(0, 3);
+      const deptBenchmark = deptBenchmarkMap[f.department] !== undefined ? deptBenchmarkMap[f.department] : null;
+      const deptDiff = (deptBenchmark !== null && avg > 0)
+        ? parseFloat((avg - deptBenchmark).toFixed(2))
+        : null;
+
       return {
         id: f.id,
         name: f.name,
         department: f.department,
         averageRating: avg,
+        verbalRating: getVerbalRating(avg),
+        departmentAverage: deptBenchmark,
+        differenceFromDepartment: deptDiff,
         totalEvaluations: totalEvals,
         enrolledStudents: enrolled,
         responseRate,
