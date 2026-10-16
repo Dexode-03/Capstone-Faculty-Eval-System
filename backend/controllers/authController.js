@@ -303,7 +303,7 @@ const changePassword = async (req, res) => {
  */
 const getAllAccounts = async (req, res) => {
   try {
-    const { role, department, year_level, section, search } = req.query;
+    const { role, department, subject, year_level, section, search } = req.query;
 
     // Authorization check
     if (req.user.role !== 'admin') {
@@ -315,8 +315,8 @@ const getAllAccounts = async (req, res) => {
       return res.status(400).json({ message: 'Valid role required: admin, faculty, or student.' });
     }
 
-    // Fetch filtered accounts
-    const filters = { department, year_level, section, search };
+    // Fetch filtered accounts (Task 3B.5 / FR-02)
+    const filters = { department, subject, year_level, section, search };
     const accounts = await User.findAllByRoleFiltered(role, filters);
 
     // Fetch distinct filter values for dropdown population

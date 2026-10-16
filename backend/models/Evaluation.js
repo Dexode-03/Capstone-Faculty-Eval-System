@@ -68,21 +68,90 @@ const Evaluation = {
     return rows[0].avg_rating;
   },
 
-  // Get all evaluations (for admin/system analysis) — includes strengths/weaknesses
-  findAll: async () => {
-    const [rows] = await pool.execute(
-      `SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at,
-              f.name as faculty_name, f.department,
-              COALESCE(e.strengths, MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END)) as strengths,
-              COALESCE(e.weaknesses, MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END)) as weaknesses
-       FROM evaluations e
-       JOIN faculty f ON e.faculty_id = f.id
-       LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
-       LEFT JOIN evaluation_questions eq
-              ON eq.id = er.question_id AND eq.question_type = 'text'
-       GROUP BY e.id, f.name, f.department
-       ORDER BY e.created_at DESC`
-    );
+  // Get all evaluations (for admin/system analysis) with optional parameterized filters (Task 3B.5 / FR-28)
+  findAll: async (filters = {}) => {
+    const { period, department, faculty, subject, year_level, section } = filters || {};
+    const params = [];
+    const whereClauses = [];
+
+    const isSet = v => v !== undefined && v !== null && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'all';
+
+    // Filter by academic period
+    if (isSet(period)) {
+      whereClauses.push('e.academic_period_id = ?');
+      params.push(period);
+    }
+
+    // Filter by department
+    if (isSet(department)) {
+      whereClauses.push('f.department = ?');
+      params.push(department);
+    }
+
+    // Filter by faculty ID
+    if (isSet(faculty)) {
+      whereClauses.push('e.faculty_id = ?');
+      params.push(faculty);
+    }
+
+    // Filter by subject (subject_id or subject code)
+    if (isSet(subject)) {
+      whereClauses.push(`(
+        e.id IN (
+          SELECT es_sub.evaluation_id
+          FROM evaluation_submissions es_sub
+          INNER JOIN student_subjects ss_sub ON ss_sub.student_id = es_sub.student_id
+          INNER JOIN subjects s_sub ON s_sub.id = ss_sub.subject_id
+          WHERE (ss_sub.subject_id = ? OR s_sub.code = ?)
+        )
+      )`);
+      params.push(subject, subject);
+    }
+
+    // Filter by year level
+    if (isSet(year_level)) {
+      whereClauses.push(`(
+        e.id IN (
+          SELECT es_sub.evaluation_id
+          FROM evaluation_submissions es_sub
+          INNER JOIN students st_sub ON st_sub.id = es_sub.student_id
+          WHERE st_sub.year_level = ?
+        )
+      )`);
+      params.push(year_level);
+    }
+
+    // Filter by section
+    if (isSet(section)) {
+      whereClauses.push(`(
+        e.id IN (
+          SELECT es_sub.evaluation_id
+          FROM evaluation_submissions es_sub
+          INNER JOIN students st_sub ON st_sub.id = es_sub.student_id
+          WHERE st_sub.section = ?
+        )
+      )`);
+      params.push(section);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    const query = `
+      SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at, e.academic_period_id,
+             f.name as faculty_name, f.department,
+             COALESCE(e.strengths, MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END)) as strengths,
+             COALESCE(e.weaknesses, MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END)) as weaknesses
+      FROM evaluations e
+      JOIN faculty f ON e.faculty_id = f.id
+      LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
+      LEFT JOIN evaluation_questions eq
+             ON eq.id = er.question_id AND eq.question_type = 'text'
+      ${whereSql}
+      GROUP BY e.id, f.name, f.department, e.created_at, e.academic_period_id
+      ORDER BY e.created_at DESC
+    `;
+
+    const [rows] = await pool.execute(query, params);
     return rows;
   },
 

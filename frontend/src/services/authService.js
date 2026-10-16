@@ -14,6 +14,7 @@ const authService = {
   getAllAccounts: (role, filters = {}) => {
     const params = new URLSearchParams({ role });
     if (filters.department) params.append('department', filters.department);
+    if (filters.subject) params.append('subject', filters.subject);
     if (filters.year_level) params.append('year_level', filters.year_level);
     if (filters.section) params.append('section', filters.section);
     if (filters.search) params.append('search', filters.search);

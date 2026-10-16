@@ -504,13 +504,52 @@ const getEnrolledInstructors = async (req, res) => {
 
 /**
  * GET /api/evaluation/analysis
+ * Supports parameterized filters for period, department, faculty, subject, year_level, section (Task 3B.5 / FR-28)
  */
 const getSystemAnalysis = async (req, res) => {
   try {
-    const allEvaluations = await Evaluation.findAll();
-    const allFaculty     = await Faculty.findAll();
+    const { period, department, faculty, subject, year_level, section } = req.query;
+    const filters = { period, department, faculty, subject, year_level, section };
+
+    const allEvaluations = await Evaluation.findAll(filters);
+    let allFaculty     = await Faculty.findAll();
+
+    if (department && department !== 'all') {
+      allFaculty = allFaculty.filter(f => f.department === department);
+    }
+    if (faculty && faculty !== 'all') {
+      allFaculty = allFaculty.filter(f => String(f.id) === String(faculty));
+    }
+
     const enrolledMap    = await Faculty.getAllEnrolledStudentCounts();
     const analysis       = generateSystemRecommendations(allEvaluations, allFaculty, enrolledMap);
+
+    // Dynamic filter options for frontend dropdowns
+    const periods = await AcademicPeriod.findAll();
+    const subjects = await Subject.findAll();
+    const [deptRows] = await pool.execute(
+      "SELECT DISTINCT department FROM faculty WHERE department IS NOT NULL AND department != '' ORDER BY department ASC"
+    );
+    const departments = deptRows.map(r => r.department);
+    const [secRows] = await pool.execute(
+      "SELECT DISTINCT section FROM students WHERE section IS NOT NULL AND section != '' ORDER BY section ASC"
+    );
+    const sections = secRows.map(r => r.section);
+    const yearLevels = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
+
+    analysis.filterOptions = {
+      periods: periods.map(p => ({
+        id: p.id,
+        label: `${p.academic_year} ${p.semester}${p.is_active ? ' (Active)' : ''}`,
+        is_active: p.is_active,
+      })),
+      departments,
+      faculty: (await Faculty.findAll()).map(f => ({ id: f.id, name: f.name, department: f.department })),
+      subjects: subjects.map(s => ({ id: s.id, code: s.code, name: s.name })),
+      yearLevels,
+      sections,
+    };
+    analysis.activeFilters = filters;
 
     if (req.user.role === 'admin') {
       await AuditLog.log({
@@ -518,7 +557,7 @@ const getSystemAnalysis = async (req, res) => {
         actor_id: req.user.id,
         action: 'REPORT_ACCESS_SYSTEM',
         target: 'system_analysis',
-        details: { total_evaluations: allEvaluations.length, total_faculty: allFaculty.length },
+        details: { total_evaluations: allEvaluations.length, total_faculty: allFaculty.length, filters },
         ip_address: req.ip,
       });
     }

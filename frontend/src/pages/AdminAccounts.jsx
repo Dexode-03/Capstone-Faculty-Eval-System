@@ -14,8 +14,9 @@ export default function AdminAccounts() {
   const [successMessage, setSuccessMessage] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-  // Filter state
+  // Filter state (Task 3B.5 / FR-02)
   const [department, setDepartment] = useState('');
+  const [subject, setSubject] = useState('');
   const [yearLevel, setYearLevel] = useState('');
   const [section, setSection] = useState('');
   const [search, setSearch] = useState('');
@@ -23,6 +24,7 @@ export default function AdminAccounts() {
   // Available filter options (from DB)
   const [filterOptions, setFilterOptions] = useState({
     departments: [],
+    subjects: [],
     yearLevels: [],
     sections: [],
   });
@@ -37,6 +39,7 @@ export default function AdminAccounts() {
   // Reset filters when role changes
   useEffect(() => {
     setDepartment('');
+    setSubject('');
     setYearLevel('');
     setSection('');
     setSearch('');
@@ -58,6 +61,7 @@ export default function AdminAccounts() {
 
       const filters = {};
       if (department) filters.department = department;
+      if (subject) filters.subject = subject;
       if (yearLevel) filters.year_level = yearLevel;
       if (section) filters.section = section;
       if (search) filters.search = search;
@@ -65,13 +69,7 @@ export default function AdminAccounts() {
       const result = await authService.getAllAccounts(role, filters);
       setAccounts(result.data.data || []);
       if (result.data.filters) {
-        const newFilters = result.data.filters;
-        setFilterOptions(newFilters);
-        
-        // Auto-select first options if not set
-        setDepartment(prev => prev || newFilters.departments?.[0] || '');
-        setYearLevel(prev => prev || newFilters.yearLevels?.[0] || '');
-        setSection(prev => prev || newFilters.sections?.[0] || '');
+        setFilterOptions(result.data.filters);
       }
     } catch (err) {
       console.error('Error fetching accounts:', err);
@@ -79,7 +77,7 @@ export default function AdminAccounts() {
     } finally {
       setLoading(false);
     }
-  }, [role, department, yearLevel, section, search, user, navigate]);
+  }, [role, department, subject, yearLevel, section, search, user, navigate]);
 
   useEffect(() => {
     if (user?.role === 'admin' && !authLoading) {
@@ -134,9 +132,10 @@ export default function AdminAccounts() {
 
   const activeFilterCount = [
     search,
-    department && filterOptions.departments[0] !== department ? department : '',
-    yearLevel && filterOptions.yearLevels[0] !== yearLevel ? yearLevel : '',
-    section && filterOptions.sections[0] !== section ? section : ''
+    department,
+    subject,
+    yearLevel,
+    section,
   ].filter(Boolean).length;
 
   return (
@@ -163,7 +162,7 @@ export default function AdminAccounts() {
       <div className="mb-6 bg-white rounded-lg shadow p-4">
         <div className="flex flex-wrap gap-3 items-end">
           {/* Role */}
-          <div className="min-w-[140px]">
+          <div className="min-w-[130px]">
             <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Role</label>
             <select
               value={role}
@@ -178,13 +177,14 @@ export default function AdminAccounts() {
 
           {/* Department (faculty + student) */}
           {(role === 'faculty' || role === 'student') && (
-            <div className="min-w-[180px]">
+            <div className="min-w-[160px]">
               <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Department</label>
               <select
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
+                <option value="">All Departments</option>
                 {filterOptions.departments.map(d => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -192,15 +192,33 @@ export default function AdminAccounts() {
             </div>
           )}
 
-          {/* Year Level (student only) */}
-          {role === 'student' && (
-            <div className="min-w-[140px]">
+          {/* Subject (faculty + student) - Task 3B.5 / FR-02 */}
+          {(role === 'faculty' || role === 'student') && (
+            <div className="min-w-[180px]">
+              <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Subject</label>
+              <select
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">All Subjects</option>
+                {(filterOptions.subjects || []).map(s => (
+                  <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Year Level (faculty + student) */}
+          {(role === 'faculty' || role === 'student') && (
+            <div className="min-w-[130px]">
               <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Year Level</label>
               <select
                 value={yearLevel}
                 onChange={(e) => setYearLevel(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
+                <option value="">All Year Levels</option>
                 {filterOptions.yearLevels.map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
@@ -208,8 +226,8 @@ export default function AdminAccounts() {
             </div>
           )}
 
-          {/* Section (student only) */}
-          {role === 'student' && (
+          {/* Section (faculty + student) */}
+          {(role === 'faculty' || role === 'student') && (
             <div className="min-w-[120px]">
               <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-wider mb-1">Section</label>
               <select
@@ -217,6 +235,7 @@ export default function AdminAccounts() {
                 onChange={(e) => setSection(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
+                <option value="">All Sections</option>
                 {filterOptions.sections.map(s => (
                   <option key={s} value={s}>Section {s}</option>
                 ))}
@@ -255,9 +274,10 @@ export default function AdminAccounts() {
             <span className="text-[12px] text-gray-500">{accounts.length} result{accounts.length !== 1 ? 's' : ''}</span>
             <button
               onClick={() => {
-                setDepartment(filterOptions.departments[0] || '');
-                setYearLevel(filterOptions.yearLevels[0] || '');
-                setSection(filterOptions.sections[0] || '');
+                setDepartment('');
+                setSubject('');
+                setYearLevel('');
+                setSection('');
                 setSearch('');
                 setSearchInput('');
               }}

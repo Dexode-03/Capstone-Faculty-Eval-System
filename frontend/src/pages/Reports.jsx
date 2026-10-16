@@ -56,14 +56,68 @@ const Reports = () => {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
+
+  // Drill-down filters state (Task 3B.5 / FR-28)
+  const [selectedPeriod, setSelectedPeriod]         = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [selectedFaculty, setSelectedFaculty] = useState('all');
+  const [selectedFaculty, setSelectedFaculty]       = useState('all');
+  const [selectedSubject, setSelectedSubject]       = useState('all');
+  const [selectedYearLevel, setSelectedYearLevel]   = useState('all');
+  const [selectedSection, setSelectedSection]       = useState('all');
+
+  // Available filter options (from DB)
+  const [filterOptions, setFilterOptions] = useState({
+    periods: [],
+    departments: [],
+    faculty: [],
+    subjects: [],
+    yearLevels: [],
+    sections: [],
+  });
+
+  const resetFilters = () => {
+    setSelectedPeriod('all');
+    setSelectedDepartment('all');
+    setSelectedFaculty('all');
+    setSelectedSubject('all');
+    setSelectedYearLevel('all');
+    setSelectedSection('all');
+  };
+
+  const hasActiveFilters =
+    selectedPeriod !== 'all' ||
+    selectedDepartment !== 'all' ||
+    selectedFaculty !== 'all' ||
+    selectedSubject !== 'all' ||
+    selectedYearLevel !== 'all' ||
+    selectedSection !== 'all';
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const res = await evaluationService.getSystemAnalysis();
+        setLoading(true);
+        const params = {};
+        if (selectedPeriod !== 'all') params.period = selectedPeriod;
+        if (selectedDepartment !== 'all') params.department = selectedDepartment;
+        if (selectedFaculty !== 'all') params.faculty = selectedFaculty;
+        if (selectedSubject !== 'all') params.subject = selectedSubject;
+        if (selectedYearLevel !== 'all') params.year_level = selectedYearLevel;
+        if (selectedSection !== 'all') params.section = selectedSection;
+
+        const res = await evaluationService.getSystemAnalysis(params);
         setAnalysis(res.data);
+
+        if (res.data?.filterOptions) {
+          const fo = res.data.filterOptions;
+          setFilterOptions(prev => ({
+            periods: fo.periods?.length ? fo.periods : prev.periods,
+            departments: fo.departments?.length ? fo.departments : prev.departments,
+            faculty: fo.faculty?.length ? fo.faculty : prev.faculty,
+            subjects: fo.subjects?.length ? fo.subjects : prev.subjects,
+            yearLevels: fo.yearLevels?.length ? fo.yearLevels : prev.yearLevels,
+            sections: fo.sections?.length ? fo.sections : prev.sections,
+          }));
+        }
       } catch {
         setError('Failed to load system analysis.');
       } finally {
@@ -71,9 +125,9 @@ const Reports = () => {
       }
     };
     fetch();
-  }, []);
+  }, [selectedPeriod, selectedDepartment, selectedFaculty, selectedSubject, selectedYearLevel, selectedSection]);
 
-  if (loading) {
+  if (loading && !analysis) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-5 h-5 border-2 border-psu-border border-t-psu-primary rounded-full animate-spin" />
@@ -81,7 +135,7 @@ const Reports = () => {
     );
   }
 
-  if (error) {
+  if (error && !analysis) {
     return (
       <div className="text-center py-16">
         <p className="text-[13px] text-red-500">{error}</p>
@@ -89,42 +143,26 @@ const Reports = () => {
     );
   }
 
-  if (!analysis || analysis.totalEvaluations === 0) {
-    return (
-      <div>
-        <div className="mb-10">
-          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Analytics</p>
-          <h1 className="text-3xl font-semibold text-psu-text tracking-tight">System Reports</h1>
-          <p className="text-[13px] text-psu-muted mt-1">Prescriptive analysis across all faculty and departments.</p>
-        </div>
-        <div className="border border-psu-border bg-white rounded-lg px-6 py-16 text-center">
-          <p className="text-[14px] font-semibold text-psu-text">No evaluations yet</p>
-          <p className="text-[13px] text-psu-muted mt-1">
-            Reports will appear here once students start submitting evaluations.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const sentimentCounts = analysis.sentimentCounts || { positive: 0, neutral: 0, negative: 0 };
+  const sentimentCounts = analysis?.sentimentCounts || { positive: 0, neutral: 0, negative: 0 };
   const total = sentimentCounts.positive + sentimentCounts.neutral + sentimentCounts.negative;
   const pct   = v => total === 0 ? 0 : Math.round((v / total) * 100);
-  const departments = analysis.departmentInsights?.map(d => d.department) || [];
+  const departments = filterOptions.departments?.length
+    ? filterOptions.departments
+    : (analysis?.departmentInsights?.map(d => d.department) || []);
 
-  const filteredHeatmap = (analysis.sentimentHeatmap || []).filter(row =>
+  const filteredHeatmap = (analysis?.sentimentHeatmap || []).filter(row =>
     selectedDepartment === 'all' ? true : row.department === selectedDepartment
   );
-  const filteredDeptInsights = (analysis.departmentInsights || []).filter(row =>
+  const filteredDeptInsights = (analysis?.departmentInsights || []).filter(row =>
     selectedDepartment === 'all' ? true : row.department === selectedDepartment
   );
-  const filteredFaculty = (analysis.facultySummary || []).filter(row => {
+  const filteredFaculty = (analysis?.facultySummary || []).filter(row => {
     const departmentMatch = selectedDepartment === 'all' || row.department === selectedDepartment;
     const facultyMatch = selectedFaculty === 'all' || String(row.id) === String(selectedFaculty);
     return departmentMatch && facultyMatch;
   });
 
-  const facultyOptions = (analysis.facultySummary || [])
+  const facultyOptions = (filterOptions.faculty?.length ? filterOptions.faculty : (analysis?.facultySummary || []))
     .filter(row => selectedDepartment === 'all' ? true : row.department === selectedDepartment)
     .map(row => ({ id: row.id, name: row.name }));
 
@@ -479,18 +517,34 @@ const Reports = () => {
         </p>
       </div>
 
-      {/* Drill-down controls */}
+      {/* Drill-down controls (Task 3B.5 / FR-28) */}
       <div className="border border-psu-border bg-white rounded-lg p-4 mb-8">
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
-          <div className="w-full md:w-64">
-            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Department</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
+          {/* Period */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Academic Period</label>
+            <select
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+            >
+              <option value="all">All Periods</option>
+              {(filterOptions.periods || []).map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Department */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Department</label>
             <select
               value={selectedDepartment}
               onChange={(e) => {
                 setSelectedDepartment(e.target.value);
                 setSelectedFaculty('all');
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
             >
               <option value="all">All Departments</option>
               {departments.map((dept) => (
@@ -498,12 +552,14 @@ const Reports = () => {
               ))}
             </select>
           </div>
-          <div className="w-full md:w-72">
-            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Faculty</label>
+
+          {/* Faculty */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Faculty</label>
             <select
               value={selectedFaculty}
               onChange={(e) => setSelectedFaculty(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
             >
               <option value="all">All Faculty</option>
               {facultyOptions.map((f) => (
@@ -511,15 +567,101 @@ const Reports = () => {
               ))}
             </select>
           </div>
+
+          {/* Subject */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Subject</label>
+            <select
+              value={selectedSubject}
+              onChange={(e) => setSelectedSubject(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+            >
+              <option value="all">All Subjects</option>
+              {(filterOptions.subjects || []).map((s) => (
+                <option key={s.id} value={s.id}>{s.code} - {s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Level */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Year Level</label>
+            <select
+              value={selectedYearLevel}
+              onChange={(e) => setSelectedYearLevel(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+            >
+              <option value="all">All Year Levels</option>
+              {(filterOptions.yearLevels || []).map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Section */}
+          <div>
+            <label className="block text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-1.5">Section</label>
+            <select
+              value={selectedSection}
+              onChange={(e) => setSelectedSection(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-2.5 py-2 text-[13px] text-psu-text bg-white focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary"
+            >
+              <option value="all">All Sections</option>
+              {(filterOptions.sections || []).map((s) => (
+                <option key={s} value={s}>Section {s}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Action buttons & Filter summary */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-psu-border">
+          <div className="flex items-center gap-2">
+            {hasActiveFilters ? (
+              <>
+                <span className="text-[12px] text-psu-muted font-medium">Filters applied</span>
+                <span className="text-gray-300">·</span>
+                <button
+                  onClick={resetFilters}
+                  className="text-[12px] text-psu-primary hover:underline font-semibold"
+                >
+                  Clear all filters
+                </button>
+              </>
+            ) : (
+              <span className="text-[12px] text-psu-muted">Showing all evaluations</span>
+            )}
+          </div>
           <button
             onClick={generateSummaryReport}
-            className="bg-psu-primary text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors"
+            className="bg-psu-primary text-white rounded-lg px-5 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors whitespace-nowrap"
           >
             Generate Summary Report
           </button>
         </div>
       </div>
 
+      {(!analysis || analysis.totalEvaluations === 0) ? (
+        <div className="border border-psu-border bg-white rounded-lg px-6 py-16 text-center">
+          <p className="text-[14px] font-semibold text-psu-text">
+            {hasActiveFilters ? 'No evaluations match the selected filters' : 'No evaluations yet'}
+          </p>
+          <p className="text-[13px] text-psu-muted mt-1">
+            {hasActiveFilters
+              ? 'Try adjusting or clearing your filters to see more results.'
+              : 'Reports will appear here once students start submitting evaluations.'}
+          </p>
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="mt-4 px-4 py-1.5 bg-psu-primary text-white text-[12px] font-semibold rounded hover:bg-psu-secondary transition-colors"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
       {/* Overview row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="border border-psu-border bg-white rounded-lg p-5">
@@ -852,8 +994,9 @@ const Reports = () => {
             </div>
           )}
         </div>
-
       </div>
+        </>
+      )}
     </div>
   );
 };
