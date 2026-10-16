@@ -550,14 +550,17 @@ const Reports = () => {
           <h2 className="text-[13px] font-semibold text-psu-text">System-wide Recommendations</h2>
         </div>
         <div className="divide-y divide-psu-border">
-          {analysis.systemRecommendations.map((rec, i) => (
-            <div key={i} className="px-6 py-4 flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-psu-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-[10px] font-bold text-psu-primary">{i + 1}</span>
+          {analysis.systemRecommendations.map((rec, i) => {
+            const text = typeof rec === 'object' && rec !== null ? (rec.text || '') : String(rec);
+            return (
+              <div key={i} className="px-6 py-4 flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-psu-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-psu-primary">{i + 1}</span>
+                </div>
+                <p className="text-[14px] text-psu-text leading-relaxed">{text}</p>
               </div>
-              <p className="text-[14px] text-psu-text leading-relaxed">{rec}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

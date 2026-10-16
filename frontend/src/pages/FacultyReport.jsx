@@ -1036,20 +1036,47 @@ const FacultyReport = () => {
         ) : (
           <div className="divide-y divide-psu-border">
             {report.recommendations.map((rec, i) => {
-              const isPositive = rec.toLowerCase().includes('excellent') ||
-                                 rec.toLowerCase().includes('strong') ||
-                                 rec.toLowerCase().includes('appreciate') ||
-                                 rec.toLowerCase().includes('maintain') ||
-                                 rec.toLowerCase().includes('nominating') ||
-                                 rec.toLowerCase().includes('recognition');
+              const text = typeof rec === 'object' && rec !== null ? (rec.text || '') : String(rec);
+              const severity = typeof rec === 'object' && rec !== null ? (rec.severity || 'medium') : 'medium';
+              const isPositive = severity === 'positive' ||
+                                 text.toLowerCase().includes('excellent') ||
+                                 text.toLowerCase().includes('strong') ||
+                                 text.toLowerCase().includes('appreciate') ||
+                                 text.toLowerCase().includes('maintain') ||
+                                 text.toLowerCase().includes('nominating') ||
+                                 text.toLowerCase().includes('recognition');
+
+              const severityBadge = {
+                high: 'bg-red-50 text-red-700 border-red-200',
+                medium: 'bg-amber-50 text-amber-700 border-amber-200',
+                low: 'bg-blue-50 text-blue-700 border-blue-200',
+                positive: 'bg-green-50 text-green-700 border-green-200',
+              }[severity] || 'bg-gray-100 text-psu-muted border-psu-border';
+
+              const severityLabel = {
+                high: 'High Priority',
+                medium: 'Medium Priority',
+                low: 'Low Priority',
+                positive: 'Commendation',
+              }[severity] || severity;
+
               return (
                 <div key={i} className="px-6 py-4 flex items-start gap-3">
-                  {isPositive ? (
+                  {severity === 'high' ? (
+                    <HiOutlineExclamation className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  ) : isPositive ? (
                     <HiOutlineCheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                   ) : (
                     <HiOutlineExclamation className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
                   )}
-                  <p className="text-[14px] text-psu-text leading-relaxed">{rec}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${severityBadge}`}>
+                        {severityLabel}
+                      </span>
+                    </div>
+                    <p className="text-[14px] text-psu-text leading-relaxed">{text}</p>
+                  </div>
                 </div>
               );
             })}

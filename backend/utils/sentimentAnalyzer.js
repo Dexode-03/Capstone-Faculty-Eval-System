@@ -229,9 +229,52 @@ const STRENGTH_KEYWORD_MAP = {
   linaw:        { theme: 'Clarity', rec: null },
 };
 
+// ── Recommendation severity priorities (Task 3B.4 / FR-23) ────────
+const SEVERITY_ORDER = {
+  high: 1,
+  medium: 2,
+  low: 3,
+  positive: 4,
+};
+
+const WEAKNESS_THEME_SEVERITY = {
+  Punctuality: 'high',
+  Fairness: 'high',
+  Respect: 'high',
+  Clarity: 'medium',
+  Pacing: 'medium',
+  Engagement: 'medium',
+  Grading: 'medium',
+};
+
+/**
+ * RecommendationItem extends String for backward compatibility with string operations
+ * while providing structured metadata (severity, theme, rule_type, evidence) in JSON.
+ */
+class RecommendationItem extends String {
+  constructor(text, meta = {}) {
+    super(text);
+    this.text = String(text);
+    this.severity = meta.severity || 'medium';
+    this.theme = meta.theme || null;
+    this.rule_type = meta.rule_type || null;
+    this.evidence = meta.evidence || null;
+  }
+
+  toJSON() {
+    return {
+      text: this.toString(),
+      severity: this.severity,
+      theme: this.theme,
+      rule_type: this.rule_type,
+      evidence: this.evidence,
+    };
+  }
+}
+
 /**
  * Generate prescriptive recommendations for a single faculty member.
- * Uses dynamic keyword extraction instead of hardcoded includes().
+ * Uses dynamic keyword extraction and ranks recommendations with most serious first (Task 3B.4 / FR-23).
  */
 const generateRecommendations = (evaluations, dbRules = null) => {
   const recommendations = [];
@@ -284,7 +327,12 @@ const generateRecommendations = (evaluations, dbRules = null) => {
 
       if (match) {
         const text = rule.recommendation_text.replace('{rating}', avgRating.toFixed(1));
-        recommendations.push(text);
+        const sev = rule.severity || (avgRating < 2.5 ? 'high' : avgRating < 3.5 ? 'medium' : avgRating < 4.5 ? 'low' : 'positive');
+        recommendations.push(new RecommendationItem(text, {
+          severity: sev,
+          theme: rule.theme || 'Rating',
+          rule_type: 'rating',
+        }));
         break;
       }
     }
@@ -305,7 +353,12 @@ const generateRecommendations = (evaluations, dbRules = null) => {
         const text = rule.recommendation_text
           .replace('{negative_pct}', Math.round(pct))
           .replace('{positive_pct}', Math.round(pct));
-        recommendations.push(text);
+        const sev = rule.severity || (isNeg ? (pct > 40 ? 'high' : 'medium') : 'positive');
+        recommendations.push(new RecommendationItem(text, {
+          severity: sev,
+          theme: rule.theme || 'Sentiment',
+          rule_type: 'sentiment',
+        }));
       }
     }
 
@@ -317,7 +370,14 @@ const generateRecommendations = (evaluations, dbRules = null) => {
         const kwList = rule.keywords.split(',').map(k => k.trim().toLowerCase());
         if (kwList.includes(word) && !triggeredWeakThemes.has(rule.theme)) {
           triggeredWeakThemes.add(rule.theme);
-          recommendations.push(`[Weakness: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`);
+          const text = `[Weakness: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`;
+          const sev = rule.severity || WEAKNESS_THEME_SEVERITY[rule.theme] || 'medium';
+          recommendations.push(new RecommendationItem(text, {
+            severity: sev,
+            theme: rule.theme,
+            rule_type: 'weakness',
+            evidence: `mentioned ${count}x`,
+          }));
           break;
         }
       }
@@ -331,7 +391,13 @@ const generateRecommendations = (evaluations, dbRules = null) => {
         const kwList = rule.keywords.split(',').map(k => k.trim().toLowerCase());
         if (kwList.includes(word) && !triggeredStrongThemes.has(rule.theme)) {
           triggeredStrongThemes.add(rule.theme);
-          recommendations.push(`[Strength: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`);
+          const text = `[Strength: ${rule.theme} — mentioned ${count}x] ${rule.recommendation_text}`;
+          recommendations.push(new RecommendationItem(text, {
+            severity: rule.severity || 'positive',
+            theme: rule.theme,
+            rule_type: 'strength',
+            evidence: `mentioned ${count}x`,
+          }));
           break;
         }
       }
@@ -349,47 +415,64 @@ const generateRecommendations = (evaluations, dbRules = null) => {
       .slice(0, 3);
     if (unmappedWeak.length > 0) {
       const wordList = unmappedWeak.map(k => `"${k.word}" (${k.count}x)`).join(', ');
-      recommendations.push(
-        `Additional recurring concern keywords detected: ${wordList}. Review these topics in student feedback for further action.`
-      );
+      const text = `Additional recurring concern keywords detected: ${wordList}. Review these topics in student feedback for further action.`;
+      recommendations.push(new RecommendationItem(text, {
+        severity: 'medium',
+        theme: 'Recurring Concerns',
+        rule_type: 'weakness',
+      }));
     }
+
+    // Sort with most serious first: high (1) -> medium (2) -> low (3) -> positive (4)
+    recommendations.sort((a, b) => {
+      const rankA = SEVERITY_ORDER[a.severity] || 99;
+      const rankB = SEVERITY_ORDER[b.severity] || 99;
+      return rankA - rankB;
+    });
 
     return recommendations;
   }
 
   // ── FALLBACK: Hardcoded rules ──────────────────────────────────
   if (avgRating < 2.5) {
-    recommendations.push(
-      `Overall rating is critically low (${avgRating.toFixed(1)}/5). Immediate faculty development intervention is recommended, including a review of teaching methodology and classroom engagement.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Overall rating is critically low (${avgRating.toFixed(1)}/5). Immediate faculty development intervention is recommended, including a review of teaching methodology and classroom engagement.`,
+      { severity: 'high', theme: 'Rating', rule_type: 'rating' }
+    ));
   } else if (avgRating < 3.5) {
-    recommendations.push(
-      `Rating of ${avgRating.toFixed(1)}/5 is below satisfactory. Focus on specific areas flagged in student feedback and consider peer mentoring from higher-rated colleagues.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Rating of ${avgRating.toFixed(1)}/5 is below satisfactory. Focus on specific areas flagged in student feedback and consider peer mentoring from higher-rated colleagues.`,
+      { severity: 'medium', theme: 'Rating', rule_type: 'rating' }
+    ));
   } else if (avgRating < 4.5) {
-    recommendations.push(
-      `Rating of ${avgRating.toFixed(1)}/5 is good. Minor refinements based on student feedback can push performance to excellent.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Rating of ${avgRating.toFixed(1)}/5 is good. Minor refinements based on student feedback can push performance to excellent.`,
+      { severity: 'low', theme: 'Rating', rule_type: 'rating' }
+    ));
   } else {
-    recommendations.push(
-      `Excellent overall rating (${avgRating.toFixed(1)}/5). This faculty member is a strong candidate for mentoring roles and teaching excellence recognition.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Excellent overall rating (${avgRating.toFixed(1)}/5). This faculty member is a strong candidate for mentoring roles and teaching excellence recognition.`,
+      { severity: 'positive', theme: 'Rating', rule_type: 'rating' }
+    ));
   }
 
   if (negativePercent > 40) {
-    recommendations.push(
-      `High high-probability negative sentiment detected (${Math.round(negativePercent)}%). A structured faculty development plan and follow-up evaluation within the semester is strongly recommended.`
-    );
+    recommendations.push(new RecommendationItem(
+      `High high-probability negative sentiment detected (${Math.round(negativePercent)}%). A structured faculty development plan and follow-up evaluation within the semester is strongly recommended.`,
+      { severity: 'high', theme: 'Sentiment Negative', rule_type: 'sentiment' }
+    ));
   } else if (negativePercent > 20) {
-    recommendations.push(
-      `Moderate high-probability negative sentiment present (${Math.round(negativePercent)}%). Review recurring complaints in student feedback and address specific concerns raised.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Moderate high-probability negative sentiment present (${Math.round(negativePercent)}%). Review recurring complaints in student feedback and address specific concerns raised.`,
+      { severity: 'medium', theme: 'Sentiment Negative', rule_type: 'sentiment' }
+    ));
   }
 
   if (positivePercent > 70) {
-    recommendations.push(
-      `Strong high-probability positive sentiment trend (${Math.round(positivePercent)}%). Consider nominating this faculty for teaching awards or a leadership role in curriculum development.`
-    );
+    recommendations.push(new RecommendationItem(
+      `Strong high-probability positive sentiment trend (${Math.round(positivePercent)}%). Consider nominating this faculty for teaching awards or a leadership role in curriculum development.`,
+      { severity: 'positive', theme: 'Sentiment Positive', rule_type: 'sentiment' }
+    ));
   }
 
   const triggeredWeakThemes = new Set();
@@ -400,7 +483,14 @@ const generateRecommendations = (evaluations, dbRules = null) => {
       const rec = mapping.rec || Object.values(WEAKNESS_KEYWORD_MAP)
         .find(m => m.theme === mapping.theme && m.rec)?.rec;
       if (rec) {
-        recommendations.push(`[Weakness: ${mapping.theme} — mentioned ${count}x] ${rec}`);
+        const text = `[Weakness: ${mapping.theme} — mentioned ${count}x] ${rec}`;
+        const sev = WEAKNESS_THEME_SEVERITY[mapping.theme] || 'medium';
+        recommendations.push(new RecommendationItem(text, {
+          severity: sev,
+          theme: mapping.theme,
+          rule_type: 'weakness',
+          evidence: `mentioned ${count}x`,
+        }));
       }
     }
   });
@@ -413,7 +503,13 @@ const generateRecommendations = (evaluations, dbRules = null) => {
       const rec = mapping.rec || Object.values(STRENGTH_KEYWORD_MAP)
         .find(m => m.theme === mapping.theme && m.rec)?.rec;
       if (rec) {
-        recommendations.push(`[Strength: ${mapping.theme} — mentioned ${count}x] ${rec}`);
+        const text = `[Strength: ${mapping.theme} — mentioned ${count}x] ${rec}`;
+        recommendations.push(new RecommendationItem(text, {
+          severity: 'positive',
+          theme: mapping.theme,
+          rule_type: 'strength',
+          evidence: `mentioned ${count}x`,
+        }));
       }
     }
   });
@@ -427,10 +523,20 @@ const generateRecommendations = (evaluations, dbRules = null) => {
     .slice(0, 3);
   if (unmappedWeak.length > 0) {
     const wordList = unmappedWeak.map(k => `"${k.word}" (${k.count}x)`).join(', ');
-    recommendations.push(
-      `Additional recurring concern keywords detected: ${wordList}. Review these topics in student feedback for further action.`
-    );
+    const text = `Additional recurring concern keywords detected: ${wordList}. Review these topics in student feedback for further action.`;
+    recommendations.push(new RecommendationItem(text, {
+      severity: 'medium',
+      theme: 'Recurring Concerns',
+      rule_type: 'weakness',
+    }));
   }
+
+  // Sort with most serious first: high (1) -> medium (2) -> low (3) -> positive (4)
+  recommendations.sort((a, b) => {
+    const rankA = SEVERITY_ORDER[a.severity] || 99;
+    const rankB = SEVERITY_ORDER[b.severity] || 99;
+    return rankA - rankB;
+  });
 
   return recommendations;
 };
@@ -846,4 +952,12 @@ const generateSystemRecommendations = (allEvaluations, facultyList, enrolledMap 
   };
 };
 
-module.exports = { analyzeSentiment, generateRecommendations, generateSystemRecommendations, SHORT_CATEGORY };
+module.exports = {
+  analyzeSentiment,
+  generateRecommendations,
+  generateSystemRecommendations,
+  SHORT_CATEGORY,
+  SEVERITY_ORDER,
+  WEAKNESS_THEME_SEVERITY,
+  RecommendationItem,
+};
