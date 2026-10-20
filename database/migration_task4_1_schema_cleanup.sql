@@ -39,5 +39,5 @@ ALTER TABLE `student_subjects`
   ADD CONSTRAINT `fk_student_subjects_faculty_subject`
   FOREIGN KEY (`subject_id`, `faculty_id`)
   REFERENCES `faculty_subjects` (`subject_id`, `faculty_id`)
-  ON DELETE SET NULL
+  ON DELETE CASCADE
   ON UPDATE CASCADE;
