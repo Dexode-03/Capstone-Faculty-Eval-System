@@ -107,12 +107,12 @@ const PrivacyConsentModal = ({ onAccept, onDecline }) => {
             </span>
           </label>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex flex-col-reverse sm:flex-row items-center sm:justify-end gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={onDecline}
               disabled={loading}
-              className="border border-psu-border text-psu-muted rounded-lg px-4 py-2 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto border border-psu-border text-psu-muted rounded-lg px-4 py-2.5 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors disabled:opacity-50 text-center"
             >
               Decline
             </button>
@@ -120,7 +120,7 @@ const PrivacyConsentModal = ({ onAccept, onDecline }) => {
               type="button"
               onClick={handleAccept}
               disabled={!agreed || loading}
-              className="bg-psu-primary text-white rounded-lg px-5 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-psu-primary text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-center"
             >
               {loading ? 'Recording...' : 'I Agree & Continue'}
             </button>

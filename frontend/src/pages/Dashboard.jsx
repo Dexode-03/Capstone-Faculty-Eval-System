@@ -524,9 +524,9 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
                         ? Math.round((yr.evaluatedStudents / yr.totalStudents) * 100)
                         : 0;
                       return (
-                        <div key={yr.yearLevel} className="px-6 py-3 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3 flex-1">
-                            <span className="text-[12px] font-medium text-slate-600 w-24 flex-shrink-0">{yr.yearLevel}</span>
+                        <div key={yr.yearLevel} className="px-4 sm:px-6 py-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 sm:gap-4">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-[180px]">
+                            <span className="text-[12px] font-medium text-slate-600 w-20 sm:w-24 flex-shrink-0">{yr.yearLevel}</span>
                             <div className="flex-1 h-1.5 bg-slate-100 rounded-full">
                               <div
                                 className={`h-full rounded-full transition-all duration-700 ${yrPct === 100 ? 'bg-green-500' : 'bg-psu-primary'}`}

@@ -18,16 +18,16 @@ const RATING_SCALE = [
 // ── Rating scale header table ─────────────────────────────────────
 const RatingScaleTable = () => (
   <div className="border border-psu-border bg-white rounded-lg overflow-hidden mb-6">
-    <div className="px-6 py-3 bg-gray-50 border-b border-psu-border">
+    <div className="px-4 sm:px-6 py-3 bg-gray-50 border-b border-psu-border">
       <h3 className="text-[12px] font-semibold text-psu-muted uppercase tracking-wider">Rating Scale</h3>
     </div>
     <div className="divide-y divide-psu-border">
       {RATING_SCALE.map(r => (
-        <div key={r.value} className="px-6 py-2.5 flex items-center gap-4">
+        <div key={r.value} className="px-4 sm:px-6 py-2.5 flex items-center gap-3 sm:gap-4">
           <span className="w-6 h-6 rounded-full bg-psu-primary/10 text-psu-primary text-[12px] font-bold flex items-center justify-center flex-shrink-0">
             {r.value}
           </span>
-          <span className="text-[13px] font-medium text-psu-text w-44 flex-shrink-0">{r.label}</span>
+          <span className="text-[13px] font-medium text-psu-text flex-1 sm:w-44 sm:flex-shrink-0">{r.label}</span>
         </div>
       ))}
     </div>
@@ -86,7 +86,7 @@ const QuestionRow = ({ number, question, value, onChange, isUnanswered }) => (
 const ConfirmationModal = ({ faculty, onNextFaculty, onClose, sentimentResult, overallRating }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
     <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-    <div className="relative bg-white rounded-2xl border border-psu-border shadow-xl w-full max-w-md p-8 text-center">
+    <div className="relative bg-white rounded-2xl border border-psu-border shadow-xl w-full max-w-md p-6 sm:p-8 text-center">
       <button onClick={onClose} className="absolute top-4 right-4 text-gray-300 hover:text-psu-text transition-colors">
         <HiX className="h-5 w-5" />
       </button>
@@ -95,26 +95,28 @@ const ConfirmationModal = ({ faculty, onNextFaculty, onClose, sentimentResult, o
       <p className="text-[13px] text-psu-muted mb-5">
         Your feedback for <span className="font-medium text-psu-text">{faculty?.name}</span> has been recorded.
       </p>
-      {overallRating > 0 && (
-        <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-4 py-2 mb-3 text-[12px]">
-          <span className="text-psu-muted uppercase tracking-wider font-medium">Overall Rating</span>
-          <span className="font-bold text-psu-primary tabular-nums">{overallRating} / 5</span>
-        </div>
-      )}
-      {sentimentResult && (
-        <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-4 py-2 mb-6 ml-2 text-[12px]">
-          <span className="text-psu-muted uppercase tracking-wider font-medium">Sentiment</span>
-          {sentimentResult.label === 'positive' && <HiEmojiHappy className="h-4 w-4 text-psu-primary" />}
-          {sentimentResult.label === 'neutral' && <HiMinusCircle className="h-4 w-4 text-psu-muted" />}
-          {sentimentResult.label === 'negative' && <HiEmojiSad className="h-4 w-4 text-red-500" />}
-          <span className={`font-semibold capitalize ${
-            sentimentResult.label === 'positive' ? 'text-psu-primary' :
-            sentimentResult.label === 'negative' ? 'text-red-500' : 'text-psu-muted'
-          }`}>
-            {sentimentResult.label}
-          </span>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+        {overallRating > 0 && (
+          <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-3 py-1.5 text-[12px]">
+            <span className="text-psu-muted uppercase tracking-wider font-medium">Overall Rating</span>
+            <span className="font-bold text-psu-primary tabular-nums">{overallRating} / 5</span>
+          </div>
+        )}
+        {sentimentResult && (
+          <div className="inline-flex items-center gap-2 border border-psu-border rounded-lg px-3 py-1.5 text-[12px]">
+            <span className="text-psu-muted uppercase tracking-wider font-medium">Sentiment</span>
+            {sentimentResult.label === 'positive' && <HiEmojiHappy className="h-4 w-4 text-psu-primary" />}
+            {sentimentResult.label === 'neutral' && <HiMinusCircle className="h-4 w-4 text-psu-muted" />}
+            {sentimentResult.label === 'negative' && <HiEmojiSad className="h-4 w-4 text-red-500" />}
+            <span className={`font-semibold capitalize ${
+              sentimentResult.label === 'positive' ? 'text-psu-primary' :
+              sentimentResult.label === 'negative' ? 'text-red-500' : 'text-psu-muted'
+            }`}>
+              {sentimentResult.label}
+            </span>
+          </div>
+        )}
+      </div>
       <div className="flex flex-col gap-3">
         {onNextFaculty && (
           <button
@@ -144,12 +146,12 @@ const SubmitConfirmModal = ({ onConfirm, onCancel, loading }) => (
       <p className="text-[13px] text-psu-muted leading-relaxed mb-6">
         Please confirm before submitting. You will not be able to edit this evaluation after submission.
       </p>
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex flex-col-reverse sm:flex-row items-center sm:justify-end gap-3">
         <button
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="border border-psu-border text-psu-muted rounded-lg px-4 py-2 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors disabled:opacity-50"
+          className="w-full sm:w-auto border border-psu-border text-psu-muted rounded-lg px-4 py-2.5 text-[13px] font-medium hover:text-psu-text hover:border-gray-300 transition-colors disabled:opacity-50 text-center"
         >
           Cancel
         </button>
@@ -157,7 +159,7 @@ const SubmitConfirmModal = ({ onConfirm, onCancel, loading }) => (
           type="button"
           onClick={onConfirm}
           disabled={loading}
-          className="bg-psu-primary text-white rounded-lg px-5 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-40"
+          className="w-full sm:w-auto bg-psu-primary text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-40 text-center"
         >
           {loading ? 'Submitting...' : 'Confirm Submit'}
         </button>

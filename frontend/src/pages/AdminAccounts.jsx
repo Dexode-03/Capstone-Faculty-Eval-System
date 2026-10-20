@@ -258,7 +258,7 @@ export default function AdminAccounts() {
           {/* Create Account */}
           <button
             onClick={() => navigate('/admin/accounts/create')}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium whitespace-nowrap"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium whitespace-nowrap text-center justify-center flex items-center"
           >
             + Create Account
           </button>
