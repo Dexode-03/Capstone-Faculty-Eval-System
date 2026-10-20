@@ -212,8 +212,8 @@ export default function CreateAccount() {
         return;
       }
 
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters');
+      if (formData.password.length < 8 || !/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+        setError('Password must be at least 8 characters and contain both letters and numbers');
         setLoading(false);
         return;
       }
@@ -405,11 +405,11 @@ export default function CreateAccount() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="At least 6 characters"
+                placeholder="At least 8 characters (letters & numbers)"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+              <p className="text-xs text-gray-500 mt-1">Minimum 8 characters with letters and numbers</p>
             </div>
 
             {/* Role */}

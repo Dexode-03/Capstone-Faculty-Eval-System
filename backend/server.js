@@ -13,13 +13,29 @@ const academicPeriodRoutes = require('./routes/academicPeriodRoutes');
 const evaluationQuestionRoutes = require('./routes/evaluationQuestionRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
 const recommendationRuleRoutes = require('./routes/recommendationRuleRoutes');
+const securityHeaders = require('./middleware/securityHeaders');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Security Headers (Task 4.3 / NFR-01)
+app.use(securityHeaders);
+
+// Strict CORS Origin Verification (Task 4.3)
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (no origin) or origins in allowed list
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Blocked by CORS policy: Origin not allowed.'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());

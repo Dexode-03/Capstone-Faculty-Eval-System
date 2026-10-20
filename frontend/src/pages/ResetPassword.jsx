@@ -28,6 +28,12 @@ const ResetPassword = () => {
       return;
     }
 
+    if (formData.password.length < 8 || !/[a-zA-Z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      setError('Password must be at least 8 characters and contain both letters and numbers.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await authService.resetPassword({ token, ...formData });
       setSuccess(response.data.message);
@@ -48,7 +54,7 @@ const ResetPassword = () => {
           </div>
           <h1 className="text-2xl font-semibold text-psu-text tracking-tight">New password</h1>
           <p className="text-[13px] text-psu-muted mt-1.5 leading-relaxed">
-            Choose a new password for your account
+            Choose a new password for your account (min. 8 characters with letters & numbers)
           </p>
         </div>
 
@@ -69,9 +75,9 @@ const ResetPassword = () => {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                minLength={6}
+                minLength={8}
                 className="w-full px-0 py-2.5 border-0 border-b border-psu-border bg-transparent text-[15px] text-psu-text placeholder-gray-300 focus:border-psu-primary transition-colors pr-8"
-                placeholder="Min. 6 characters"
+                placeholder="Min. 8 characters (letters & numbers)"
               />
               <button
                 type="button"
@@ -91,7 +97,7 @@ const ResetPassword = () => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              minLength={6}
+              minLength={8}
               className="w-full px-0 py-2.5 border-0 border-b border-psu-border bg-transparent text-[15px] text-psu-text placeholder-gray-300 focus:border-psu-primary transition-colors"
               placeholder="Re-enter password"
             />

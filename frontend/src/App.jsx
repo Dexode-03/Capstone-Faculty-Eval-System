@@ -19,6 +19,7 @@ import MySubmissions from './pages/MySubmissions';
 import QuestionManagement from './pages/QuestionManagement';
 import RecommendationRules from './pages/RecommendationRules';
 import AuditLogs from './pages/AuditLogs';
+import Privacy from './pages/Privacy';
 import useAuth from './hooks/useAuth';
 
 // Renders the correct Reports page based on the user's role
@@ -37,6 +38,7 @@ function App() {
           <Route path="/login"                 element={<Login />} />
           <Route path="/forgot-password"       element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/privacy"               element={<Privacy />} />
 
           {/* Protected routes */}
           <Route

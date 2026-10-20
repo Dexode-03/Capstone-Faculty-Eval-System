@@ -11,6 +11,9 @@ import {
   HiEmojiSad,
   HiMinusCircle,
   HiOutlineLockClosed,
+  HiOutlinePrinter,
+  HiOutlineDocumentText,
+  HiOutlineTable,
 } from 'react-icons/hi';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -21,6 +24,7 @@ import evaluationService from '../services/evaluationService';
 import facultyService from '../services/facultyService';
 import { getVerbalRating } from '../config/ratingScale';
 import { getComparisonBadgeClass } from '../utils/comparisons';
+import { exportFacultyExcel, exportSubjectSectionExcel, exportPrintPDF } from '../utils/exportUtils';
 
 const heatBg = (sentiment, rate) => {
   const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
@@ -64,6 +68,39 @@ const FacultyReport = () => {
 
   const [selectedAssignment, setSelectedAssignment] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [generatingExcel, setGeneratingExcel] = useState(false);
+
+  const handleExportExcel = () => {
+    if (!report || !faculty) return;
+    exportFacultyExcel({ faculty, report });
+  };
+
+  const handlePrintPDF = () => {
+    if (!faculty) return;
+    const cleanName = (faculty.name || 'Faculty').replace(/\s+/g, '-');
+    exportPrintPDF(`PSU-Faculty-Evaluation-Report-${cleanName}`);
+  };
+
+  const handleGenerateSubjectReportExcel = async () => {
+    if (!selectedAssignment) return;
+    setGeneratingExcel(true);
+    try {
+      const { subject_id, section } = JSON.parse(selectedAssignment);
+      const res = await evaluationService.getSubjectSectionReport(faculty.id, subject_id, section);
+      const data = res.data;
+      exportSubjectSectionExcel({
+        faculty,
+        subject: data.subject || {},
+        section,
+        data,
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate individual subject-section Excel report.');
+    } finally {
+      setGeneratingExcel(false);
+    }
+  };
 
   const handleGenerateSubjectReport = async () => {
     if (!selectedAssignment) return;
@@ -653,11 +690,22 @@ const FacultyReport = () => {
 
   return (
     <div>
+      {/* Official Print Header for PDF Generation */}
+      <div className="print-only mb-6 border-b-2 border-gray-900 pb-4 text-center">
+        <h2 className="text-base font-bold uppercase tracking-wider text-gray-900">Pangasinan State University</h2>
+        <p className="text-xs uppercase text-gray-700 font-medium">Asingan Campus · Asingan, Pangasinan</p>
+        <h1 className="text-lg font-bold text-gray-900 mt-2 uppercase">Individual Faculty Performance Evaluation Report</h1>
+        <p className="text-xs text-gray-700 mt-1 font-semibold">
+          Instructor: {faculty?.name} ({faculty?.department})
+        </p>
+        <p className="text-[10px] text-gray-500 mt-1">Generated on {new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })} · Official Faculty Evaluation Report</p>
+      </div>
+
       {/* Back — admin only */}
       {!isSelfMode && (
         <Link
           to="/faculty"
-          className="inline-flex items-center gap-1.5 text-[13px] text-psu-muted hover:text-psu-text transition-colors mb-8"
+          className="inline-flex items-center gap-1.5 text-[13px] text-psu-muted hover:text-psu-text transition-colors mb-8 no-print"
         >
           <HiArrowLeft className="h-4 w-4" />
           Back to Faculty
@@ -665,7 +713,7 @@ const FacultyReport = () => {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 bg-psu-primary/10 border border-psu-border flex items-center justify-center flex-shrink-0">
             <span className="text-[16px] font-semibold text-psu-primary">
@@ -680,15 +728,38 @@ const FacultyReport = () => {
             <p className="text-[13px] text-psu-muted mt-0.5">{faculty?.department}</p>
           </div>
         </div>
-        <div className="text-left sm:text-right">
-          <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Response Rate</p>
-          <div className="flex items-baseline justify-start sm:justify-end gap-2">
-            <span className="text-3xl font-bold text-psu-text tabular-nums">
-              {report.responseRateFormatted || (report.enrolledStudents > 0 ? `${report.responseRate}%` : 'n/a')}
-            </span>
-            <span className="text-[12px] text-psu-muted">
-              ({report.totalEvaluations}/{report.enrolledStudents !== undefined && report.enrolledStudents !== null ? report.enrolledStudents : 'n/a'})
-            </span>
+
+        <div className="flex flex-col sm:items-end gap-3">
+          <div className="text-left sm:text-right">
+            <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider">Response Rate</p>
+            <div className="flex items-baseline justify-start sm:justify-end gap-2">
+              <span className="text-3xl font-bold text-psu-text tabular-nums">
+                {report.responseRateFormatted || (report.enrolledStudents > 0 ? `${report.responseRate}%` : 'n/a')}
+              </span>
+              <span className="text-[12px] text-psu-muted">
+                ({report.totalEvaluations}/{report.enrolledStudents !== undefined && report.enrolledStudents !== null ? report.enrolledStudents : 'n/a'})
+              </span>
+            </div>
+          </div>
+
+          {/* Export Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap no-print">
+            <button
+              onClick={handleExportExcel}
+              title="Download Faculty Evaluation Report as Excel (.xlsx)"
+              className="inline-flex items-center gap-1.5 bg-emerald-700 text-white rounded-lg px-3.5 py-1.5 text-[12px] font-semibold hover:bg-emerald-800 transition-colors shadow-sm"
+            >
+              <HiOutlineTable className="h-4 w-4" />
+              Export Excel
+            </button>
+            <button
+              onClick={handlePrintPDF}
+              title="Print or Save as PDF"
+              className="inline-flex items-center gap-1.5 bg-white text-psu-text border border-psu-border rounded-lg px-3.5 py-1.5 text-[12px] font-semibold hover:bg-gray-50 transition-colors shadow-sm"
+            >
+              <HiOutlinePrinter className="h-4 w-4 text-psu-muted" />
+              Print / PDF
+            </button>
           </div>
         </div>
       </div>
@@ -902,10 +973,10 @@ const FacultyReport = () => {
 
       {/* Export Subject Report Summary card */}
       {subjectAssignments.length > 0 && (
-        <div className="border border-psu-border bg-white rounded-lg p-5 mb-8">
+        <div className="border border-psu-border bg-white rounded-lg p-5 mb-8 no-print">
           <h2 className="text-[13px] font-semibold text-psu-text mb-1">Export Subject Report Summary</h2>
           <p className="text-[12px] text-psu-muted mb-4">
-            Generate a customized, professional evaluation report (DOCX) for a specific subject and section.
+            Generate a customized, professional evaluation report (DOCX or Excel) for a specific subject and section.
           </p>
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <div className="w-full sm:w-80">
@@ -925,20 +996,42 @@ const FacultyReport = () => {
                 ))}
               </select>
             </div>
-            <button
-              disabled={!selectedAssignment || generating}
-              onClick={handleGenerateSubjectReport}
-              className="bg-psu-primary text-white rounded-lg px-5 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {generating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                'Download Report Summary (DOCX)'
-              )}
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                disabled={!selectedAssignment || generating}
+                onClick={handleGenerateSubjectReport}
+                className="bg-psu-primary text-white rounded-lg px-4 py-2.5 text-[13px] font-semibold hover:bg-psu-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                {generating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineDocumentText className="h-4 w-4" />
+                    Download DOCX
+                  </>
+                )}
+              </button>
+              <button
+                disabled={!selectedAssignment || generatingExcel}
+                onClick={handleGenerateSubjectReportExcel}
+                className="bg-emerald-700 text-white rounded-lg px-4 py-2.5 text-[13px] font-semibold hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                {generatingExcel ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineTable className="h-4 w-4" />
+                    Download Excel
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 const Faculty = require('../models/Faculty');
+const { validatePasswordPolicy } = require('../utils/passwordPolicy');
 
 /**
  * GET /api/faculty
@@ -52,8 +53,9 @@ const createFaculty = async (req, res) => {
       return res.status(400).json({ message: 'Only PSU email addresses (@psu.edu.ph) are allowed.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    const pwdCheck = validatePasswordPolicy(password);
+    if (!pwdCheck.isValid) {
+      return res.status(400).json({ message: pwdCheck.message });
     }
 
     const existingFaculty = await Faculty.findByEmail(email);

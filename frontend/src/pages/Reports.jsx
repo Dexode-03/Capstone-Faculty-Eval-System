@@ -12,6 +12,9 @@ import {
   HiEmojiHappy,
   HiEmojiSad,
   HiMinusCircle,
+  HiOutlinePrinter,
+  HiOutlineDocumentText,
+  HiOutlineTable,
 } from 'react-icons/hi';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -21,6 +24,12 @@ import {
 import { saveAs } from 'file-saver';
 import evaluationService from '../services/evaluationService';
 import { getVerbalRating } from '../config/ratingScale';
+import {
+  DepartmentScoresChart,
+  SentimentDonutChart,
+  PeriodTrendChart,
+} from '../components/charts/AnalyticsCharts';
+import { exportSystemExcel, exportPrintPDF } from '../utils/exportUtils';
 
 const heatBg = (sentiment, rate) => {
   const alpha = Math.max(0.08, Math.min(0.85, rate / 100));
@@ -506,10 +515,36 @@ const Reports = () => {
     }
   };
 
+  const handleExportExcel = () => {
+    const filterDeptLabel = selectedDepartment === 'all' ? 'All Departments' : selectedDepartment;
+    exportSystemExcel({
+      analysis,
+      filterLabel: filterDeptLabel,
+      filteredFaculty,
+      filteredDeptInsights,
+    });
+  };
+
+  const handlePrintPDF = () => {
+    const filterDeptLabel = selectedDepartment === 'all' ? 'All-Departments' : selectedDepartment;
+    exportPrintPDF(`PSU-System-Evaluation-Summary-${filterDeptLabel}`);
+  };
+
   return (
     <div>
+      {/* Official Print Header for PDF Generation */}
+      <div className="print-only mb-6 border-b-2 border-gray-900 pb-4 text-center">
+        <h2 className="text-base font-bold uppercase tracking-wider text-gray-900">Pangasinan State University</h2>
+        <p className="text-xs uppercase text-gray-700 font-medium">Asingan Campus · Asingan, Pangasinan</p>
+        <h1 className="text-lg font-bold text-gray-900 mt-2 uppercase">General Faculty Evaluation System Report</h1>
+        <p className="text-xs text-gray-600 mt-0.5">
+          Academic Period: {selectedPeriod !== 'all' ? (filterOptions.periods.find(p => String(p.id) === String(selectedPeriod))?.label || selectedPeriod) : 'All Academic Periods'} · Department: {selectedDepartment === 'all' ? 'All Departments' : selectedDepartment}
+        </p>
+        <p className="text-[10px] text-gray-500 mt-1">Generated on {new Date().toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })} · Official Evaluation Analytics</p>
+      </div>
+
       {/* Header */}
-      <div className="mb-10">
+      <div className="mb-10 no-print">
         <p className="text-[12px] font-medium text-psu-muted uppercase tracking-wider mb-1">Analytics</p>
         <h1 className="text-3xl font-semibold text-psu-text tracking-tight">System Reports</h1>
         <p className="text-[13px] text-psu-muted mt-1">
@@ -518,7 +553,7 @@ const Reports = () => {
       </div>
 
       {/* Drill-down controls (Task 3B.5 / FR-28) */}
-      <div className="border border-psu-border bg-white rounded-lg p-4 mb-8">
+      <div className="border border-psu-border bg-white rounded-lg p-4 mb-8 no-print">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
           {/* Period */}
           <div>
@@ -632,12 +667,32 @@ const Reports = () => {
               <span className="text-[12px] text-psu-muted">Showing all evaluations</span>
             )}
           </div>
-          <button
-            onClick={generateSummaryReport}
-            className="bg-psu-primary text-white rounded-lg px-5 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors whitespace-nowrap"
-          >
-            Generate Summary Report
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={generateSummaryReport}
+              title="Download Word Document (.docx)"
+              className="inline-flex items-center gap-1.5 bg-psu-primary text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-psu-secondary transition-colors whitespace-nowrap shadow-sm"
+            >
+              <HiOutlineDocumentText className="h-4 w-4" />
+              Word (DOCX)
+            </button>
+            <button
+              onClick={handleExportExcel}
+              title="Download Excel Spreadsheet (.xlsx)"
+              className="inline-flex items-center gap-1.5 bg-emerald-700 text-white rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-emerald-800 transition-colors whitespace-nowrap shadow-sm"
+            >
+              <HiOutlineTable className="h-4 w-4" />
+              Excel (XLSX)
+            </button>
+            <button
+              onClick={handlePrintPDF}
+              title="Print or Save as PDF"
+              className="inline-flex items-center gap-1.5 bg-white text-psu-text border border-psu-border rounded-lg px-4 py-2 text-[13px] font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap shadow-sm"
+            >
+              <HiOutlinePrinter className="h-4 w-4 text-psu-muted" />
+              Print / PDF
+            </button>
+          </div>
         </div>
       </div>
 
@@ -663,24 +718,24 @@ const Reports = () => {
       ) : (
         <>
       {/* Overview row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="border border-psu-border bg-white rounded-lg p-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+        <div className="border border-psu-border bg-white rounded-lg p-3.5 sm:p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">System Health</p>
           <HealthBadge status={analysis.overallHealth} />
         </div>
-        <div className="border border-psu-border bg-white rounded-lg p-5">
+        <div className="border border-psu-border bg-white rounded-lg p-3.5 sm:p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Avg. Rating</p>
-          <p className="text-3xl font-bold text-psu-text tabular-nums">{analysis.avgRating}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-psu-text tabular-nums">{analysis.avgRating}</p>
           <p className="text-[11px] text-psu-muted mt-0.5">out of 5</p>
         </div>
-        <div className="border border-psu-border bg-white rounded-lg p-5">
+        <div className="border border-psu-border bg-white rounded-lg p-3.5 sm:p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Positive Rate</p>
-          <p className="text-3xl font-bold text-psu-primary tabular-nums">{analysis.positiveRate}%</p>
-          <p className="text-[11px] text-psu-muted mt-0.5">{sentimentCounts.positive} evaluations</p>
+          <p className="text-2xl sm:text-3xl font-bold text-psu-primary tabular-nums">{analysis.positiveRate}%</p>
+          <p className="text-[11px] text-psu-muted mt-0.5 truncate">{sentimentCounts.positive} evaluations</p>
         </div>
-        <div className="border border-psu-border bg-white rounded-lg p-5">
+        <div className="border border-psu-border bg-white rounded-lg p-3.5 sm:p-5">
           <p className="text-[11px] font-medium text-psu-muted uppercase tracking-wider mb-2">Total Evaluations</p>
-          <p className="text-3xl font-bold text-psu-text tabular-nums">{analysis.totalEvaluations}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-psu-text tabular-nums">{analysis.totalEvaluations}</p>
           <p className="text-[11px] text-psu-muted mt-0.5">this semester</p>
         </div>
       </div>
@@ -765,6 +820,13 @@ const Reports = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Analytics Charts (Task 3B.6 / FR-29) ────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <SentimentDonutChart sentimentCounts={sentimentCounts} />
+        <DepartmentScoresChart departments={filteredDeptInsights} />
+      </div>
+      <PeriodTrendChart periodTrends={analysis.periodTrends || []} />
 
       {/* Sentiment heat map */}
       {filteredHeatmap.length > 0 && (

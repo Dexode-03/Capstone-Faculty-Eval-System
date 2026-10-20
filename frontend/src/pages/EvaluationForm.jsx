@@ -4,6 +4,7 @@ import { HiCheckCircle, HiArrowRight, HiX, HiEmojiHappy, HiEmojiSad, HiMinusCirc
 import useAuth from '../hooks/useAuth';
 import facultyService from '../services/facultyService';
 import evaluationService from '../services/evaluationService';
+import PrivacyConsentModal from '../components/PrivacyConsentModal';
 
 // ── Rating scale definition (matches PSU form) ────────────────────
 const RATING_SCALE = [
@@ -37,7 +38,7 @@ const RatingScaleTable = () => (
 const QuestionRow = ({ number, question, value, onChange, isUnanswered }) => (
   <div
     id={`question-row-${number}`}
-    className={`px-6 py-4 border-b border-psu-border last:border-b-0 transition-colors ${
+    className={`px-4 sm:px-6 py-3.5 sm:py-4 border-b border-psu-border last:border-b-0 transition-colors ${
       isUnanswered ? 'bg-red-50/60' : ''
     }`}
   >
@@ -50,13 +51,13 @@ const QuestionRow = ({ number, question, value, onChange, isUnanswered }) => (
         </span>
       )}
     </p>
-    <div className="flex gap-2">
+    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
       {RATING_SCALE.map(r => {
         const isSelected = value === r.value;
         return (
           <label
             key={r.value}
-            className={`inline-flex items-center justify-center cursor-pointer w-10 h-10 rounded-full border-2 text-[13px] font-semibold transition-all ${
+            className={`inline-flex items-center justify-center cursor-pointer w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 text-[12px] sm:text-[13px] font-semibold transition-all ${
               isSelected
                 ? 'border-psu-primary bg-psu-primary text-white'
                 : isUnanswered
@@ -203,6 +204,33 @@ const EvaluationForm = () => {
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [instructors, setInstructors] = useState([]);
   const [showValidationWarning, setShowValidationWarning] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+
+  // ── Privacy consent check (once per student) ───────────────────
+  useEffect(() => {
+    if (!user || user.role !== 'student') return;
+    const checkConsent = async () => {
+      try {
+        const res = await evaluationService.getConsentStatus();
+        setHasConsented(!!res.data?.hasConsented);
+      } catch {
+        setHasConsented(false);
+      } finally {
+        setConsentChecked(true);
+      }
+    };
+    checkConsent();
+  }, [user]);
+
+  const handleConsentAccept = async () => {
+    await evaluationService.acceptConsent('1.0');
+    setHasConsented(true);
+  };
+
+  const handleConsentDecline = () => {
+    navigate('/dashboard', { replace: true });
+  };
 
   // ── Fetch faculty info + questions ──────────────────────────────
   useEffect(() => {
@@ -364,6 +392,13 @@ const EvaluationForm = () => {
 
   return (
     <>
+      {/* Privacy consent modal — shown once before first evaluation */}
+      {consentChecked && !hasConsented && (
+        <PrivacyConsentModal
+          onAccept={handleConsentAccept}
+          onDecline={handleConsentDecline}
+        />
+      )}
       {showModal && (
         <ConfirmationModal
           faculty={facultyInfo}
@@ -511,7 +546,7 @@ const EvaluationForm = () => {
               const desc = getCategoryDesc(catData);
               return (
                 <div key={category} className="border border-psu-border bg-white rounded-lg overflow-hidden">
-                  <div className="px-6 py-4 bg-gray-50 border-b border-psu-border">
+                  <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-gray-50 border-b border-psu-border">
                     <h3 className="text-[13px] font-semibold text-psu-text">{category}</h3>
                     {desc && (
                       <p className="text-[12px] text-psu-muted leading-relaxed mt-1.5">{desc}</p>

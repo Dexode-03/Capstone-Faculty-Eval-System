@@ -10,6 +10,10 @@ const evaluationService = {
   getMyFacultyReport:     ()          => api.get('/evaluation/my-report'),
   clearAllEvaluations:    (payload)   => api.delete('/evaluation/clear-all', { data: payload }),
   getSubjectSectionReport:(facultyId, subjectId, section) => api.get(`/evaluation/faculty/${facultyId}/subject-section-report`, { params: { subject_id: subjectId, section } }),
+
+  // Privacy consent
+  getConsentStatus:       ()          => api.get('/auth/consent/status'),
+  acceptConsent:          (version)   => api.post('/auth/consent/accept', { consentVersion: version || '1.0' }),
 };
 
 export default evaluationService;

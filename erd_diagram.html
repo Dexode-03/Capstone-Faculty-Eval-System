@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FEFAS Logical Entity-Relationship Diagram (ERD)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 1750px;
+      height: 1250px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+      width: 100%;
+    }
+    .badge {
+      display: inline-block;
+      background: #1e3a8a;
+      color: #93c5fd;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      border: 1px solid #3b82f6;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    p.subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+
+    .diagram-container {
+      position: relative;
+      width: 1680px;
+      height: 1080px;
+      background: #1e293b;
+      border-radius: 16px;
+      border: 1px solid #334155;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    svg.connectors {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Entity Cards */
+    .entity-card {
+      position: absolute;
+      background: #0f172a;
+      border-radius: 10px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .entity-header {
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+    .entity-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+    .entity-type {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Color variations for entity types */
+    .theme-blue .entity-header { background: #1e3a8a; }
+    .theme-blue .entity-title { color: #bfdbfe; }
+    .theme-blue .entity-type { background: #2563eb; color: #eff6ff; }
+    .theme-blue { border-color: #3b82f6; }
+
+    .theme-teal .entity-header { background: #134e4a; }
+    .theme-teal .entity-title { color: #99f6e4; }
+    .theme-teal .entity-type { background: #0d9488; color: #f0fdfa; }
+    .theme-teal { border-color: #14b8a6; }
+
+    .theme-indigo .entity-header { background: #312e81; }
+    .theme-indigo .entity-title { color: #c7d2fe; }
+    .theme-indigo .entity-type { background: #4f46e5; color: #eef2ff; }
+    .theme-indigo { border-color: #6366f1; }
+
+    .theme-amber .entity-header { background: #78350f; }
+    .theme-amber .entity-title { color: #fde68a; }
+    .theme-amber .entity-type { background: #d97706; color: #fffbeb; }
+    .theme-amber { border-color: #f59e0b; }
+
+    .theme-purple .entity-header { background: #581c87; }
+    .theme-purple .entity-title { color: #e9d5ff; }
+    .theme-purple .entity-type { background: #9333ea; color: #faf5ff; }
+    .theme-purple { border-color: #a855f7; }
+
+    .theme-emerald .entity-header { background: #064e3b; }
+    .theme-emerald .entity-title { color: #a7f3d0; }
+    .theme-emerald .entity-type { background: #059669; color: #ecfdf5; }
+    .theme-emerald { border-color: #10b981; }
+
+    .theme-rose .entity-header { background: #881337; }
+    .theme-rose .entity-title { color: #fecdd3; }
+    .theme-rose .entity-type { background: #e11d48; color: #fff1f2; }
+    .theme-rose { border-color: #f43f5e; }
+
+    .entity-body {
+      padding: 6px 0;
+      font-size: 11px;
+    }
+    .field-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 12px;
+      line-height: 1.3;
+    }
+    .field-row:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .field-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .key-badge {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .key-pk { background: #eab308; color: #000; }
+    .key-fk { background: #3b82f6; color: #fff; }
+    .key-uk { background: #10b981; color: #fff; }
+    .key-plain { width: 18px; display: inline-block; }
+
+    .field-name {
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .field-type {
+      font-family: "Courier New", Courier, monospace;
+      color: #94a3b8;
+      font-size: 10.5px;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 16px;
+      right: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 10px 16px;
+      display: flex;
+      gap: 18px;
+      font-size: 11px;
+      color: #cbd5e1;
+      z-index: 10;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-line {
+      width: 24px;
+      height: 3px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="badge">SIA 101: Enterprise Architecture • Spewak EAP Data Domain</div>
+    <h1>FEFAS Logical Entity-Relationship Diagram (ERD)</h1>
+    <p class="subtitle">Pangasinan State University – Asingan Campus • Faculty Evaluation & Feedback Analysis System</p>
+  </div>
+
+  <div class="diagram-container">
+
+    <!-- SVG Connector Lines -->
+    <svg class="connectors">
+      <defs>
+        <!-- Arrowhead Marker -->
+        <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#60a5fa" />
+        </marker>
+        <marker id="arrow-gold" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#f59e0b" />
+        </marker>
+        <marker id="arrow-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#10b981" />
+        </marker>
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#a855f7" />
+        </marker>
+      </defs>
+
+      <!-- 1. academic_periods -> evaluations (top center to center) -->
+      <!-- Period (x=700, y=30, w=280, h=160) Bottom: (840, 190) -> Evaluations Top: (840, 270) -->
+      <path d="M 840 190 L 840 270" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="5 3" fill="none" marker-end="url(#arrow-gold)" />
+      <text x="848" y="235" fill="#fde68a" font-size="10" font-weight="600">1:N (scopes)</text>
+
+      <!-- 2. students -> student_subjects (left top to left middle) -->
+      <!-- students: (x=40, y=140, w=270, h=240) Bottom: (175, 380) -> student_subjects Top: (175, 460) -->
+      <path d="M 175 380 L 175 460" stroke="#60a5fa" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+      <text x="183" y="420" fill="#93c5fd" font-size="10" font-weight="600">1:N</text>
+
+      <!-- 3. subjects -> student_subjects (bottom left to student_subjects) -->
+      <!-- subjects: (x=380, y=520, w=270, h=190) Left: (380, 560) -> student_subjects Right: (310, 560) -->
+      <path d="M 380 560 L 310 560" stroke="#10b981" stroke-width="2.5" fill="none" marker-end="url(#arrow-emerald)" />
+      <text x="325" y="550" fill="#a7f3d0" font-size="10" font-weight="600">1:N</text>
+
+      <!-- 4. subjects -> faculty_subjects (subjects right: 650, 560 -> faculty_subjects left: 710, 560) -->
+      <!-- faculty_subjects: (x=710, y=490, w=260, h=160) -->
+      <path d="M 650 560 L 710 560" stroke="#10b981" stroke-width="2.5" fill="none" marker-end="url(#arrow-emerald)" />
+      <text x="660" y="550" fill="#a7f3d0" font-size="10" font-weight="600">1:N</text>
+
+      <!-- 5. faculty -> faculty_subjects -->
+      <!-- faculty: (x=1040, y=140, w=270, h=230) Bottom: (1175, 370) -> elbow -> faculty_subjects Right: (970, 550) -->
+      <path d="M 1175 370 L 1175 550 L 970 550" stroke="#60a5fa" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+      <text x="1090" y="540" fill="#93c5fd" font-size="10" font-weight="600">1:N (teaches)</text>
+
+      <!-- 6. faculty -> evaluations -->
+      <!-- faculty Left: (1040, 310) -> evaluations Right: (990, 310) -->
+      <path d="M 1040 310 L 990 310" stroke="#60a5fa" stroke-width="2.5" fill="none" marker-end="url(#arrow)" />
+      <text x="1000" y="300" fill="#93c5fd" font-size="10" font-weight="600">1:N</text>
+
+      <!-- 7. students -> evaluations -->
+      <!-- students Right: (310, 310) -> evaluations Left: (690, 310) -->
+      <path d="M 310 310 L 690 310" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arrow-gold)" />
+      <text x="440" y="300" fill="#fde68a" font-size="10" font-weight="600">1:N (Crypto Decoupled: AES-256-GCM)</text>
+
+      <!-- 8. evaluations -> evaluation_responses -->
+      <!-- evaluations Bottom: (840, 690) -> evaluation_responses Top: (840, 760) -->
+      <!-- evaluation_responses: (x=700, y=760, w=280, h=180) -->
+      <path d="M 840 430 L 840 460 L 670 460 L 670 760 L 690 760" stroke="#a855f7" stroke-width="2.5" fill="none" marker-end="url(#arrow-purple)" />
+      <!-- Cleaner direct path: evaluations: (x=690, y=270, w=300, h=200) -> Bottom: (840, 470) -> evaluation_responses (x=700, y=740) -->
+      <path d="M 840 470 L 840 730" stroke="#a855f7" stroke-width="2.5" fill="none" marker-end="url(#arrow-purple)" />
+      <text x="848" y="690" fill="#e9d5ff" font-size="10" font-weight="600">1:N (Cascade Delete)</text>
+
+      <!-- 9. evaluation_questions -> evaluation_responses -->
+      <!-- evaluation_questions: (x=1050, y=730, w=280, h=200) Left: (1050, 810) -> evaluation_responses Right: (980, 810) -->
+      <path d="M 1050 810 L 980 810" stroke="#10b981" stroke-width="2.5" fill="none" marker-end="url(#arrow-emerald)" />
+      <text x="995" y="800" fill="#a7f3d0" font-size="10" font-weight="600">1:N</text>
+    </svg>
+
+    <!-- ENTITY 1: academic_periods -->
+    <div class="entity-card theme-amber" style="top: 25px; left: 700px; width: 280px;">
+      <div class="entity-header">
+        <span class="entity-title">academic_periods</span>
+        <span class="entity-type">PERIOD</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">academic_year</span></div><span class="field-type">VARCHAR(20)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">semester</span></div><span class="field-type">ENUM('1st','2nd')</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">is_active</span></div><span class="field-type">TINYINT(1)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">start_date</span></div><span class="field-type">DATE</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">end_date</span></div><span class="field-type">DATE</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 2: students -->
+    <div class="entity-card theme-blue" style="top: 140px; left: 40px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">students</span>
+        <span class="entity-type">ACTOR</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">name</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-uk">UK</span><span class="field-name">email</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">password</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">year_level</span></div><span class="field-type">VARCHAR(20)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">section</span></div><span class="field-type">VARCHAR(50)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">department</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">email_verified</span></div><span class="field-type">TINYINT(1)</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 3: faculty -->
+    <div class="entity-card theme-blue" style="top: 140px; left: 1040px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">faculty</span>
+        <span class="entity-type">ACTOR</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">name</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-uk">UK</span><span class="field-name">email</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">password</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">department</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">email_verified</span></div><span class="field-type">TINYINT(1)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">created_at</span></div><span class="field-type">TIMESTAMP</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 4: evaluations (Central Core Entity) -->
+    <div class="entity-card theme-rose" style="top: 270px; left: 690px; width: 300px;">
+      <div class="entity-header">
+        <span class="entity-title">evaluations</span>
+        <span class="entity-type">CORE TRANSACTION</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">student_id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">anonymous_student_ref</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">faculty_id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">academic_period_id</span></div><span class="field-type">INT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">rating</span></div><span class="field-type">INT (1-5)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">comment</span></div><span class="field-type">TEXT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">strengths</span></div><span class="field-type">TEXT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">weaknesses</span></div><span class="field-type">TEXT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">sentiment</span></div><span class="field-type">ENUM(pos,neu,neg)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">sentiment_score</span></div><span class="field-type">DECIMAL(5,2)</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 5: subjects -->
+    <div class="entity-card theme-emerald" style="top: 500px; left: 380px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">subjects</span>
+        <span class="entity-type">CATALOG</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-uk">UK</span><span class="field-name">code</span></div><span class="field-type">VARCHAR(20)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">name</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">department</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">semester</span></div><span class="field-type">ENUM('1st','2nd','both')</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">year_level</span></div><span class="field-type">VARCHAR(20)</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 6: student_subjects (Junction) -->
+    <div class="entity-card theme-indigo" style="top: 460px; left: 40px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">student_subjects</span>
+        <span class="entity-type">JUNCTION (M:N)</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">student_id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">subject_id</span></div><span class="field-type">INT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">faculty_id</span></div><span class="field-type">VARCHAR(36) NULL</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 7: faculty_subjects (Junction) -->
+    <div class="entity-card theme-indigo" style="top: 490px; left: 710px; width: 260px;">
+      <div class="entity-header">
+        <span class="entity-title">faculty_subjects</span>
+        <span class="entity-type">JUNCTION (M:N)</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">faculty_id</span></div><span class="field-type">VARCHAR(36)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">subject_id</span></div><span class="field-type">INT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">section</span></div><span class="field-type">VARCHAR(50) NULL</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 8: evaluation_questions (Instrument Bank) -->
+    <div class="entity-card theme-teal" style="top: 730px; left: 1050px; width: 280px;">
+      <div class="entity-header">
+        <span class="entity-title">evaluation_questions</span>
+        <span class="entity-type">INSTRUMENT</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">category</span></div><span class="field-type">VARCHAR(100)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">question_type</span></div><span class="field-type">ENUM('rating','text')</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">question</span></div><span class="field-type">TEXT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">sort_order</span></div><span class="field-type">INT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">is_active</span></div><span class="field-type">TINYINT(1)</span></div>
+      </div>
+    </div>
+
+    <!-- ENTITY 9: evaluation_responses (Normalized Atomic Items) -->
+    <div class="entity-card theme-purple" style="top: 730px; left: 700px; width: 280px;">
+      <div class="entity-header">
+        <span class="entity-title">evaluation_responses</span>
+        <span class="entity-type">ATOMIC DETAIL</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">evaluation_id</span></div><span class="field-type">INT (Cascade)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-fk">FK</span><span class="field-name">question_id</span></div><span class="field-type">INT</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">rating</span></div><span class="field-type">INT (1-5)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">text_response</span></div><span class="field-type">TEXT NULL</span></div>
+      </div>
+    </div>
+
+    <!-- Auxiliary Entity 10: admins (Upper Right) -->
+    <div class="entity-card theme-emerald" style="top: 25px; left: 1370px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">admins</span>
+        <span class="entity-type">SECURITY</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">name</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-badge key-uk">UK</span><span class="field-name">email</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">password</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">email_verified</span></div><span class="field-type">TINYINT(1)</span></div>
+      </div>
+    </div>
+
+    <!-- Auxiliary Entity 11: password_resets (Lower Right) -->
+    <div class="entity-card theme-amber" style="top: 460px; left: 1370px; width: 270px;">
+      <div class="entity-header">
+        <span class="entity-title">password_resets</span>
+        <span class="entity-type">AUTH TOKEN</span>
+      </div>
+      <div class="entity-body">
+        <div class="field-row"><div class="field-left"><span class="key-badge key-pk">PK</span><span class="field-name">id</span></div><span class="field-type">INT AUTO</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">email</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">token</span></div><span class="field-type">VARCHAR(255)</span></div>
+        <div class="field-row"><div class="field-left"><span class="key-plain"></span><span class="field-name">expires_at</span></div><span class="field-type">DATETIME</span></div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><span class="key-badge key-pk">PK</span> Primary Key</div>
+      <div class="legend-item"><span class="key-badge key-fk">FK</span> Foreign Key</div>
+      <div class="legend-item"><span class="key-badge key-uk">UK</span> Unique Key</div>
+      <div class="legend-item"><div class="legend-line" style="background: #60a5fa;"></div> Relational Foreign Key</div>
+      <div class="legend-item"><div class="legend-line" style="background: #f59e0b; border: 1px dashed #f59e0b;"></div> Encrypted / Scoped Association</div>
+      <div class="legend-item"><div class="legend-line" style="background: #a855f7;"></div> 1:N Atomic Decomposition</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

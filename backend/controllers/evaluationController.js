@@ -524,6 +524,18 @@ const getSystemAnalysis = async (req, res) => {
     const enrolledMap    = await Faculty.getAllEnrolledStudentCounts();
     const analysis       = generateSystemRecommendations(allEvaluations, allFaculty, enrolledMap);
 
+    // ── Period-over-period trends for charts (Task 3B.6 / FR-29) ──────
+    const periodMap = {};
+    allEvaluations.forEach(e => {
+      const pid = e.academic_period_id;
+      if (!pid) return;
+      if (!periodMap[pid]) {
+        periodMap[pid] = { ratings: [], sentiments: { positive: 0, neutral: 0, negative: 0 } };
+      }
+      periodMap[pid].ratings.push(e.rating);
+      if (e.sentiment) periodMap[pid].sentiments[e.sentiment]++;
+    });
+
     // Dynamic filter options for frontend dropdowns
     const periods = await AcademicPeriod.findAll();
     const subjects = await Subject.findAll();
@@ -550,6 +562,33 @@ const getSystemAnalysis = async (req, res) => {
       sections,
     };
     analysis.activeFilters = filters;
+
+    // ── Period trends data for charts (Task 3B.6 / FR-29) ────────
+    // Sorted chronologically (oldest → newest) so chart X-axis reads left-to-right
+    analysis.periodTrends = periods
+      .slice()
+      .sort((a, b) => {
+        if (a.academic_year !== b.academic_year) return a.academic_year.localeCompare(b.academic_year);
+        return a.semester.localeCompare(b.semester);
+      })
+      .filter(p => periodMap[p.id])
+      .map(p => {
+        const d = periodMap[p.id];
+        const avgRating = d.ratings.length > 0
+          ? parseFloat((d.ratings.reduce((s, r) => s + r, 0) / d.ratings.length).toFixed(2))
+          : 0;
+        const total = d.sentiments.positive + d.sentiments.neutral + d.sentiments.negative;
+        return {
+          periodId: p.id,
+          label: `${p.academic_year} ${p.semester}`,
+          shortLabel: `${p.academic_year.split('-').pop()} ${p.semester.replace(/\s*Semester/i, 'S')}`,
+          avgRating,
+          totalEvaluations: d.ratings.length,
+          sentiments: d.sentiments,
+          positiveRate: total > 0 ? Math.round((d.sentiments.positive / total) * 100) : 0,
+          isActive: !!p.is_active,
+        };
+      });
 
     if (req.user.role === 'admin') {
       await AuditLog.log({

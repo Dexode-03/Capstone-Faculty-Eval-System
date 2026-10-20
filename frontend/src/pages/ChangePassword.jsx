@@ -24,14 +24,16 @@ const ChangePassword = () => {
       setError('New passwords do not match.');
       return;
     }
-    if (form.newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
+    if (form.newPassword.length < 8 || !/[a-zA-Z]/.test(form.newPassword) || !/[0-9]/.test(form.newPassword)) {
+      setError('New password must be at least 8 characters and contain both letters and numbers.');
       return;
     }
     setLoading(true);
     setError('');
     try {
       await authService.changePassword({
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
         current_password: form.currentPassword,
         new_password: form.newPassword,
       });

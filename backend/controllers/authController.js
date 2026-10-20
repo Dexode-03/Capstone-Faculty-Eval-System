@@ -8,14 +8,16 @@ const PasswordReset = require('../models/PasswordReset');
 const AuditLog = require('../models/AuditLog');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../config/email');
 const { pool } = require('../config/db');
-require('dotenv').config();
+const { validatePasswordPolicy } = require('../utils/passwordPolicy');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '..', '.env') });
 
 // Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
   );
 };
 
@@ -25,7 +27,7 @@ const generateToken = (user) => {
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, role, year_level, section, department, subject_ids } = req.body;
+    const { name, email, password, confirmPassword, role, year_level, section, department, subject_id, subject_ids } = req.body;
 
     // Validation
     if (!name || !email || !password || !confirmPassword || !role) {
@@ -34,7 +36,8 @@ const register = async (req, res) => {
 
     // Student-specific validation
     if (role === 'student') {
-      if (!year_level || !section || !department || !subject_id) {
+      const hasSubject = subject_id || (Array.isArray(subject_ids) ? subject_ids.length > 0 : subject_ids);
+      if (!year_level || !section || !department || !hasSubject) {
         return res.status(400).json({ message: 'Year level, section, department, and subject are required for students.' });
       }
     }
@@ -47,8 +50,9 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'Only PSU email addresses (@psu.edu.ph) are allowed.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    const pwdCheck = validatePasswordPolicy(password);
+    if (!pwdCheck.isValid) {
+      return res.status(400).json({ message: pwdCheck.message });
     }
 
     const validRoles = ['faculty', 'student'];
@@ -224,8 +228,9 @@ const resetPassword = async (req, res) => {
       return res.status(400).json({ message: 'Passwords do not match.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    const pwdCheck = validatePasswordPolicy(password);
+    if (!pwdCheck.isValid) {
+      return res.status(400).json({ message: pwdCheck.message });
     }
 
     // Find valid reset token
@@ -269,8 +274,22 @@ const getProfile = async (req, res) => {
 };
 const changePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const currentPassword = req.body.currentPassword || req.body.current_password;
+    const newPassword = req.body.newPassword || req.body.new_password;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required.' });
+    }
+
+    const pwdCheck = validatePasswordPolicy(newPassword);
+    if (!pwdCheck.isValid) {
+      return res.status(400).json({ message: pwdCheck.message });
+    }
+
     const account = await User.findById(req.user.id, req.user.role);
+    if (!account) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
 
     const userWithPassword = await User.findByEmail(account.email);
     if (!userWithPassword) {
@@ -391,8 +410,9 @@ const adminCreateAccount = async (req, res) => {
       return res.status(400).json({ message: 'Only PSU email addresses (@psu.edu.ph) allowed.' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    const pwdCheck = validatePasswordPolicy(password);
+    if (!pwdCheck.isValid) {
+      return res.status(400).json({ message: pwdCheck.message });
     }
 
     // Check if email already exists
@@ -715,4 +735,5 @@ module.exports = {
   adminDeleteAccount,
   getFacultyAssignments,
   getAllFacultyAssignments,
+  validatePasswordPolicy,
 };

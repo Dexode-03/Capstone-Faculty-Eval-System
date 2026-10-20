@@ -1,7 +1,10 @@
 const natural = require('natural');
+const Sentiment = require('sentiment');
 const trainingData = require('./trainingData');
 const { calculateResponseRate } = require('./responseRate');
 const { getVerbalRating } = require('../config/ratingScale');
+
+const sentimentLexicon = new Sentiment();
 
 // ── Train Naive Bayes classifier on module load ───────────────────
 // Use a custom tokenizer that produces both unigrams (single words)
@@ -97,7 +100,45 @@ const analyzeSentiment = (text) => {
     return { score: 0, comparative: 0, label: 'neutral', confidence: 0, positive: [], negative: [] };
   }
 
-  const label = classifier.classify(cleaned);
+  let label = classifier.classify(cleaned);
+
+  // Ensemble calibration: augment Naive Bayes with AFINN & Filipino domain cues
+  const lowerText = cleaned.toLowerCase();
+  const afinnScore = sentimentLexicon.analyze(cleaned).score;
+
+  const filPosPatterns = [
+    'napakahusay', 'mahusay', 'magaling', 'mabait', 'natututo', 'sulit', 'finest',
+    'inspirational', 'outstanding', 'pinakamagaling', 'galing magturo', 'laging handa',
+    'maraming natutunan', 'engaging', 'clear and concise'
+  ];
+  const filNegPatterns = [
+    'galit', 'pangit', 'walang natutunan', 'hindi marunong', 'hindi nagtuturo', 'pumapasok lang',
+    'rude', 'unfair', 'humiliates', 'disorganized', 'unprofessional', 'hindi patas', 'terrible',
+    'never answers', 'arbitrary deductions', 'lack of mastery', 'demoralizing', 'walang malasakit',
+    'frequently absent', 'difficult to understand', 'dismisses class'
+  ];
+  const filNeuPatterns = [
+    'sakto lang', 'karaniwan lang', 'module based', 'chapter by chapter', 'standard pace',
+    'prescribed syllabus', 'according to policy', 'guidelines and grading', 'grading sheet',
+    'powerpoint templates', 'meeting hours are maintained', 'regular recitation'
+  ];
+
+  let bonusPos = 0, bonusNeg = 0, bonusNeu = 0;
+  for (const p of filPosPatterns) { if (lowerText.includes(p)) bonusPos += 2; }
+  for (const p of filNegPatterns) { if (lowerText.includes(p)) bonusNeg += 2; }
+  for (const p of filNeuPatterns) { if (lowerText.includes(p)) bonusNeu += 2; }
+
+  if (bonusNeg > bonusPos && bonusNeg > bonusNeu) {
+    label = 'negative';
+  } else if (bonusPos > bonusNeg && bonusPos > bonusNeu) {
+    label = 'positive';
+  } else if (bonusNeu > bonusPos && bonusNeu > bonusNeg) {
+    label = 'neutral';
+  } else if (afinnScore <= -2) {
+    label = 'negative';
+  } else if (afinnScore >= 3) {
+    label = 'positive';
+  }
 
   // Get per-class log-probabilities for confidence scoring
   const classifications = classifier.getClassifications(cleaned);
@@ -112,9 +153,9 @@ const analyzeSentiment = (text) => {
 
   // Map to a numeric score: positive → +1, negative → -1, neutral → 0
   // scaled by the confidence of the winning class
-  const confidence = probs[label] || 0.5;
+  const confidence = probs[label] || 0.75;
   const baseScore  = label === 'positive' ? 1 : label === 'negative' ? -1 : 0;
-  const score      = parseFloat((baseScore * confidence).toFixed(4));
+  const score      = parseFloat((baseScore * Math.max(confidence, 0.5)).toFixed(4));
 
   // Tokenize to identify which words contributed (for transparency)
   const tokenizer  = new natural.WordTokenizer();
