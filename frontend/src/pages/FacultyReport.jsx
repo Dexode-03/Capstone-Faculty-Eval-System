@@ -636,8 +636,8 @@ const FacultyReport = () => {
       <div className="text-center py-16">
         <p className="text-[13px] text-red-500">{error}</p>
         {!isSelfMode && (
-          <Link to="/faculty" className="text-psu-primary text-[13px] mt-3 inline-block hover:underline">
-            Back to faculty list
+          <Link to="/reports" className="text-psu-primary text-[13px] mt-3 inline-block hover:underline">
+            Back to reports
           </Link>
         )}
       </div>
@@ -649,11 +649,11 @@ const FacultyReport = () => {
       <div>
         {!isSelfMode && (
           <Link
-            to="/faculty"
+            to="/reports"
             className="inline-flex items-center gap-1.5 text-[13px] text-psu-muted hover:text-psu-text transition-colors mb-8"
           >
             <HiArrowLeft className="h-4 w-4" />
-            Back to Faculty
+            Back to Reports
           </Link>
         )}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-10">
@@ -704,11 +704,11 @@ const FacultyReport = () => {
       {/* Back — admin only */}
       {!isSelfMode && (
         <Link
-          to="/faculty"
+          to="/reports"
           className="inline-flex items-center gap-1.5 text-[13px] text-psu-muted hover:text-psu-text transition-colors mb-8 no-print"
         >
           <HiArrowLeft className="h-4 w-4" />
-          Back to Faculty
+          Back to Reports
         </Link>
       )}
 

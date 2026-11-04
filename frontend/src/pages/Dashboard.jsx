@@ -561,27 +561,7 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
 
 
 
-      {/* Quick links */}
-      <div className="mb-10">
-        <h2 className="text-[12px] font-medium text-slate-500 uppercase tracking-wider mb-4">Quick Links</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[
-            { label: 'Faculty Directory', desc: 'View all faculty by department', to: '/faculty', icon: HiOutlineUserGroup, accent: 'bg-psu-gold/15 text-amber-600 group-hover:bg-amber-500 group-hover:text-white' },
-            { label: 'Reports', desc: 'View analytics',   to: '/reports', icon: HiOutlineChartBar,  accent: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white'       },
-          ].map(item => (
-            <Link key={item.label} to={item.to} className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center space-x-4 hover:border-slate-300 hover:shadow-md transition-all">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${item.accent}`}>
-                <item.icon className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-[14px] font-semibold text-slate-900">{item.label}</p>
-                <p className="text-[12px] text-slate-500 mt-0.5">{item.desc}</p>
-              </div>
-              <HiArrowRight className="h-4 w-4 text-slate-300 group-hover:text-psu-primary group-hover:translate-x-0.5 transition-all" />
-            </Link>
-          ))}
-        </div>
-      </div>
+
 
       {/* Data Management */}
       <div>

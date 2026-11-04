@@ -6,7 +6,6 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
-import FacultyList from './pages/FacultyList';
 import FacultyReport from './pages/FacultyReport';
 import EvaluationForm from './pages/EvaluationForm';
 import Reports from './pages/Reports';
@@ -49,7 +48,7 @@ function App() {
             }
           >
             <Route path="/dashboard"      element={<Dashboard />} />
-            <Route path="/faculty"        element={<FacultyList />} />
+            <Route path="/faculty"        element={<Navigate to="/reports" replace />} />
             <Route path="/reports/:id"    element={<FacultyReport />} />
             <Route path="/reports"        element={<ReportsRouter />} />
             <Route path="/change-password" element={<ChangePassword />} />

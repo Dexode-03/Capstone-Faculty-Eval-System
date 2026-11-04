@@ -15,6 +15,7 @@ import {
   HiOutlinePrinter,
   HiOutlineDocumentText,
   HiOutlineTable,
+  HiOutlineSearch,
 } from 'react-icons/hi';
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
@@ -73,6 +74,7 @@ const Reports = () => {
   const [selectedSubject, setSelectedSubject]       = useState('all');
   const [selectedYearLevel, setSelectedYearLevel]   = useState('all');
   const [selectedSection, setSelectedSection]       = useState('all');
+  const [facultySearch, setFacultySearch]           = useState('');
 
   // Available filter options (from DB)
   const [filterOptions, setFilterOptions] = useState({
@@ -91,6 +93,7 @@ const Reports = () => {
     setSelectedSubject('all');
     setSelectedYearLevel('all');
     setSelectedSection('all');
+    setFacultySearch('');
   };
 
   const hasActiveFilters =
@@ -99,7 +102,8 @@ const Reports = () => {
     selectedFaculty !== 'all' ||
     selectedSubject !== 'all' ||
     selectedYearLevel !== 'all' ||
-    selectedSection !== 'all';
+    selectedSection !== 'all' ||
+    facultySearch.trim() !== '';
 
   useEffect(() => {
     const fetch = async () => {
@@ -168,7 +172,10 @@ const Reports = () => {
   const filteredFaculty = (analysis?.facultySummary || []).filter(row => {
     const departmentMatch = selectedDepartment === 'all' || row.department === selectedDepartment;
     const facultyMatch = selectedFaculty === 'all' || String(row.id) === String(selectedFaculty);
-    return departmentMatch && facultyMatch;
+    const searchMatch = !facultySearch.trim() ||
+      (row.name && row.name.toLowerCase().includes(facultySearch.toLowerCase())) ||
+      (row.department && row.department.toLowerCase().includes(facultySearch.toLowerCase()));
+    return departmentMatch && facultyMatch && searchMatch;
   });
 
   const facultyOptions = (filterOptions.faculty?.length ? filterOptions.faculty : (analysis?.facultySummary || []))
@@ -878,74 +885,146 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Faculty drill-down */}
-      <div className="border border-psu-border bg-white rounded-lg overflow-hidden mb-8">
-        <div className="px-6 py-4 border-b border-psu-border">
-          <h2 className="text-[13px] font-semibold text-psu-text">Faculty Drill-Down</h2>
-          <p className="text-[12px] text-psu-muted mt-1">Filtered by selected department/faculty.</p>
+      {/* Merged Faculty Directory & Evaluation Drill-Down */}
+      <div className="border border-psu-border bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+        <div className="px-6 py-4 border-b border-psu-border bg-slate-50/60 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <HiOutlineUserGroup className="h-4 w-4 text-psu-primary" />
+              <h2 className="text-[14px] font-semibold text-psu-text">Faculty Directory & Evaluation Drill-Down</h2>
+              <span className="text-[11px] font-medium bg-psu-primary/10 text-psu-primary px-2 py-0.5 rounded-full">
+                {filteredFaculty.length} {filteredFaculty.length === 1 ? 'instructor' : 'instructors'}
+              </span>
+            </div>
+            <p className="text-[12px] text-psu-muted mt-0.5">
+              Search faculty records, monitor response rates, and view individual evaluation reports.
+            </p>
+          </div>
+          <div className="relative w-full md:w-72">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-psu-muted" />
+            <input
+              type="text"
+              placeholder="Search faculty name or dept..."
+              value={facultySearch}
+              onChange={(e) => setFacultySearch(e.target.value)}
+              className="w-full pl-9 pr-8 py-1.5 border border-psu-border rounded-lg bg-white text-[13px] text-psu-text placeholder-psu-muted/60 focus:outline-none focus:ring-2 focus:ring-psu-primary/20 focus:border-psu-primary transition-all"
+            />
+            {facultySearch && (
+              <button
+                onClick={() => setFacultySearch('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-psu-muted hover:text-psu-text text-xs p-0.5"
+                title="Clear search"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
+
         {filteredFaculty.length === 0 ? (
-          <div className="px-6 py-8 text-center">
-            <p className="text-[13px] text-psu-muted">No faculty match the selected filter.</p>
+          <div className="px-6 py-12 text-center">
+            <HiOutlineUserGroup className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+            <p className="text-[13px] font-medium text-psu-text">No faculty match the selected criteria</p>
+            <p className="text-[12px] text-psu-muted mt-1">
+              {facultySearch
+                ? `No results found for "${facultySearch}". Try clearing your search.`
+                : 'Try adjusting your filters above.'}
+            </p>
+            {facultySearch && (
+              <button
+                onClick={() => setFacultySearch('')}
+                className="mt-3 text-[12px] text-psu-primary hover:underline font-semibold"
+              >
+                Clear faculty search
+              </button>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-psu-border">
             {filteredFaculty.map((f) => (
-              <div key={f.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-[14px] font-medium text-psu-text">{f.name}</p>
-                  <p className="text-[12px] text-psu-muted">{f.department}</p>
-                  <div className="flex items-center gap-2 mt-1 text-[12px] text-psu-muted flex-wrap">
-                    <span>Avg {f.averageRating}/5</span>
-                    {f.verbalRating && f.verbalRating !== 'N/A' && (
-                      <>
-                        <span>·</span>
-                        <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                          {f.verbalRating}
-                        </span>
-                      </>
-                    )}
-                    {f.differenceFromDepartment !== null && f.differenceFromDepartment !== undefined && (
-                      <>
-                        <span>·</span>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
-                          f.differenceFromDepartment > 0
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : f.differenceFromDepartment < 0
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {f.differenceFromDepartment > 0 ? `+${f.differenceFromDepartment.toFixed(2)}` : f.differenceFromDepartment.toFixed(2)} vs Dept
-                        </span>
-                      </>
-                    )}
-                    <span>·</span>
-                    <span>
-                      {f.totalEvaluations} / {f.enrolledStudents !== undefined && f.enrolledStudents !== null ? f.enrolledStudents : 'n/a'} responses
-                    </span>
-                    <span>·</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
-                      f.enrolledStudents > 0
-                        ? f.responseRate >= 80
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : f.responseRate >= 50
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-gray-100 text-psu-muted border border-psu-border'
-                    }`}>
-                      {f.responseRateFormatted || (f.enrolledStudents > 0 ? `${f.responseRate}%` : 'n/a')}
+              <div
+                key={f.id}
+                className="px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 hover:bg-slate-50/50 transition-colors"
+              >
+                <div className="flex items-center space-x-3.5 min-w-0 flex-1">
+                  {/* Initials Avatar badge */}
+                  <div className="w-10 h-10 rounded-lg bg-psu-primary/10 border border-psu-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[13px] font-bold text-psu-primary">
+                      {f.name ? f.name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('') : 'FA'}
                     </span>
                   </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-[14px] font-semibold text-psu-text truncate">{f.name}</p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                        {f.department}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-1.5 text-[12px] text-psu-muted flex-wrap">
+                      <span className="font-semibold text-psu-text tabular-nums">Avg {f.averageRating}/5</span>
+                      {f.verbalRating && f.verbalRating !== 'N/A' && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                            {f.verbalRating}
+                          </span>
+                        </>
+                      )}
+                      {f.differenceFromDepartment !== null && f.differenceFromDepartment !== undefined && (
+                        <>
+                          <span className="text-gray-300">·</span>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                            f.differenceFromDepartment > 0
+                              ? 'bg-green-50 text-green-700 border border-green-200'
+                              : f.differenceFromDepartment < 0
+                              ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}>
+                            {f.differenceFromDepartment > 0 ? `+${f.differenceFromDepartment.toFixed(2)}` : f.differenceFromDepartment.toFixed(2)} vs Dept
+                          </span>
+                        </>
+                      )}
+                      <span className="text-gray-300">·</span>
+                      <span>
+                        {f.totalEvaluations} / {f.enrolledStudents !== undefined && f.enrolledStudents !== null ? f.enrolledStudents : 'n/a'} responses
+                      </span>
+                      <span className="text-gray-300">·</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
+                        f.enrolledStudents > 0
+                          ? f.responseRate >= 80
+                            ? 'bg-green-50 text-green-700 border border-green-200'
+                            : f.responseRate >= 50
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-gray-100 text-psu-muted border border-psu-border'
+                      }`}>
+                        {f.responseRateFormatted || (f.enrolledStudents > 0 ? `${f.responseRate}%` : 'n/a')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[11px] text-psu-primary inline-flex items-center gap-1"><HiEmojiHappy className="h-3.5 w-3.5" />{f.positiveRate}%</span>
-                  <span className="text-[11px] text-yellow-700 inline-flex items-center gap-1"><HiMinusCircle className="h-3.5 w-3.5" />{f.neutralRate}%</span>
-                  <span className="text-[11px] text-red-500 inline-flex items-center gap-1"><HiEmojiSad className="h-3.5 w-3.5" />{f.negativeRate}%</span>
+
+                <div className="flex items-center justify-between lg:justify-end gap-3 flex-shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] text-psu-primary inline-flex items-center gap-1 font-medium" title="Positive sentiment">
+                      <HiEmojiHappy className="h-3.5 w-3.5" />{f.positiveRate}%
+                    </span>
+                    <span className="text-[11px] text-yellow-700 inline-flex items-center gap-1 font-medium" title="Neutral sentiment">
+                      <HiMinusCircle className="h-3.5 w-3.5" />{f.neutralRate}%
+                    </span>
+                    <span className="text-[11px] text-red-500 inline-flex items-center gap-1 font-medium" title="Negative sentiment">
+                      <HiEmojiSad className="h-3.5 w-3.5" />{f.negativeRate}%
+                    </span>
+                  </div>
+
                   <Link
                     to={`/reports/${f.id}`}
-                    className="text-[12px] font-medium text-psu-muted hover:text-psu-primary transition-colors border border-psu-border hover:border-psu-primary rounded-lg px-3 py-1.5"
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-psu-primary hover:text-white hover:bg-psu-primary transition-all border border-psu-primary/30 hover:border-psu-primary rounded-lg px-3.5 py-1.5 shadow-sm"
                   >
-                    Open
+                    View Report
+                    <HiArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               </div>
