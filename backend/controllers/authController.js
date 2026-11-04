@@ -75,6 +75,7 @@ const register = async (req, res) => {
 
     // Create account
     const result = await User.create({
+      id: req.body.id ? req.body.id.trim() : undefined,
       name,
       email,
       password: hashedPassword,
@@ -465,6 +466,7 @@ const adminCreateAccount = async (req, res) => {
 
     // Create account based on role
     const result = await User.create({
+      id: req.body.id ? req.body.id.trim() : undefined,
       name,
       email,
       password: hashedPassword,

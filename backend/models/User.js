@@ -1,26 +1,65 @@
 const crypto = require('crypto');
 const { pool } = require('../config/db');
 
-// Generate unique faculty ID in format: fac_xxxxxx (6 hex chars)
+// Generate unique faculty ID in campus format: ASIN-NNNNNN (6-digit numeric)
 const generateFacultyId = async () => {
-  let id;
-  let exists = true;
-  while (exists) {
-    id = `fac_${crypto.randomBytes(3).toString('hex')}`;
-    const [rows] = await pool.execute('SELECT id FROM faculty WHERE id = ? LIMIT 1', [id]);
-    if (rows.length === 0) exists = false;
+  const [rows] = await pool.execute("SELECT id FROM faculty WHERE id LIKE 'ASIN-%'");
+  let maxNum = 0;
+  for (const row of rows) {
+    const match = row.id && row.id.match(/^ASIN-(\d+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  }
+
+  let nextNum = maxNum + 1;
+  let id = `ASIN-${String(nextNum).padStart(6, '0')}`;
+  let [check] = await pool.execute('SELECT id FROM faculty WHERE id = ? LIMIT 1', [id]);
+  while (check.length > 0) {
+    nextNum += 1;
+    id = `ASIN-${String(nextNum).padStart(6, '0')}`;
+    [check] = await pool.execute('SELECT id FROM faculty WHERE id = ? LIMIT 1', [id]);
   }
   return id;
 };
 
-// Generate unique student ID in format: std_xxxxxx (6 hex chars)
-const generateStudentId = async () => {
-  let id;
-  let exists = true;
-  while (exists) {
-    id = `std_${crypto.randomBytes(3).toString('hex')}`;
-    const [rows] = await pool.execute('SELECT id FROM students WHERE id = ? LIMIT 1', [id]);
-    if (rows.length === 0) exists = false;
+// Generate unique student ID in campus format: YY-AS-NNNN
+// YY is the last 2 digits of the year they entered first year
+// NNNN is a 4-digit unique number
+const generateStudentId = async (year_level) => {
+  let yearLevelNum = 1;
+  if (typeof year_level === 'string') {
+    const parsed = parseInt(year_level.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 6) {
+      yearLevelNum = parsed;
+    }
+  } else if (typeof year_level === 'number' && year_level >= 1 && year_level <= 6) {
+    yearLevelNum = year_level;
+  }
+
+  const currentYear = new Date().getFullYear();
+  const entryYear = currentYear - (yearLevelNum - 1);
+  const yy = String(entryYear).slice(-2);
+  const prefix = `${yy}-AS-`;
+
+  const [rows] = await pool.execute('SELECT id FROM students WHERE id LIKE ?', [`${prefix}%`]);
+  let maxNum = 0;
+  for (const row of rows) {
+    const match = row.id && row.id.match(/^(\d{2})-AS-(\d{4})$/i);
+    if (match && match[1] === yy) {
+      const num = parseInt(match[2], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  }
+
+  let nextNum = maxNum + 1;
+  let id = `${prefix}${String(nextNum).padStart(4, '0')}`;
+  let [check] = await pool.execute('SELECT id FROM students WHERE id = ? LIMIT 1', [id]);
+  while (check.length > 0) {
+    nextNum += 1;
+    id = `${prefix}${String(nextNum).padStart(4, '0')}`;
+    [check] = await pool.execute('SELECT id FROM students WHERE id = ? LIMIT 1', [id]);
   }
   return id;
 };
@@ -35,9 +74,9 @@ const User = {
     return result;
   },
 
-  // Create a new faculty (no subject_id — use Faculty.setSubjects after)
-  createFaculty: async ({ name, email, password, department, verification_token }) => {
-    const id = await generateFacultyId();
+    // Create a new faculty (no subject_id — use Faculty.setSubjects after)
+  createFaculty: async ({ id: customId, name, email, password, department, verification_token }) => {
+    const id = customId || await generateFacultyId();
     const [result] = await pool.execute(
       'INSERT INTO faculty (id, name, email, password, department, verification_token) VALUES (?, ?, ?, ?, ?, ?)',
       [id, name, email, password, department, verification_token]
@@ -46,8 +85,8 @@ const User = {
   },
 
   // Create a new student (no subject_id — use Student.setSubjects after)
-  createStudent: async ({ name, email, password, year_level, section, department, verification_token }) => {
-    const id = await generateStudentId();
+  createStudent: async ({ id: customId, name, email, password, year_level, section, department, verification_token }) => {
+    const id = customId || await generateStudentId(year_level);
     const [result] = await pool.execute(
       'INSERT INTO students (id, name, email, password, year_level, section, department, verification_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [id, name, email, password, year_level, section, department, verification_token]
@@ -56,13 +95,13 @@ const User = {
   },
 
   // Generic create method (determine role and create accordingly)
-  create: async ({ name, email, password, role, verification_token, year_level, section, department }) => {
+  create: async ({ id, name, email, password, role, verification_token, year_level, section, department }) => {
     if (role === 'admin') {
       return User.createAdmin({ name, email, password, verification_token });
     } else if (role === 'faculty') {
-      return User.createFaculty({ name, email, password, department, verification_token });
+      return User.createFaculty({ id, name, email, password, department, verification_token });
     } else if (role === 'student') {
-      return User.createStudent({ name, email, password, year_level, section, department, verification_token });
+      return User.createStudent({ id, name, email, password, year_level, section, department, verification_token });
     }
     throw new Error('Invalid role');
   },
