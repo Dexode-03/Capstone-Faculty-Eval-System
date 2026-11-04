@@ -18,20 +18,22 @@ const Evaluation = {
   },
 
   // Get evaluations by faculty ID — includes strengths/weaknesses from open-ended responses
-  findByFacultyId: async (faculty_id) => {
-    const [rows] = await pool.execute(
-      `SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at, e.academic_period_id,
+  findByFacultyId: async (faculty_id, academic_period_id = null) => {
+    let sql = `SELECT e.id, e.faculty_id, e.rating, e.comment, e.sentiment, e.sentiment_score, e.created_at, e.academic_period_id,
               COALESCE(e.strengths, MAX(CASE WHEN eq.sort_order = 16 THEN er.text_response END)) as strengths,
               COALESCE(e.weaknesses, MAX(CASE WHEN eq.sort_order = 17 THEN er.text_response END)) as weaknesses
        FROM evaluations e
        LEFT JOIN evaluation_responses er ON er.evaluation_id = e.id
        LEFT JOIN evaluation_questions eq
               ON eq.id = er.question_id AND eq.question_type = 'text'
-       WHERE e.faculty_id = ?
-       GROUP BY e.id
-       ORDER BY e.created_at DESC`,
-      [faculty_id]
-    );
+       WHERE e.faculty_id = ?`;
+    const params = [String(faculty_id)];
+    if (academic_period_id) {
+      sql += ' AND e.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    sql += ' GROUP BY e.id ORDER BY e.created_at DESC';
+    const [rows] = await pool.execute(sql, params);
     return rows;
   },
 

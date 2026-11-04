@@ -172,10 +172,9 @@ const Faculty = {
       `SELECT COUNT(DISTINCT st.id) as count
        FROM students st
        INNER JOIN student_subjects ss ON ss.student_id = st.id
-       INNER JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
-       WHERE fs.faculty_id = ?
-         AND (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)`,
-      [String(facultyId)]
+       LEFT JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
+       WHERE (ss.faculty_id = ? OR (fs.faculty_id = ? AND (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)))`,
+      [String(facultyId), String(facultyId)]
     );
     return parseInt(rows[0]?.count, 10) || 0;
   },
@@ -183,16 +182,18 @@ const Faculty = {
   // Get enrolled student counts for all faculty (keyed by faculty_id)
   getAllEnrolledStudentCounts: async () => {
     const [rows] = await pool.execute(
-      `SELECT fs.faculty_id, COUNT(DISTINCT st.id) as count
+      `SELECT COALESCE(ss.faculty_id, fs.faculty_id) as faculty_id, COUNT(DISTINCT st.id) as count
        FROM students st
        INNER JOIN student_subjects ss ON ss.student_id = st.id
-       INNER JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
-       WHERE (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)
-       GROUP BY fs.faculty_id`
+       LEFT JOIN faculty_subjects fs ON fs.subject_id = ss.subject_id
+       WHERE (ss.faculty_id IS NOT NULL OR (fs.faculty_id IS NOT NULL AND (fs.section IS NULL OR fs.section = '' OR fs.section = st.section)))
+       GROUP BY COALESCE(ss.faculty_id, fs.faculty_id)`
     );
     const map = {};
     rows.forEach(r => {
-      map[r.faculty_id] = parseInt(r.count, 10) || 0;
+      if (r.faculty_id) {
+        map[r.faculty_id] = parseInt(r.count, 10) || 0;
+      }
     });
     return map;
   },

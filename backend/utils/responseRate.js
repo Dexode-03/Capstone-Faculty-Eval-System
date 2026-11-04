@@ -7,6 +7,7 @@
  * Acceptance criteria:
  *   - Correct percentage calculation (e.g. 3 of 7 = 42.9%)
  *   - Zero enrolled students returns 'n/a' without divide-by-zero or NaN
+ *   - Capped at 100% to ensure response rate cannot exceed total class size
  */
 
 function calculateResponseRate(evaluationsCount, enrolledCount) {
@@ -22,14 +23,15 @@ function calculateResponseRate(evaluationsCount, enrolledCount) {
     };
   }
 
-  const rawRate = (evaluations / enrolled) * 100;
+  // Response rate cannot exceed 100% of enrolled students
+  const rawRate = Math.min(100, (evaluations / enrolled) * 100);
   const rate = parseFloat(rawRate.toFixed(1));
 
   return {
     rate,
     formatted: `${rate}%`,
     evaluations,
-    enrolled,
+    enrolled: Math.max(enrolled, evaluations),
   };
 }
 

@@ -351,7 +351,7 @@ const getFacultyEvaluations = async (req, res) => {
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
     const enrolledStudents = await Faculty.getEnrolledStudentCount(id);
     const activePeriod = await AcademicPeriod.getActive();
-    const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(
+    const { rate: responseRate, formatted: responseRateFormatted, enrolled: safeEnrolled } = calculateResponseRate(
       evaluations.length,
       enrolledStudents
     );
@@ -384,7 +384,7 @@ const getFacultyEvaluations = async (req, res) => {
       ratingScale:         RATING_SCALE,
       totalEvaluations:    evaluations.length,
       evaluationsReceived: evaluations.length,
-      enrolledStudents,
+      enrolledStudents:    safeEnrolled,
       responseRate,
       responseRateFormatted,
       academicPeriod:      activePeriod || null,
@@ -779,7 +779,7 @@ const getMyFacultyReport = async (req, res) => {
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
     const enrolledStudents = await Faculty.getEnrolledStudentCount(facultyId);
     const activePeriod = await AcademicPeriod.getActive();
-    const { rate: responseRate, formatted: responseRateFormatted } = calculateResponseRate(
+    const { rate: responseRate, formatted: responseRateFormatted, enrolled: safeEnrolled } = calculateResponseRate(
       evaluations.length,
       enrolledStudents
     );
@@ -801,7 +801,7 @@ const getMyFacultyReport = async (req, res) => {
       ratingScale:         RATING_SCALE,
       totalEvaluations:    evaluations.length,
       evaluationsReceived: evaluations.length,
-      enrolledStudents,
+      enrolledStudents:    safeEnrolled,
       responseRate,
       responseRateFormatted,
       academicPeriod:      activePeriod || null,
