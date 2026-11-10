@@ -1,0 +1,1201 @@
+id,text,label,category
+1,The instructor explains concepts clearly and effectively,positive,Content & Pedagogy
+2,Very knowledgeable about the subject matter,positive,Content & Pedagogy
+3,Excellent teaching methodology and approach,positive,Commitment & Transparency
+4,The professor makes complex topics easy to understand,positive,Content & Pedagogy
+5,Great at breaking down difficult concepts,positive,Content & Pedagogy
+6,Uses real-world examples that help us learn,positive,Content & Pedagogy
+7,The lessons are well-prepared and organized,positive,Content & Pedagogy
+8,Always comes to class prepared with materials,positive,Content & Pedagogy
+9,Best teacher I have ever had in this university,positive,Content & Pedagogy
+10,Truly passionate about teaching and it shows,positive,Content & Pedagogy
+11,Makes the subject interesting and engaging,positive,Content & Pedagogy
+12,Clear and concise explanations during lectures,positive,Content & Pedagogy
+13,The instructor is a very effective communicator,positive,Teaching & Learning
+14,Very good at explaining lessons in a simple way,positive,Content & Pedagogy
+15,Always provides relevant examples and illustrations,positive,Content & Pedagogy
+16,The class is always fun and interactive,positive,Teaching & Learning
+17,Encourages student participation and questions,positive,Teaching & Learning
+18,Creates a positive and inclusive learning environment,positive,Teaching & Learning
+19,Very engaging and keeps us interested throughout,positive,Teaching & Learning
+20,Uses creative activities to make learning enjoyable,positive,Teaching & Learning
+21,The instructor makes everyone feel welcome to ask questions,positive,Teaching & Learning
+22,I always look forward to attending this class,positive,Teaching & Learning
+23,Group activities are well designed and helpful,positive,Teaching & Learning
+24,Interactive discussions make the class lively,positive,Teaching & Learning
+25,Never a boring moment in class,positive,Teaching & Learning
+26,Very approachable and friendly to students,positive,Commitment & Transparency
+27,Always available for consultation and guidance,positive,Commitment & Transparency
+28,Helpful and supportive when students have difficulties,positive,Teaching & Learning
+29,The instructor genuinely cares about student learning,positive,Teaching & Learning
+30,Kind and patient with struggling students,positive,Commitment & Transparency
+31,Very accommodating and understanding,positive,Content & Pedagogy
+32,Always willing to help outside of class hours,positive,Teaching & Learning
+33,Treats all students with respect and fairness,positive,Commitment & Transparency
+34,Gives encouragement and motivates us to do better,positive,Teaching & Learning
+35,The professor is very considerate of student needs,positive,Teaching & Learning
+36,Provides clear and constructive feedback on our work,positive,Commitment & Transparency
+37,Fair and transparent grading system,positive,Commitment & Transparency
+38,Returns graded papers and exams promptly,positive,Commitment & Transparency
+39,The grading criteria are clear and reasonable,positive,Commitment & Transparency
+40,Gives detailed feedback that helps us improve,positive,Commitment & Transparency
+41,Very fair when it comes to grades and assessments,positive,Commitment & Transparency
+42,Very professional and dedicated instructor,positive,Teaching & Learning
+43,Always on time and well organized,positive,Teaching & Learning
+44,The instructor is a role model for students,positive,Teaching & Learning
+45,Demonstrates mastery of the subject,positive,Content & Pedagogy
+46,Very responsible and committed to teaching,positive,Content & Pedagogy
+47,Manages class time efficiently,positive,Teaching & Learning
+48,Well-structured course from start to finish,positive,Teaching & Learning
+49,Excellent professor overall,positive,Teaching & Learning
+50,One of the best instructors in the department,positive,Teaching & Learning
+51,Highly recommend this teacher,positive,Content & Pedagogy
+52,Outstanding performance as an educator,positive,Teaching & Learning
+53,I learned a lot from this instructor,positive,Teaching & Learning
+54,Great teacher who truly inspires students,positive,Content & Pedagogy
+55,Very satisfied with the teaching quality,positive,Content & Pedagogy
+56,The instructor exceeded my expectations,positive,Teaching & Learning
+57,Amazing professor and wonderful person,positive,Teaching & Learning
+58,Thank you for being such a great mentor,positive,Teaching & Learning
+59,The instructor is unclear and hard to follow,negative,Content & Pedagogy
+60,Lessons are confusing and poorly explained,negative,Content & Pedagogy
+61,Does not explain the topics well,negative,Content & Pedagogy
+62,Very difficult to understand the lectures,negative,Content & Pedagogy
+63,Teaching method is ineffective and outdated,negative,Content & Pedagogy
+64,The instructor just reads from the slides,negative,Content & Pedagogy
+65,No real teaching happens in this class,negative,Content & Pedagogy
+66,Cannot explain concepts in a way students understand,negative,Content & Pedagogy
+67,The professor is not knowledgeable about the subject,negative,Content & Pedagogy
+68,Poorly prepared for class most of the time,negative,Teaching & Learning
+69,Lessons lack structure and organization,negative,Content & Pedagogy
+70,The instructor does not use any visual aids or examples,negative,Content & Pedagogy
+71,Very bad at explaining even basic concepts,negative,Content & Pedagogy
+72,The teacher seems lost during lectures,negative,Content & Pedagogy
+73,Instruction quality is very poor,negative,Teaching & Learning
+74,The instructor talks too fast,negative,Teaching & Learning
+75,Rushes through topics without checking understanding,negative,Content & Pedagogy
+76,Pacing is too quick for students to keep up,negative,Teaching & Learning
+77,Moves on to new topics before we understand the current one,negative,Content & Pedagogy
+78,The pace of the class is overwhelming,negative,Teaching & Learning
+79,The class is boring and unengaging,negative,Teaching & Learning
+80,Monotone delivery puts students to sleep,negative,Teaching & Learning
+81,No effort to make the class interesting,negative,Teaching & Learning
+82,The instructor does not encourage participation,negative,Teaching & Learning
+83,Very dull and uninteresting lectures,negative,Teaching & Learning
+84,There is no interaction or discussion in class,negative,Teaching & Learning
+85,The class feels like a waste of time,negative,Teaching & Learning
+86,Sitting in class feels like a punishment,negative,Teaching & Learning
+87,The instructor is always late to class,negative,Teaching & Learning
+88,Frequently absent without notice,negative,Commitment & Transparency
+89,Cancels class too often without replacement,negative,Teaching & Learning
+90,Does not respect class schedule or time,negative,Commitment & Transparency
+91,Very unprofessional behavior in class,negative,Teaching & Learning
+92,The instructor uses phone during class time,negative,Teaching & Learning
+93,Does not take teaching responsibilities seriously,negative,Content & Pedagogy
+94,Unfair grading and biased treatment of students,negative,Commitment & Transparency
+95,Shows favoritism towards certain students,negative,Commitment & Transparency
+96,The instructor is rude and disrespectful,negative,Commitment & Transparency
+97,Makes students feel stupid for asking questions,negative,Teaching & Learning
+98,Very intimidating and unapproachable,negative,Commitment & Transparency
+99,Does not treat students equally,negative,Teaching & Learning
+100,The teacher is arrogant and dismissive,negative,Content & Pedagogy
+101,Discourages students from asking questions,negative,Teaching & Learning
+102,Grades seem arbitrary and inconsistent,negative,Commitment & Transparency
+103,No transparency in how grades are computed,negative,Commitment & Transparency
+104,Never returns graded papers or gives feedback,negative,Commitment & Transparency
+105,Takes too long to return grades,negative,Commitment & Transparency
+106,No constructive feedback on assignments,negative,Commitment & Transparency
+107,The instructor is never available for consultation,negative,Commitment & Transparency
+108,Does not care about student performance,negative,Teaching & Learning
+109,Ignores student concerns and questions,negative,Teaching & Learning
+110,Worst instructor I have ever had,negative,Teaching & Learning
+111,Very disappointed with this teacher,negative,Content & Pedagogy
+112,Would not recommend this instructor,negative,Teaching & Learning
+113,Terrible teaching experience overall,negative,Content & Pedagogy
+114,I did not learn anything from this class,negative,Teaching & Learning
+115,This instructor should not be teaching,negative,Content & Pedagogy
+116,Extremely dissatisfied with the course,negative,Teaching & Learning
+117,The instructor needs serious improvement,negative,Teaching & Learning
+118,The class was okay,neutral,Teaching & Learning
+119,Nothing special about the teaching,neutral,Content & Pedagogy
+120,Average instructor with average performance,neutral,Teaching & Learning
+121,The course was fine I guess,neutral,Teaching & Learning
+122,The class is just normal,neutral,Teaching & Learning
+123,Neither good nor bad overall,neutral,Teaching & Learning
+124,The instructor is okay but could improve,neutral,Teaching & Learning
+125,Some lessons are good and some are not,neutral,Content & Pedagogy
+126,Acceptable teaching quality,neutral,Content & Pedagogy
+127,The class meets basic expectations,neutral,Teaching & Learning
+128,It was an ordinary class experience,neutral,Teaching & Learning
+129,The instructor is decent,neutral,Teaching & Learning
+130,The course was standard nothing remarkable,neutral,Teaching & Learning
+131,Sometimes good sometimes not,neutral,Teaching & Learning
+132,There are areas for improvement but also good points,neutral,Teaching & Learning
+133,The teacher is not bad but not great either,neutral,Content & Pedagogy
+134,Mixed feelings about this course,neutral,Teaching & Learning
+135,The instructor has both strengths and weaknesses,neutral,Teaching & Learning
+136,Regular class nothing to complain about,neutral,Teaching & Learning
+137,Just a typical class experience,neutral,Teaching & Learning
+138,Some topics were taught well others not so much,neutral,Content & Pedagogy
+139,I have no strong feelings about this class,neutral,Teaching & Learning
+140,The instructor does an adequate job,neutral,Teaching & Learning
+141,It was a mediocre experience overall,neutral,Teaching & Learning
+142,The class is passable,neutral,Teaching & Learning
+143,Not the best but not the worst either,neutral,Teaching & Learning
+144,The instructor was alright,neutral,Teaching & Learning
+145,No comments,neutral,Teaching & Learning
+146,None,neutral,Teaching & Learning
+147,N/A,neutral,Teaching & Learning
+148,Always late,negative,Teaching & Learning
+149,Always late and unprepared,negative,Teaching & Learning
+150,Late and unprepared for class,negative,Teaching & Learning
+151,Never on time,negative,Teaching & Learning
+152,Unprepared and disorganized,negative,Teaching & Learning
+153,Not prepared,negative,Teaching & Learning
+154,Lazy instructor,negative,Teaching & Learning
+155,Does not care,negative,Teaching & Learning
+156,Very rude,negative,Commitment & Transparency
+157,Disrespectful to students,negative,Commitment & Transparency
+158,Not helpful at all,negative,Teaching & Learning
+159,Cannot teach,negative,Content & Pedagogy
+160,Bad teacher,negative,Content & Pedagogy
+161,Poor teaching,negative,Content & Pedagogy
+162,Very disappointing,negative,Teaching & Learning
+163,Waste of time,negative,Teaching & Learning
+164,Terrible,negative,Teaching & Learning
+165,Awful experience,negative,Teaching & Learning
+166,The worst,negative,Teaching & Learning
+167,Unacceptable behavior,negative,Teaching & Learning
+168,No effort from the instructor,negative,Teaching & Learning
+169,Very slow to return grades and feedback,negative,Commitment & Transparency
+170,Does not listen to students,negative,Teaching & Learning
+171,Makes the subject harder than it should be,negative,Content & Pedagogy
+172,The instructor clearly does not want to teach,negative,Content & Pedagogy
+173,Very good,positive,Teaching & Learning
+174,Excellent,positive,Teaching & Learning
+175,Amazing teacher,positive,Content & Pedagogy
+176,Best professor,positive,Teaching & Learning
+177,Very helpful,positive,Teaching & Learning
+178,Great instructor,positive,Teaching & Learning
+179,Well prepared,positive,Teaching & Learning
+180,Always on time and ready,positive,Teaching & Learning
+181,Highly knowledgeable,positive,Teaching & Learning
+182,Super engaging,positive,Teaching & Learning
+183,Really good at teaching,positive,Content & Pedagogy
+184,Love this class,positive,Teaching & Learning
+185,Learned so much,positive,Teaching & Learning
+186,The best teacher ever,positive,Content & Pedagogy
+187,Very inspiring and motivating,positive,Teaching & Learning
+188,Clear explanations and good examples,positive,Content & Pedagogy
+189,Made difficult topics easy,positive,Content & Pedagogy
+190,Fun and educational at the same time,positive,Teaching & Learning
+191,I wish all teachers were like this,positive,Content & Pedagogy
+192,The instructor truly cares about us,positive,Teaching & Learning
+193,Okay lang,neutral,Teaching & Learning
+194,So so,neutral,Teaching & Learning
+195,Fair enough,neutral,Commitment & Transparency
+196,Could be better could be worse,neutral,Teaching & Learning
+197,Moderate performance,neutral,Teaching & Learning
+198,Not bad,neutral,Teaching & Learning
+199,It was fine,neutral,Teaching & Learning
+200,Nothing much to say,neutral,Teaching & Learning
+201,No complaints but nothing impressive,neutral,Teaching & Learning
+202,The class was average,neutral,Teaching & Learning
+203,Helpful but boring,neutral,Teaching & Learning
+204,The instructor is kind but the lectures are confusing,neutral,Content & Pedagogy
+205,Good teacher but always late to class,neutral,Content & Pedagogy
+206,Knowledgeable but not engaging,neutral,Teaching & Learning
+207,Nice person but bad at explaining,neutral,Content & Pedagogy
+208,The professor knows the subject but cannot teach it well,neutral,Content & Pedagogy
+209,Friendly but disorganized,neutral,Teaching & Learning
+210,Patient with students but the lessons are unclear,neutral,Commitment & Transparency
+211,Well prepared but the class is still boring,neutral,Teaching & Learning
+212,Grades fairly but does not explain well,neutral,Commitment & Transparency
+213,Approachable but lectures are too fast,neutral,Commitment & Transparency
+214,Caring instructor but poor time management,neutral,Teaching & Learning
+215,Great personality but needs to improve teaching,neutral,Content & Pedagogy
+216,The instructor is helpful but boring,neutral,Teaching & Learning
+217,Respectful but ineffective teaching style,neutral,Commitment & Transparency
+218,Good at theory but bad at practical examples,neutral,Content & Pedagogy
+219,Sometimes great sometimes terrible,neutral,Teaching & Learning
+220,Has good days and bad days in teaching,neutral,Content & Pedagogy
+221,Strong in content but weak in delivery,neutral,Teaching & Learning
+222,The teacher tries hard but students still struggle,neutral,Content & Pedagogy
+223,Boring lectures every single day,negative,Teaching & Learning
+224,Unclear and confusing all the time,negative,Content & Pedagogy
+225,The lectures are boring and hard to follow,negative,Teaching & Learning
+226,Confusing explanations with no examples,negative,Content & Pedagogy
+227,Class is always boring nothing interesting,negative,Teaching & Learning
+228,Unclear instructions on assignments and exams,negative,Content & Pedagogy
+229,The instructor is terrible at teaching,negative,Content & Pedagogy
+230,Completely boring and waste of time,negative,Teaching & Learning
+231,Late unprepared and does not care about students,negative,Teaching & Learning
+232,The class is so boring I want to drop it,negative,Teaching & Learning
+233,Disorganized boring and ineffective,negative,Teaching & Learning
+234,Lectures are unclear and poorly delivered,negative,Content & Pedagogy
+235,Not clear,negative,Content & Pedagogy
+236,Not helpful,negative,Teaching & Learning
+237,Not good,negative,Teaching & Learning
+238,Not organized,negative,Teaching & Learning
+239,Not engaging,negative,Teaching & Learning
+240,Not effective,negative,Teaching & Learning
+241,Not professional,negative,Teaching & Learning
+242,Not fair,negative,Commitment & Transparency
+243,Not recommended,negative,Teaching & Learning
+244,The instructor is not clear at all,negative,Content & Pedagogy
+245,Explanations are not clear,negative,Content & Pedagogy
+246,The teacher is not helpful,negative,Content & Pedagogy
+247,Teaching is not effective,negative,Content & Pedagogy
+248,The instructor is not good at explaining,negative,Content & Pedagogy
+249,Not a good teacher,negative,Content & Pedagogy
+250,The class is not interesting,negative,Teaching & Learning
+251,Not well organized,negative,Teaching & Learning
+252,The grading is not fair,negative,Commitment & Transparency
+253,Does not explain clearly,negative,Content & Pedagogy
+254,Not bad at all,positive,Teaching & Learning
+255,Not boring,positive,Teaching & Learning
+256,The instructor is not bad,neutral,Teaching & Learning
+257,The class is not boring,positive,Teaching & Learning
+258,Not the worst teacher,neutral,Content & Pedagogy
+259,Not terrible,neutral,Teaching & Learning
+260,Not disappointing,positive,Teaching & Learning
+261,The instructor is not rude,positive,Commitment & Transparency
+262,Not unfair,positive,Commitment & Transparency
+263,Not disorganized,positive,Teaching & Learning
+264,Not unprepared,positive,Teaching & Learning
+265,The class was not boring at all,positive,Teaching & Learning
+266,Teaching is not bad actually,positive,Content & Pedagogy
+267,Magaling mag-turo si sir,positive,Content & Pedagogy
+268,Magaling mag-explain ng lessons,positive,Content & Pedagogy
+269,Napaka-galing ng professor namin,positive,Teaching & Learning
+270,Ang galing galing niya magturo,positive,Content & Pedagogy
+271,Sobrang galing ng teacher namin,positive,Content & Pedagogy
+272,Ang husay ng pagtuturo niya,positive,Content & Pedagogy
+273,Napakahusay ng instructor,positive,Teaching & Learning
+274,Masaya mag-aral sa class niya,positive,Teaching & Learning
+275,Ang saya ng klase niya,positive,Teaching & Learning
+276,Sobrang saya ng class namin,positive,Teaching & Learning
+277,Nakakatuwa yung mga activities,positive,Teaching & Learning
+278,Ang dami kong natutunan sa class niya,positive,Teaching & Learning
+279,Marami akong natutunan,positive,Teaching & Learning
+280,Natuto talaga ako sa kanya,positive,Teaching & Learning
+281,Ang gaan ng pagtuturo niya,positive,Content & Pedagogy
+282,Madali niya i-explain yung lessons,positive,Content & Pedagogy
+283,Sobrang clear ng explanation niya,positive,Content & Pedagogy
+284,Ang linaw ng discussion niya,positive,Teaching & Learning
+285,Very approachable si maam,positive,Commitment & Transparency
+286,Mabait si sir at helpful,positive,Teaching & Learning
+287,Sobrang bait ng teacher namin,positive,Content & Pedagogy
+288,Napaka-approachable at kind,positive,Commitment & Transparency
+289,Maalaga sa students,positive,Teaching & Learning
+290,May pagmamalasakit sa mga estudyante,positive,Teaching & Learning
+291,Always nag-eeffort si sir para sa amin,positive,Teaching & Learning
+292,Lagi siyang prepared sa class,positive,Teaching & Learning
+293,On time lagi si maam,positive,Teaching & Learning
+294,Napaka-organized ng class niya,positive,Teaching & Learning
+295,Fair mag-grade si sir,positive,Commitment & Transparency
+296,Super helpful at patient,positive,Commitment & Transparency
+297,Best teacher ever si maam,positive,Content & Pedagogy
+298,Ang galing talaga love ko yung class,positive,Teaching & Learning
+299,Solid yung pagtuturo niya,positive,Content & Pedagogy
+300,Astig mag-turo si sir,positive,Content & Pedagogy
+301,Hindi marunong magturo,negative,Content & Pedagogy
+302,Hindi magaling mag-explain,negative,Content & Pedagogy
+303,Ang pangit ng pagtuturo,negative,Content & Pedagogy
+304,Sobrang boring ng class,negative,Teaching & Learning
+305,Ang boring ng klase niya,negative,Teaching & Learning
+306,Nakakaantok yung discussion,negative,Teaching & Learning
+307,Walang kwenta yung class,negative,Teaching & Learning
+308,Walang natutunan sa klase,negative,Teaching & Learning
+309,Hindi ko maintindihan yung lessons,negative,Content & Pedagogy
+310,Hindi malinaw ang explanation,negative,Content & Pedagogy
+311,Ang labo ng turo niya,negative,Content & Pedagogy
+312,Sobrang labo ng discussion,negative,Teaching & Learning
+313,Magulo yung lesson,negative,Content & Pedagogy
+314,Ang hirap intindihin ng turo niya,negative,Content & Pedagogy
+315,Laging late si sir,negative,Teaching & Learning
+316,Lagi siyang absent,negative,Commitment & Transparency
+317,Palaging late at walang pake,negative,Teaching & Learning
+318,Hindi pumapasok minsan,negative,Teaching & Learning
+319,Bastos yung teacher,negative,Content & Pedagogy
+320,Ang sama ng ugali ng instructor,negative,Teaching & Learning
+321,Masungit at hindi approachable,negative,Commitment & Transparency
+322,May favoritism sa ibang students,negative,Commitment & Transparency
+323,Hindi fair mag-grade,negative,Commitment & Transparency
+324,Unfair ang grading system niya,negative,Commitment & Transparency
+325,Walang feedback sa mga assignments,negative,Commitment & Transparency
+326,Ang tagal mag-return ng grades,negative,Commitment & Transparency
+327,Sobrang strict at hindi makatao,negative,Teaching & Learning
+328,Hindi siya nakikinig sa students,negative,Teaching & Learning
+329,Parang ayaw niya magturo,negative,Content & Pedagogy
+330,Ang pangit ng experience sa class niya,negative,Teaching & Learning
+331,Worst teacher ko ever,negative,Content & Pedagogy
+332,Nakakadismaya yung klase,negative,Teaching & Learning
+333,Ang hirap mag-aral sa kanya,negative,Teaching & Learning
+334,Tamad magturo,negative,Content & Pedagogy
+335,Okay lang naman si sir,neutral,Teaching & Learning
+336,Pwede na,neutral,Teaching & Learning
+337,Okay naman yung class,neutral,Teaching & Learning
+338,Sakto lang,neutral,Teaching & Learning
+339,Ayos naman,neutral,Teaching & Learning
+340,Hindi naman masama pero hindi rin magaling,neutral,Teaching & Learning
+341,Katamtaman lang,neutral,Teaching & Learning
+342,So-so lang yung pagtuturo,neutral,Content & Pedagogy
+343,Pwede pa naman i-improve,neutral,Teaching & Learning
+344,Wala naman akong masabi,neutral,Teaching & Learning
+345,Wala lang,neutral,Teaching & Learning
+346,Minsan okay minsan hindi,neutral,Teaching & Learning
+347,May mga araw na magaling may mga araw na hindi,neutral,Teaching & Learning
+348,Average naman ang teacher,neutral,Content & Pedagogy
+349,Goods naman,neutral,Teaching & Learning
+350,Magaling magturo pero laging late,neutral,Content & Pedagogy
+351,Mabait si sir pero boring yung class,neutral,Teaching & Learning
+352,Mahusay pero hindi approachable,neutral,Commitment & Transparency
+353,Magaling pero masungit,neutral,Teaching & Learning
+354,Knowledgeable si maam pero ang bilis magturo,neutral,Content & Pedagogy
+355,Okay naman si sir pero minsan confusing,neutral,Content & Pedagogy
+356,Prepared lagi pero boring yung delivery,neutral,Teaching & Learning
+357,Fair mag-grade pero hindi malinaw magturo,neutral,Commitment & Transparency
+358,Patient pero hindi engaging yung class,neutral,Commitment & Transparency
+359,Mabait pero walang natututunan,neutral,Teaching & Learning
+360,Hindi malinaw,negative,Content & Pedagogy
+361,Hindi helpful,negative,Teaching & Learning
+362,Hindi magaling,negative,Teaching & Learning
+363,Hindi organized,negative,Teaching & Learning
+364,Hindi prepared,negative,Teaching & Learning
+365,Hindi clear ang explanation,negative,Content & Pedagogy
+366,Hindi engaging ang class,negative,Teaching & Learning
+367,Hindi fair ang grading,negative,Commitment & Transparency
+368,Hindi naman masama,neutral,Teaching & Learning
+369,Hindi naman boring,positive,Teaching & Learning
+370,Hindi siya masungit,positive,Teaching & Learning
+371,Hindi naman pangit magturo,neutral,Content & Pedagogy
+372,Hindi naman nakakaantok,positive,Teaching & Learning
+373,Hindi siya bastos,positive,Teaching & Learning
+374,Magaling siya magturo,positive,Content & Pedagogy
+375,Magaling magturo,positive,Content & Pedagogy
+376,Magaling ang teacher,positive,Content & Pedagogy
+377,Magaling si sir sa pagtuturo,positive,Content & Pedagogy
+378,Sobrang magaling magturo ni sir,positive,Content & Pedagogy
+379,Magaling talaga siya,positive,Teaching & Learning
+380,Walang kwenta,negative,Teaching & Learning
+381,Walang kwenta ang klase,negative,Teaching & Learning
+382,Walang kwenta ang turo niya,negative,Content & Pedagogy
+383,Walang natutunan sa kanya,negative,Teaching & Learning
+384,Walang silbi yung class,negative,Teaching & Learning
+385,Wala akong natutunan,negative,Teaching & Learning
+386,Laging late,negative,Teaching & Learning
+387,Late lagi,negative,Teaching & Learning
+388,Laging late sa class,negative,Teaching & Learning
+389,Palaging late ang instructor,negative,Teaching & Learning
+390,Late palagi si sir sa klase,negative,Teaching & Learning
+391,Ang labo,negative,Teaching & Learning
+392,Malabo magturo,negative,Content & Pedagogy
+393,Labo ng explanation,negative,Teaching & Learning
+394,Ang labo ng turo,negative,Content & Pedagogy
+395,Malabo ang pagtuturo niya,negative,Content & Pedagogy
+396,Ang labo ng lesson niya,negative,Content & Pedagogy
+397,Sobrang labo,negative,Teaching & Learning
+398,Dull and repetitive lectures,negative,Teaching & Learning
+399,The class is so dull,negative,Teaching & Learning
+400,Very dull teaching style,negative,Content & Pedagogy
+401,Repetitive lessons every day,negative,Content & Pedagogy
+402,So repetitive and boring,negative,Teaching & Learning
+403,Comes to class unprepared,negative,Teaching & Learning
+404,The teacher is unprepared,negative,Content & Pedagogy
+405,Unprepared for every class,negative,Teaching & Learning
+406,Always unprepared,negative,Teaching & Learning
+407,The worst experience,negative,Teaching & Learning
+408,Worst class ever,negative,Teaching & Learning
+409,The worst professor in the school,negative,Teaching & Learning
+410,This is the worst class,negative,Teaching & Learning
+411,Could not understand the lessons,negative,Content & Pedagogy
+412,Could not follow the discussion,negative,Teaching & Learning
+413,Students could not understand anything,negative,Content & Pedagogy
+414,I could not learn anything,negative,Teaching & Learning
+415,Not effective at teaching,negative,Content & Pedagogy
+416,Not a very good teacher,negative,Content & Pedagogy
+417,Not a very clear instructor,negative,Content & Pedagogy
+418,Not very organized or prepared,negative,Teaching & Learning
+419,Explains topics clearly,positive,Content & Pedagogy
+420,She explains so clearly,positive,Content & Pedagogy
+421,Everything was explained clearly,positive,Content & Pedagogy
+422,Very clearly explained lessons,positive,Content & Pedagogy
+423,The instructor explains clearly every time,positive,Content & Pedagogy
+424,Decent but not exceptional,neutral,Teaching & Learning
+425,Decent instructor overall,neutral,Teaching & Learning
+426,Has room for improvement,neutral,Teaching & Learning
+427,Room for growth as a teacher,neutral,Content & Pedagogy
+428,Sobrang enjoy,positive,Teaching & Learning
+429,Enjoy ang klase,positive,Teaching & Learning
+430,Nag-enjoy ako sa class,positive,Teaching & Learning
+431,Sobrang enjoy ko ang subject,positive,Content & Pedagogy
+432,Ang laki ng natutunan ko,positive,Teaching & Learning
+433,Malaki ang natutunan namin,positive,Teaching & Learning
+434,Dami kong natutunan dito,positive,Teaching & Learning
+435,Masaya at maraming natutunan,positive,Teaching & Learning
+436,Masayang klase,positive,Teaching & Learning
+437,Masaya ang klase niya,positive,Teaching & Learning
+438,Katamtaman,neutral,Teaching & Learning
+439,Katamtaman ang galing,neutral,Teaching & Learning
+440,Katamtaman lang ang performance,neutral,Teaching & Learning
+441,Hindi niya maayos ang turo,negative,Content & Pedagogy
+442,Hindi maayos magturo,negative,Content & Pedagogy
+443,Hindi siya nag-eeffort,negative,Teaching & Learning
+444,Walang effort,negative,Teaching & Learning
+445,Walang effort magturo,negative,Content & Pedagogy
+446,Solid ang performance,positive,Teaching & Learning
+447,Solid magturo,positive,Content & Pedagogy
+448,Solid yung class,positive,Teaching & Learning
+449,Solid ang teaching,positive,Content & Pedagogy
+450,Strict at unfair,negative,Commitment & Transparency
+451,Sobrang strict tapos unfair pa,negative,Commitment & Transparency
+452,Ang strict unfair mag-grade,negative,Commitment & Transparency
+453,Strict pero unfair ang grading,negative,Commitment & Transparency
+454,Boring talaga,negative,Teaching & Learning
+455,Boring talaga ang class,negative,Teaching & Learning
+456,Boring talaga ng klase niya,negative,Teaching & Learning
+457,Sobrang boring talaga,negative,Teaching & Learning
+458,Pretty bad instructor,negative,Teaching & Learning
+459,Pretty bad at teaching,negative,Content & Pedagogy
+460,Pretty boring class,negative,Teaching & Learning
+461,Pretty terrible lectures,negative,Teaching & Learning
+462,Pretty disappointing,negative,Teaching & Learning
+463,Pretty awful experience,negative,Teaching & Learning
+464,Pretty confusing lessons,negative,Content & Pedagogy
+465,Pretty bad overall,negative,Teaching & Learning
+466,Pretty good teacher,positive,Content & Pedagogy
+467,Pretty helpful professor,positive,Teaching & Learning
+468,Pretty clear explanations,positive,Content & Pedagogy
+469,Pretty organized class,positive,Teaching & Learning
+470,Pretty great experience,positive,Teaching & Learning
+471,Clearly incompetent,negative,Content & Pedagogy
+472,Clearly unprepared for class,negative,Content & Pedagogy
+473,Clearly does not care,negative,Content & Pedagogy
+474,Clearly not qualified,negative,Content & Pedagogy
+475,Clearly has no idea what to teach,negative,Content & Pedagogy
+476,Clearly do not understand what he is teaching,negative,Content & Pedagogy
+477,Clearly not interested in teaching,negative,Content & Pedagogy
+478,Absolutely terrible,negative,Teaching & Learning
+479,Totally useless lectures,negative,Teaching & Learning
+480,Absolutely boring,negative,Teaching & Learning
+481,Totally unprepared,negative,Teaching & Learning
+482,Absolutely unfair grading,negative,Commitment & Transparency
+483,Totally disorganized,negative,Teaching & Learning
+484,Absolutely amazing teacher,positive,Content & Pedagogy
+485,Totally helpful and kind,positive,Teaching & Learning
+486,Absolutely brilliant lectures,positive,Teaching & Learning
+487,Totally engaging class,positive,Teaching & Learning
+488,Absolutely the best professor,positive,Teaching & Learning
+489,Terribly good at teaching,positive,Content & Pedagogy
+490,Awfully nice professor,positive,Teaching & Learning
+491,Terribly effective instructor,positive,Teaching & Learning
+492,Terribly boring,negative,Teaching & Learning
+493,Awfully slow lectures,negative,Teaching & Learning
+494,Terribly unprepared,negative,Teaching & Learning
+495,Awfully confusing,negative,Content & Pedagogy
+496,Great at wasting time,negative,Teaching & Learning
+497,Really good at confusing students,negative,Content & Pedagogy
+498,Expert at being late,negative,Teaching & Learning
+499,Amazing at making things harder,negative,Teaching & Learning
+500,Excellent at being unhelpful,negative,Teaching & Learning
+501,Sobrang pangit ng turo,negative,Content & Pedagogy
+502,Medyo magaling naman,neutral,Teaching & Learning
+503,Medyo boring,negative,Teaching & Learning
+504,Medyo okay lang,neutral,Teaching & Learning
+505,Sobrang galing talaga,positive,Teaching & Learning
+506,Grabe ang galing,positive,Teaching & Learning
+507,Grabe ang pangit ng class,negative,Teaching & Learning
+508,Grabe ang boring,negative,Teaching & Learning
+509,Sobrang laki ng improvement niya,positive,Teaching & Learning
+510,Good teacher,positive,Content & Pedagogy
+511,Good professor,positive,Teaching & Learning
+512,Good instructor,positive,Teaching & Learning
+513,Great teacher,positive,Content & Pedagogy
+514,Best teacher,positive,Content & Pedagogy
+515,Nice teacher,positive,Content & Pedagogy
+516,Kind professor,positive,Teaching & Learning
+517,Bad professor,negative,Teaching & Learning
+518,Bad instructor,negative,Teaching & Learning
+519,Worst teacher,negative,Content & Pedagogy
+520,Worst professor,negative,Teaching & Learning
+521,Terrible teacher,negative,Content & Pedagogy
+522,Terrible professor,negative,Teaching & Learning
+523,Awful teacher,negative,Content & Pedagogy
+524,Horrible professor,negative,Teaching & Learning
+525,Okay teacher,neutral,Content & Pedagogy
+526,Average teacher,neutral,Content & Pedagogy
+527,Magaling teacher,positive,Content & Pedagogy
+528,Magaling professor,positive,Teaching & Learning
+529,Pangit magturo,negative,Content & Pedagogy
+530,Pangit professor,negative,Teaching & Learning
+531,Mahusay magturo,positive,Content & Pedagogy
+532,Magaling siya,positive,Teaching & Learning
+533,Pangit naman,negative,Teaching & Learning
+534,Palaging masigla at nakaka-engganyo ang bawat lecture.,positive,Teaching & Learning
+535,"Maganda ang pacing ng bawat klase, hindi nakakagulat ang mga bagong topics.",positive,Teaching & Learning
+536,Sobrang linaw ng microphone at presentasyon sa online class.,positive,Teaching & Learning
+537,Encourages healthy debate and respectful exchange of opinions in class.,positive,Teaching & Learning
+538,Punctual sa bawat meeting at laging nagsisimula sa tamang oras.,positive,Teaching & Learning
+539,Creates an enthusiastic atmosphere where students look forward to learning.,positive,Teaching & Learning
+540,"Napaka-dynamic magturo, maraming engaging quizzes at group discussions.",positive,Teaching & Learning
+541,Very mindful of student attention spans and gives short breather breaks.,positive,Teaching & Learning
+542,Mahusay mag-moderate ng classroom discussions nang walang napapag-iwanan.,positive,Teaching & Learning
+543,Maintains excellent classroom discipline while keeping lectures friendly.,positive,Teaching & Learning
+544,"Hindi nakakaantok ang boses ni sir, laging lively ang klase.",positive,Teaching & Learning
+545,Always checks if everyone is keeping up with the discussion before proceeding.,positive,Teaching & Learning
+546,Super fun activities that help us remember key course concepts easily.,positive,Teaching & Learning
+547,"Sobrang productive ng bawat period, walang nasasayang na oras.",positive,Teaching & Learning
+548,Adapts teaching pace quickly when students express difficulty.,positive,Teaching & Learning
+549,Makes sure every student gets a chance to participate during recitation.,positive,Teaching & Learning
+550,Laging may recap bago magsimula ang bagong lesson para fresh sa isip.,positive,Teaching & Learning
+551,Excellent voice modulation and enthusiastic body language during lectures.,positive,Teaching & Learning
+552,Very organized whiteboard notes that are easy to copy and review.,positive,Teaching & Learning
+553,Encouraging words during recitations make shy students gain confidence.,positive,Teaching & Learning
+554,Hindi boring kahit three-hour straight lecture class.,positive,Teaching & Learning
+555,"The atmosphere in class is always warm, welcoming, and academically rigorous.",positive,Teaching & Learning
+556,Gives energizers when students look exhausted from earlier classes.,positive,Teaching & Learning
+557,Sobrang galing mag-catch ng attention ng buong klase kahit 7am pa lang.,positive,Teaching & Learning
+558,Handles rowdy classes with calm authority and genuine professionalism.,positive,Teaching & Learning
+559,Balanseng-balanse ang lecture at group activities every meeting.,positive,Teaching & Learning
+560,Always acknowledges valid student insights during open forums.,positive,Teaching & Learning
+561,Pumapasok nang maaga at laging prepared ang room projector bago kami dumating.,positive,Teaching & Learning
+562,High energy teaching style that motivates everyone to stay attentive.,positive,Teaching & Learning
+563,"Very patient with slow learners, hindi nagpapakita ng inis.",positive,Teaching & Learning
+564,Always smiles and greets the students warmly upon entering the room.,positive,Teaching & Learning
+565,Effective use of gamified learning platforms like Kahoot and Quizizz.,positive,Teaching & Learning
+566,Classroom feels like a safe space where mistakes are treated as learning steps.,positive,Teaching & Learning
+567,Never cancels classes unnecessarily and always values scheduled time.,positive,Teaching & Learning
+568,Malinaw ang panuto sa bawat group activity at seatwork.,positive,Teaching & Learning
+569,Smooth transitions between theoretical discussions and application exercises.,positive,Teaching & Learning
+570,The instructor knows how to connect with the Gen Z student mindset.,positive,Teaching & Learning
+571,Always maintains composure even when facing classroom technical difficulties.,positive,Teaching & Learning
+572,"Very disciplined with time management, dismisses class precisely on the dot.",positive,Teaching & Learning
+573,Interactive polls and breakout sessions make online learning bearable and fun.,positive,Teaching & Learning
+574,Laging updated ang attendance log at walang favoritism sa late policy.,positive,Teaching & Learning
+575,Promotes peer-to-peer learning through well-structured collaborative tasks.,positive,Teaching & Learning
+576,"Sobrang husay mag-facilitate ng reporting, hindi niya kami pinapabayaan.",positive,Teaching & Learning
+577,Keeps the class engaged by throwing thought-provoking questions.,positive,Teaching & Learning
+578,Great balance of academic seriousness and light-hearted classroom humor.,positive,Teaching & Learning
+579,Active learning strategies are implemented exceptionally well in this class.,positive,Teaching & Learning
+580,Mabilis mag-adjust ng lesson plan kapag nakikitang nahihirapan ang klase.,positive,Teaching & Learning
+581,Always encourages us to think critically rather than memorize terms blindly.,positive,Teaching & Learning
+582,Classroom discussions are always intellectually stimulating and relevant.,positive,Teaching & Learning
+583,Sobrang gaan ng vibe sa klase pero marami kang matututunan.,positive,Teaching & Learning
+584,Creates high student involvement through role-playing and case analyses.,positive,Teaching & Learning
+585,"Always present and punctual, a true role model for students.",positive,Teaching & Learning
+586,Effective communication skills that bridge language gaps effortlessly.,positive,Teaching & Learning
+587,Very clear audio and visual presentation during blended learning sessions.,positive,Teaching & Learning
+588,Never leaves a question hanging during classroom discussions.,positive,Teaching & Learning
+589,Gives equal opportunities for both introverts and extroverts to share ideas.,positive,Teaching & Learning
+590,Always provides warm reinforcement whenever students provide good answers.,positive,Teaching & Learning
+591,Inspirational instructor who pushes students beyond their comfort zones.,positive,Teaching & Learning
+592,Laging may clear learning objectives sa slide bago magsimula ang talakayan.,positive,Teaching & Learning
+593,Punctuality and dedication to teaching are truly admirable.,positive,Teaching & Learning
+594,"Sobrang bait magturo, never nanghiya ng estudyante sa harap ng klase.",positive,Teaching & Learning
+595,Provides well-structured study guides before major examinations.,positive,Teaching & Learning
+596,The teacher creates an atmosphere of mutual respect and high curiosity.,positive,Teaching & Learning
+597,Always reviews previous meeting assignments before starting a new chapter.,positive,Teaching & Learning
+598,Very energetic and passionate about the subject matter every single day.,positive,Teaching & Learning
+599,Maintains an orderly classroom environment conducive to focused study.,positive,Teaching & Learning
+600,Hands down one of the most dedicated educators I have met in college.,positive,Teaching & Learning
+601,Clear enunciation and audible delivery across the entire lecture hall.,positive,Teaching & Learning
+602,Encourages collaborative problem solving among team members.,positive,Teaching & Learning
+603,Laging maaga mag-upload ng meeting links at lecture materials.,positive,Teaching & Learning
+604,Very approachable demeanor that puts anxious students at ease.,positive,Teaching & Learning
+605,Inspires us to love the subject even if the formulas are intimidating.,positive,Teaching & Learning
+606,The instructor uses humor tastefully to lighten stressful topics.,positive,Teaching & Learning
+607,Consistently shows high enthusiasm for student academic growth.,positive,Teaching & Learning
+608,Simpleng mga analohiya ang ginagamit para ipaliwanag ang mahihirap na konsepto.,positive,Content & Pedagogy
+609,Demonstrates practical code implementation live instead of just talking.,positive,Content & Pedagogy
+610,Detailed and well-commented slides provided before the lecture starts.,positive,Content & Pedagogy
+611,Relates academic theories to current Philippine industry practices.,positive,Content & Pedagogy
+612,Very thorough in explaining the derivations and formulas step by step.,positive,Content & Pedagogy
+613,Laging updated ang mga reference materials at textbooks na ginagamit.,positive,Content & Pedagogy
+614,Provides comprehensive walkthroughs for laboratory exercises and simulations.,positive,Content & Pedagogy
+615,Integrates LMS tools smoothly to track learning modules and quizzes.,positive,Content & Pedagogy
+616,"Explains the ""why"" behind concepts, not just the mechanical ""how"".",positive,Content & Pedagogy
+617,Super clear PowerPoint presentations with high-quality educational diagrams.,positive,Content & Pedagogy
+618,"Master na master ni sir ang subject matter, nasasagot lahat ng advanced inquiries.",positive,Content & Pedagogy
+619,Shares real-world workplace case studies that bridge theory and practice.,positive,Content & Pedagogy
+620,Uses step-by-step algorithms on the board to illustrate tricky calculations.,positive,Content & Pedagogy
+621,Provides supplementary video links and reading materials for enrichment.,positive,Content & Pedagogy
+622,Maraming concrete examples na madaling i-relate sa pang-araw-araw na buhay.,positive,Content & Pedagogy
+623,Exemplary mastery of specialized domain topics and cutting-edge trends.,positive,Content & Pedagogy
+624,Well-curated laboratory manuals that guide students through every step.,positive,Content & Pedagogy
+625,"Breaks down lengthy chapters into digestible, bite-sized learning modules.",positive,Content & Pedagogy
+626,Laging handa sa questions tungkol sa practical application ng theories.,positive,Content & Pedagogy
+627,Effective use of digital simulations and visual models during demonstration.,positive,Content & Pedagogy
+628,Deeply knowledgeable in both foundational theories and practical tooling.,positive,Content & Pedagogy
+629,Presents complex mathematical concepts in an intuitive and relatable way.,positive,Content & Pedagogy
+630,All lecture handouts are logically organized and thoroughly proofread.,positive,Content & Pedagogy
+631,Helps students understand difficult programming bugs patiently.,positive,Content & Pedagogy
+632,Provides comprehensive sample exam questions that test conceptual understanding.,positive,Content & Pedagogy
+633,Bihira ang prof na kasing galing niyang mag-explain ng technical jargon.,positive,Content & Pedagogy
+634,Skillfully answers tricky edge-case questions during coding laboratory.,positive,Content & Pedagogy
+635,Integrates modern technology tools effectively into the weekly curriculum.,positive,Content & Pedagogy
+636,Provides practical tips on how to prepare for professional certification exams.,positive,Content & Pedagogy
+637,Gives clear and concise definitions before diving into advanced proofs.,positive,Content & Pedagogy
+638,"Organized course structure, each topic logically builds upon the prior one.",positive,Content & Pedagogy
+639,Very adept at troubleshooting software setup issues for students.,positive,Content & Pedagogy
+640,Mahusay mag-synthesize ng magkakaibang theories sa isang unified framework.,positive,Content & Pedagogy
+641,Gives meaningful assignments that stimulate higher-order thinking skills.,positive,Content & Pedagogy
+642,Utilizes modern case studies from top local and multinational institutions.,positive,Content & Pedagogy
+643,Laging may hands-on demo bago magpa-exercise sa computer laboratory.,positive,Content & Pedagogy
+644,"Pedagogical delivery is clear, concise, and academically inspiring.",positive,Content & Pedagogy
+645,Simplifies complicated architectural diagrams into clean visual steps.,positive,Content & Pedagogy
+646,"Very proficient with Google Classroom, Canvas, and university LMS portals.",positive,Content & Pedagogy
+647,Shares personal research and industry experience to enrich the course content.,positive,Content & Pedagogy
+648,Malalim ang kaalaman sa bawat kabanata ng textbook.,positive,Content & Pedagogy
+649,"Balances rigorous technical theory with realistic, hands-on projects.",positive,Content & Pedagogy
+650,Excellent use of multimedia presentations to support auditory and visual learners.,positive,Content & Pedagogy
+651,Gives clear instructions on how to use laboratory instruments and software.,positive,Content & Pedagogy
+652,Provides timely clarifications on confusing textbook notations.,positive,Content & Pedagogy
+653,Teaching style develops our analytical reasoning and problem-solving abilities.,positive,Content & Pedagogy
+654,Uses relevant local examples that reflect Philippine socioeconomic realities.,positive,Content & Pedagogy
+655,Demonstrates deep subject expertise without sounding arrogant or patronizing.,positive,Content & Pedagogy
+656,Makes sure students grasp the fundamentals before introducing complex models.,positive,Content & Pedagogy
+657,Hands-on coding exercises are directly relevant to real software engineering jobs.,positive,Content & Pedagogy
+658,Provides detailed problem sets with complete step-by-step solutions.,positive,Content & Pedagogy
+659,Explains tricky edge cases and pitfalls to avoid in practical assignments.,positive,Content & Pedagogy
+660,The teacher has phenomenal domain mastery and genuine love for the subject.,positive,Content & Pedagogy
+661,"Uses clean, uncluttered visual aids that emphasize core takeaways.",positive,Content & Pedagogy
+662,Clearly outlines the practical relevance of every module to our future careers.,positive,Content & Pedagogy
+663,Answers questions thoroughly with clear references to scholarly literature.,positive,Content & Pedagogy
+664,Helps students debug errors methodically rather than just giving the answer.,positive,Content & Pedagogy
+665,"Super galing magturo ng math, nawala ang takot ko sa calculus.",positive,Content & Pedagogy
+666,Provides well-structured recap notes at the end of each major unit.,positive,Content & Pedagogy
+667,Utilizes interactive online simulations that make abstract physics intuitive.,positive,Content & Pedagogy
+668,"Course materials are high quality, peer-reviewed, and up to date.",positive,Content & Pedagogy
+669,"Makes sure we understand the logic behind coding patterns, not just syntax.",positive,Content & Pedagogy
+670,Very clear audio-visual setup during synchronous virtual demonstrations.,positive,Content & Pedagogy
+671,Engaging real-world case analysis that sparked lively debates.,positive,Content & Pedagogy
+672,Patiently re-explains complex formulas until the entire block understands.,positive,Content & Pedagogy
+673,"Presents research methodologies with clarity, rigor, and practical guidance.",positive,Content & Pedagogy
+674,The instructor explains difficult algorithms using visual flowcharts.,positive,Content & Pedagogy
+675,High intellectual competence paired with down-to-earth teaching style.,positive,Content & Pedagogy
+676,Provides clear rubrics for all computational and written requirements.,positive,Content & Pedagogy
+677,Skillful integration of technology that improves classroom productivity.,positive,Content & Pedagogy
+678,The instructor bridges the gap between textbook theory and practical industry needs.,positive,Content & Pedagogy
+679,Extensive knowledge of industry tools makes laboratory hours deeply rewarding.,positive,Content & Pedagogy
+680,Provides constructive hints that lead students to find solutions independently.,positive,Content & Pedagogy
+681,Lectures are structured with exemplary pedagogical clarity and depth.,positive,Content & Pedagogy
+682,Always returns exam papers with constructive marginal feedback.,positive,Commitment & Transparency
+683,Transparent grading sheet shown before submitting final grades to the registrar.,positive,Commitment & Transparency
+684,Generous with consultation hours and patient during one-on-one advising.,positive,Commitment & Transparency
+685,Accommodates questions politely without showing irritation or condescension.,positive,Commitment & Transparency
+686,Consistently adheres to the announced course syllabus and deadlines.,positive,Commitment & Transparency
+687,Gives fair consideration for documented emergencies and illnesses.,positive,Commitment & Transparency
+688,Very professional in answering student emails and consultation requests.,positive,Commitment & Transparency
+689,"No favoritism observed, every student receives objective grading.",positive,Commitment & Transparency
+690,Grades activities promptly so students can learn from their mistakes.,positive,Commitment & Transparency
+691,Punctual sa consultation schedules at laging handang tumulong sa projects.,positive,Commitment & Transparency
+692,Provides detailed score breakdowns so you know where you lost points.,positive,Commitment & Transparency
+693,"Very fair when evaluating group projects, checks individual contributions.",positive,Commitment & Transparency
+694,Respects student opinions and never takes constructive criticism personally.,positive,Commitment & Transparency
+695,Syllabus policies are clearly explained on the very first day of class.,positive,Commitment & Transparency
+696,Promptly notifies the class whenever an emergency schedule change happens.,positive,Commitment & Transparency
+697,Fair and objective grading based strictly on the published rubric.,positive,Commitment & Transparency
+698,Provides consultation slots even outside official class hours when requested.,positive,Commitment & Transparency
+699,Treats all students with equal dignity regardless of academic standing.,positive,Commitment & Transparency
+700,Honors scheduled deadlines and never assigns surprise tasks overnight.,positive,Commitment & Transparency
+701,Transparent grade computation presented openly during grade consultation day.,positive,Commitment & Transparency
+702,Returns checked midterm papers within one week with actionable comments.,positive,Commitment & Transparency
+703,Listens attentively to student concerns regarding project scope and workload.,positive,Commitment & Transparency
+704,Walang pinapaboran kahit mga student leaders o kakilala.,positive,Commitment & Transparency
+705,Very respectful and professional communication across all chat channels.,positive,Commitment & Transparency
+706,Always reminds students of upcoming deadlines well in advance.,positive,Commitment & Transparency
+707,Shows great empathy for working students balancing jobs and academics.,positive,Commitment & Transparency
+708,"Strict but fair, adheres to university guidelines with utmost integrity.",positive,Commitment & Transparency
+709,Explains the grading criteria thoroughly before any major project submission.,positive,Commitment & Transparency
+710,Always available on Google Chat or email during designated consultation periods.,positive,Commitment & Transparency
+711,Fair examination questions that directly match the scope of covered topics.,positive,Commitment & Transparency
+712,Returns quizzes before midterm exams so we can use them as study references.,positive,Commitment & Transparency
+713,Open to regrading inquiries when there are legitimate clerical mistakes.,positive,Commitment & Transparency
+714,Maintains high academic standards while showing kindness and understanding.,positive,Commitment & Transparency
+715,Very prompt in updating our grades in the university portal.,positive,Commitment & Transparency
+716,Values student feedback and adjusted the workload based on our mid-sem review.,positive,Commitment & Transparency
+717,"Transparent policies on attendance, excuses, and makeup quizzes.",positive,Commitment & Transparency
+718,Never cancels consultation hours without prior notice to the class rep.,positive,Commitment & Transparency
+719,Takes time to explain individually why a student received a particular mark.,positive,Commitment & Transparency
+720,Gives constructive remarks on project drafts before final submission.,positive,Commitment & Transparency
+721,Upholds academic honesty while guiding students through proper citations.,positive,Commitment & Transparency
+722,"Transparent rubric criteria make grading clear, predictable, and fair.",positive,Commitment & Transparency
+723,"Always polite, approachable, and encouraging during private consultations.",positive,Commitment & Transparency
+724,Understands personal crises and grants reasonable extensions when justified.,positive,Commitment & Transparency
+725,Provides an item analysis of exams to clarify commonly missed questions.,positive,Commitment & Transparency
+726,"Respectful tone in all correspondence, truly embodies professional demeanor.",positive,Commitment & Transparency
+727,Ensures that all grading disputes are resolved transparently and amicably.,positive,Commitment & Transparency
+728,Consistently holds consultation sessions for capstone and thesis groups.,positive,Commitment & Transparency
+729,Returns assignments with detailed feedback on how to achieve higher marks.,positive,Commitment & Transparency
+730,Strict adherence to university data privacy and grade confidentiality rules.,positive,Commitment & Transparency
+731,Fair distribution of laboratory equipment and computers among students.,positive,Commitment & Transparency
+732,Displays exceptional professional ethics and dedication to student welfare.,positive,Commitment & Transparency
+733,Welcomes diverse viewpoints and creates a democratic classroom space.,positive,Commitment & Transparency
+734,Grades are posted on schedule without unnecessary delays.,positive,Commitment & Transparency
+735,Consistently provides office hours access to all enrolled students.,positive,Commitment & Transparency
+736,"Fairness in evaluating presentations, no bias against quieter students.",positive,Commitment & Transparency
+737,Thoroughly reviews make-up requirements for officially excused absences.,positive,Commitment & Transparency
+738,"Always transparent about the weighting of exams, quizzes, and projects.",positive,Commitment & Transparency
+739,Respectful and accommodating mentor throughout the entire semester.,positive,Commitment & Transparency
+740,Provides individualized guidance for struggling students during office hours.,positive,Commitment & Transparency
+741,Returns laboratory exercise scores within the agreed turnaround time.,positive,Commitment & Transparency
+742,Clearly communicates changes in syllabus schedules well ahead of time.,positive,Commitment & Transparency
+743,Genuinely cares about students emotional well-being and academic success.,positive,Commitment & Transparency
+744,Evaluates each student submission with utmost objectivity and precision.,positive,Commitment & Transparency
+745,Displays unwavering dedication to university standards and teaching ethics.,positive,Commitment & Transparency
+746,Always available to clarify project requirements before deadlines.,positive,Commitment & Transparency
+747,Constructive feedback provided on every phase of the research proposal.,positive,Commitment & Transparency
+748,Approachable mentor who welcomes questions with genuine warmth.,positive,Commitment & Transparency
+749,Transparent criteria prevent ambiguity and ensure fair competition.,positive,Commitment & Transparency
+750,Respects students time by starting and ending consultations punctually.,positive,Commitment & Transparency
+751,Patient adviser who guides students through challenging project roadblocks.,positive,Commitment & Transparency
+752,Exemplary transparency in all grading formulas and academic policies.,positive,Commitment & Transparency
+753,Provides encouraging words along with critique to inspire better output.,positive,Commitment & Transparency
+754,Integrity and fairness are evident in every aspect of instruction.,positive,Commitment & Transparency
+755,"Outstanding dedication to transparent, student-centered education.",positive,Commitment & Transparency
+756,The lectures are delivered at an average speed without noticeable issues.,neutral,Teaching & Learning
+757,Standard classroom setting following the scheduled timetable.,neutral,Teaching & Learning
+758,"Sumusunod lang sa takdang oras ng klase, walang labis walang kulang.",neutral,Teaching & Learning
+759,The instructor speaks at a normal volume throughout the lecture.,neutral,Teaching & Learning
+760,Bawat klase ay may nakatakdang attendance check bago magsimula ang aralin.,neutral,Teaching & Learning
+761,Normal presentation of syllabus topics using standard teaching slides.,neutral,Teaching & Learning
+762,The class starts on time and dismisses exactly at the scheduled bell.,neutral,Teaching & Learning
+763,Moderate student participation during open question periods.,neutral,Teaching & Learning
+764,The pacing neither rushes nor slows down unnecessarily.,neutral,Teaching & Learning
+765,Karaniwang diskusyon sa bawat meeting ayon sa kurikulum.,neutral,Teaching & Learning
+766,Lectures are structured according to the standard unit plan.,neutral,Teaching & Learning
+767,Classroom routine is regular with no unexpected deviations.,neutral,Teaching & Learning
+768,The teacher follows the allocated time slots for each agenda item.,neutral,Teaching & Learning
+769,Adequate voice projection inside the standard-sized classroom.,neutral,Teaching & Learning
+770,Sakto lang ang bilis ng pagsasalita habang nagtuturo.,neutral,Teaching & Learning
+771,Routine discussions conducted according to the weekly syllabus.,neutral,Teaching & Learning
+772,The instructor maintains a typical lecture hall atmosphere.,neutral,Teaching & Learning
+773,Classroom management adheres to normal university guidelines.,neutral,Teaching & Learning
+774,Students are called randomly during recitation sessions.,neutral,Teaching & Learning
+775,"Pangkaraniwang paraan ng pagtuturo, katulad ng ibang propesor.",neutral,Teaching & Learning
+776,The lecture duration matches the assigned semester schedule.,neutral,Teaching & Learning
+777,Standard seatwork given after discussing the theoretical background.,neutral,Teaching & Learning
+778,Follows the scheduled break time during three-hour blocks.,neutral,Teaching & Learning
+779,The classroom environment is standard and ordinary.,neutral,Teaching & Learning
+780,Usual flow of lecture followed by short question period.,neutral,Teaching & Learning
+781,Neither too fast nor too slow in delivering the lecture points.,neutral,Teaching & Learning
+782,Checks student presence using the official class roster.,neutral,Teaching & Learning
+783,The teacher conducts lessons in a formal and conventional style.,neutral,Teaching & Learning
+784,Average level of student interaction during classroom sessions.,neutral,Teaching & Learning
+785,"Sakto lang ang volume ng boses, naririnig naman hanggang likod.",neutral,Teaching & Learning
+786,Delivers the lecture topics as outlined in the course guide.,neutral,Teaching & Learning
+787,"The instructor presents slides in a normal, unhurried manner.",neutral,Teaching & Learning
+788,Routine attendance checking at the start of every meeting.,neutral,Teaching & Learning
+789,Standard group discussions conducted during laboratory hours.,neutral,Teaching & Learning
+790,Normal pacing maintained throughout the sixteen-week semester.,neutral,Teaching & Learning
+791,The class proceeds according to the prescribed departmental schedule.,neutral,Teaching & Learning
+792,Average delivery style with regular pauses for note taking.,neutral,Teaching & Learning
+793,Typical university classroom setup and standard instructional pacing.,neutral,Teaching & Learning
+794,Sumusunod sa nakatakdang oras ng lecture at laboratory.,neutral,Teaching & Learning
+795,The instructor uses the whiteboard occasionally during discussions.,neutral,Teaching & Learning
+796,Ordinary lecture sessions with standard student participation.,neutral,Teaching & Learning
+797,Classes are held on the designated room and timetable.,neutral,Teaching & Learning
+798,Standard adherence to class schedules and departmental time limits.,neutral,Teaching & Learning
+799,The teacher delivers the topics listed in the syllabus.,neutral,Teaching & Learning
+800,Moderate amount of student questions raised during lectures.,neutral,Teaching & Learning
+801,Karaniwang daloy ng klase mula umpisa hanggang uwian.,neutral,Teaching & Learning
+802,The lecture proceeds at an even and predictable pace.,neutral,Teaching & Learning
+803,Standard room climate maintained during regular sessions.,neutral,Teaching & Learning
+804,The teacher uses customary instructional methods.,neutral,Teaching & Learning
+805,Classes start within a reasonable window of the scheduled time.,neutral,Teaching & Learning
+806,Follows the departmental timetable for lecture hours.,neutral,Teaching & Learning
+807,The instructor reads the bullet points and provides standard commentary.,neutral,Teaching & Learning
+808,Normal interaction between students and instructor during class.,neutral,Teaching & Learning
+809,Sakto lang ang haba ng mga discussion bago magpa-activity.,neutral,Teaching & Learning
+810,Standard classroom etiquette is observed throughout.,neutral,Teaching & Learning
+811,The pacing allows students to copy notes from slides.,neutral,Teaching & Learning
+812,Ordinary teaching routine without particular surprises.,neutral,Teaching & Learning
+813,Delivers standard presentations for each unit in the outline.,neutral,Teaching & Learning
+814,The instructor maintains a neutral and professional posture.,neutral,Teaching & Learning
+815,Standard classroom attendance policies are observed.,neutral,Teaching & Learning
+816,The class covers one unit per week as stated in the course guide.,neutral,Teaching & Learning
+817,"Normal volume of voice, audible within the room.",neutral,Teaching & Learning
+818,Pangkaraniwang talakayan sa bawat paksa ng asignatura.,neutral,Teaching & Learning
+819,The teacher addresses student queries within normal lecture time.,neutral,Teaching & Learning
+820,Standard balance between teacher talk and student listening.,neutral,Teaching & Learning
+821,The instructor proceeds through the slides at a moderate rate.,neutral,Teaching & Learning
+822,Ordinary classroom interactions throughout the term.,neutral,Teaching & Learning
+823,Classes are conducted in accordance with university calendars.,neutral,Teaching & Learning
+824,Average classroom atmosphere with conventional teaching style.,neutral,Teaching & Learning
+825,The teacher follows standard administrative protocols.,neutral,Teaching & Learning
+826,"Sakto lang ang bilis, kayang sabayan kung magfo-focus ka.",neutral,Teaching & Learning
+827,The instructor follows standard presentation guidelines.,neutral,Teaching & Learning
+828,Normal student engagement during weekly course meetings.,neutral,Teaching & Learning
+829,Delivers scheduled lectures within normal operational hours.,neutral,Teaching & Learning
+830,Standard classroom seating and lecture format.,neutral,Teaching & Learning
+831,The instructor manages the class within acceptable norms.,neutral,Teaching & Learning
+832,Ordinary pace of instruction consistent across units.,neutral,Teaching & Learning
+833,Karaniwang recitation gamit ang class list index cards.,neutral,Teaching & Learning
+834,The pacing follows the standard collegiate guideline.,neutral,Teaching & Learning
+835,The teacher speaks at an even and steady pace.,neutral,Teaching & Learning
+836,Standard classroom management observed during exams.,neutral,Teaching & Learning
+837,The session runs through the planned topic outline.,neutral,Teaching & Learning
+838,Typical lecture delivery without unusual features.,neutral,Teaching & Learning
+839,Moderate pace that adheres to standard class hours.,neutral,Teaching & Learning
+840,Sumusunod sa nakatalagang room schedule sa prospectus.,neutral,Teaching & Learning
+841,The instructor conducts the class in a formal manner.,neutral,Teaching & Learning
+842,Standard level of formality maintained during discussions.,neutral,Teaching & Learning
+843,Class proceeds through the assigned syllabus chapters.,neutral,Teaching & Learning
+844,Average student response during classroom recitations.,neutral,Teaching & Learning
+845,The teacher stays within the designated teaching hours.,neutral,Teaching & Learning
+846,Normal lecture flow observed on ordinary class days.,neutral,Teaching & Learning
+847,"Pwede na ang takbo ng klase, walang malaking problema.",neutral,Teaching & Learning
+848,The instructor covers the scheduled items on the board.,neutral,Teaching & Learning
+849,Standard pacing through weekly syllabus milestones.,neutral,Teaching & Learning
+850,The classroom session proceeds without significant delays.,neutral,Teaching & Learning
+851,Ordinary delivery of lecture topics as scheduled.,neutral,Teaching & Learning
+852,The teacher completes the lecture within regular hours.,neutral,Teaching & Learning
+853,Standard meeting times maintained across the semester.,neutral,Teaching & Learning
+854,Typical teaching methodologies observed in class.,neutral,Teaching & Learning
+855,Sakto lang ang daloy ng diskusyon sa bawat meeting.,neutral,Teaching & Learning
+856,PowerPoint slides are directly based on the prescribed university syllabus.,neutral,Content & Pedagogy
+857,The instructor uses the standard department-issued textbook.,neutral,Content & Pedagogy
+858,Follows the module sequence chapter by chapter without deviations.,neutral,Content & Pedagogy
+859,Standard code snippets are copied directly from the reference guide.,neutral,Content & Pedagogy
+860,Provides the textbook questions as home activities every week.,neutral,Content & Pedagogy
+861,Covers the exact theoretical topics outlined in the course prospectus.,neutral,Content & Pedagogy
+862,Course portal contains the required PDF handouts for each module.,neutral,Content & Pedagogy
+863,Assignments reflect the standard exercises from the subject syllabus.,neutral,Content & Pedagogy
+864,Uses basic whiteboard demonstrations when working through numerical problems.,neutral,Content & Pedagogy
+865,Adequate coverage of fundamental theories as mandated by the course.,neutral,Content & Pedagogy
+866,The slides follow the department template format.,neutral,Content & Pedagogy
+867,Covers standard definitions and conceptual terms from the textbook.,neutral,Content & Pedagogy
+868,Uses textbook examples during computational exercises.,neutral,Content & Pedagogy
+869,The instructor delivers the material specified in the module outline.,neutral,Content & Pedagogy
+870,Standard laboratory experiments conducted as indicated in the manual.,neutral,Content & Pedagogy
+871,Nasa module naman lahat ng binabasa sa presentation slides.,neutral,Content & Pedagogy
+872,Theoretical content matches the standard curriculum requirements.,neutral,Content & Pedagogy
+873,The course materials are directly lifted from the standard syllabus.,neutral,Content & Pedagogy
+874,Explains formulas using the exact steps in the prescribed manual.,neutral,Content & Pedagogy
+875,Lecture topics follow the official curriculum guidelines.,neutral,Content & Pedagogy
+876,The teacher provides customary problem sets for practice.,neutral,Content & Pedagogy
+877,Standard explanations provided for foundational concepts.,neutral,Content & Pedagogy
+878,The syllabus content is delivered in sequential order.,neutral,Content & Pedagogy
+879,Slide content adheres closely to the course module.,neutral,Content & Pedagogy
+880,Exercises correspond to the end-of-chapter textbook problems.,neutral,Content & Pedagogy
+881,The instructor uses conventional pedagogical materials.,neutral,Content & Pedagogy
+882,Karaniwang slides na may text at diagrams galing sa libro.,neutral,Content & Pedagogy
+883,The subject coverage follows the standard curriculum pacing.,neutral,Content & Pedagogy
+884,Presents standard examples that illustrate basic concepts.,neutral,Content & Pedagogy
+885,The teacher covers required topics without adding external materials.,neutral,Content & Pedagogy
+886,Course handouts are uploaded to Google Drive as scheduled.,neutral,Content & Pedagogy
+887,Standard coverage of theoretical paradigms in the field.,neutral,Content & Pedagogy
+888,The instructor references the required reading list in the syllabus.,neutral,Content & Pedagogy
+889,Basic concepts are presented in accordance with departmental guidelines.,neutral,Content & Pedagogy
+890,Standard code examples are shown during computer programming sessions.,neutral,Content & Pedagogy
+891,The lectures focus strictly on the official syllabus topics.,neutral,Content & Pedagogy
+892,Content is aligned with the standard departmental exam format.,neutral,Content & Pedagogy
+893,Module handouts contain standard references and citations.,neutral,Content & Pedagogy
+894,Sumusunod sa pagkakasunod-sunod ng mga chapters sa prescribed book.,neutral,Content & Pedagogy
+895,The instructor uses standard laboratory software during practicals.,neutral,Content & Pedagogy
+896,Presents the standard formulas from the course outline.,neutral,Content & Pedagogy
+897,The course follows standard pedagogical sequences.,neutral,Content & Pedagogy
+898,Weekly topics match the department syllabus timeline.,neutral,Content & Pedagogy
+899,Assignments test basic recall of lecture material.,neutral,Content & Pedagogy
+900,Standard technical terms are discussed during the session.,neutral,Content & Pedagogy
+901,The instructor utilizes the official university LMS repository.,neutral,Content & Pedagogy
+902,Explanations align with standard introductory literature.,neutral,Content & Pedagogy
+903,The slides summarize key points from the assigned reading.,neutral,Content & Pedagogy
+904,Standard laboratory procedures are demonstrated step by step.,neutral,Content & Pedagogy
+905,"Sakto lang ang detalye sa slides, sapat para makasunod.",neutral,Content & Pedagogy
+906,Content delivery reflects the approved course outline.,neutral,Content & Pedagogy
+907,The instructor uses departmental PowerPoint slide decks.,neutral,Content & Pedagogy
+908,Lecture materials are shared in PDF format after meetings.,neutral,Content & Pedagogy
+909,Standard problem sets distributed at the end of each topic.,neutral,Content & Pedagogy
+910,Theoretical models are presented as defined in reference books.,neutral,Content & Pedagogy
+911,The teacher adheres to standard subject matter guidelines.,neutral,Content & Pedagogy
+912,Course activities are derived from standard textbook items.,neutral,Content & Pedagogy
+913,Pangkaraniwang talakayan tungkol sa mga theories sa syllabus.,neutral,Content & Pedagogy
+914,The teacher covers each section of the curriculum sequentially.,neutral,Content & Pedagogy
+915,Provides standard definitions for all technical terms covered.,neutral,Content & Pedagogy
+916,Course materials are consistent with departmental recommendations.,neutral,Content & Pedagogy
+917,Standard mathematical notations used during whiteboard solving.,neutral,Content & Pedagogy
+918,The instructor utilizes official curriculum guidelines.,neutral,Content & Pedagogy
+919,Basic explanations provided for each curriculum topic.,neutral,Content & Pedagogy
+920,Standard presentation format maintained across lecture decks.,neutral,Content & Pedagogy
+921,The instructor relies on the departmental course syllabus.,neutral,Content & Pedagogy
+922,Content is delivered according to institutional guidelines.,neutral,Content & Pedagogy
+923,Sumusunod sa standard curriculum ng college of computer studies.,neutral,Content & Pedagogy
+924,Standard laboratory exercises performed according to manual.,neutral,Content & Pedagogy
+925,The teacher presents the standard derivations required by the syllabus.,neutral,Content & Pedagogy
+926,Lectures match the topics tested in departmental exams.,neutral,Content & Pedagogy
+927,The instructor uses conventional visual representations.,neutral,Content & Pedagogy
+928,Covers the required theoretical frameworks in regular order.,neutral,Content & Pedagogy
+929,Course readings are selected from the official textbook list.,neutral,Content & Pedagogy
+930,The slides provide standard definitions for examination study.,neutral,Content & Pedagogy
+931,Standard instructional materials provided each week.,neutral,Content & Pedagogy
+932,The teacher reviews the assigned syllabus readings in class.,neutral,Content & Pedagogy
+933,"Pwede na ang mga examples, sumusunod naman sa textbook.",neutral,Content & Pedagogy
+934,Lecture content matches the prescribed collegiate syllabus.,neutral,Content & Pedagogy
+935,The instructor delivers the theoretical curriculum as scheduled.,neutral,Content & Pedagogy
+936,Standard code walkthroughs conducted during laboratory.,neutral,Content & Pedagogy
+937,The materials are aligned with departmental requirements.,neutral,Content & Pedagogy
+938,Content follows the prescribed module breakdown.,neutral,Content & Pedagogy
+939,Standard academic definitions presented in lecture slides.,neutral,Content & Pedagogy
+940,The instructor uses the recommended syllabus textbook.,neutral,Content & Pedagogy
+941,Basic coverage of curriculum objectives achieved.,neutral,Content & Pedagogy
+942,Standard formulas and sample calculations presented.,neutral,Content & Pedagogy
+943,Course content stays within official syllabus bounds.,neutral,Content & Pedagogy
+944,Karaniwang halimbawa mula sa reference book ang gamit.,neutral,Content & Pedagogy
+945,The instructor conducts the lecture based on module notes.,neutral,Content & Pedagogy
+946,Standard course materials distributed through LMS portal.,neutral,Content & Pedagogy
+947,Theoretical topics are delivered according to timetable.,neutral,Content & Pedagogy
+948,The teacher relies on approved academic outlines.,neutral,Content & Pedagogy
+949,Standard presentations covering essential course definitions.,neutral,Content & Pedagogy
+950,Module handouts reflect the curriculum outline accurately.,neutral,Content & Pedagogy
+951,The instructor presents standard illustrations from text.,neutral,Content & Pedagogy
+952,Curriculum delivery matches standard institutional expectations.,neutral,Content & Pedagogy
+953,Standard laboratory exercises completed on schedule.,neutral,Content & Pedagogy
+954,The teacher adheres strictly to the assigned course syllabus.,neutral,Content & Pedagogy
+955,"Sakto lang ang presentation, sumusunod sa guide ng department.",neutral,Content & Pedagogy
+956,Grading is computed according to the institutional weight percentages.,neutral,Commitment & Transparency
+957,Consultation hours are scheduled according to the department notice board.,neutral,Commitment & Transparency
+958,Announces exam schedules two weeks prior as stipulated in university policy.,neutral,Commitment & Transparency
+959,Grades are submitted within the prescribed deadline of the registrar.,neutral,Commitment & Transparency
+960,Follows standard departmental policies on class absences and excuses.,neutral,Commitment & Transparency
+961,Quizzes are returned during the following class period with scores tallied.,neutral,Commitment & Transparency
+962,Syllabus was distributed during the first week of classes as required.,neutral,Commitment & Transparency
+963,The instructor follows standard guidelines for makeup examinations.,neutral,Commitment & Transparency
+964,Rubrics are aligned with university assessment standards.,neutral,Commitment & Transparency
+965,Grade computations follow the standard formula indicated in the course syllabus.,neutral,Commitment & Transparency
+966,Consultation schedule is posted outside the faculty department room.,neutral,Commitment & Transparency
+967,Sumusunod sa departmental policy ukol sa bilang ng pinapayagang absences.,neutral,Commitment & Transparency
+968,The instructor adheres to standard grading rubrics for project evaluation.,neutral,Commitment & Transparency
+969,Class requirements are listed in the syllabus distributed at the start of term.,neutral,Commitment & Transparency
+970,Attendance records are kept in the standard university class ledger.,neutral,Commitment & Transparency
+971,Standard turnaround time observed for checking student assignments.,neutral,Commitment & Transparency
+972,The teacher follows official university grading deadlines.,neutral,Commitment & Transparency
+973,Consultation is available during the officially declared faculty office hours.,neutral,Commitment & Transparency
+974,Follows institutional guidelines regarding excused student absences.,neutral,Commitment & Transparency
+975,Exam guidelines are communicated prior to test administration.,neutral,Commitment & Transparency
+976,Naka-post naman sa syllabus ang grading system ng subject.,neutral,Commitment & Transparency
+977,The instructor observes university guidelines on classroom decorum.,neutral,Commitment & Transparency
+978,Official department rubrics are utilized for term projects.,neutral,Commitment & Transparency
+979,Grades are encoded in the student information system as scheduled.,neutral,Commitment & Transparency
+980,The teacher adheres to standard institutional exam schedules.,neutral,Commitment & Transparency
+981,Assignments are collected on the stated syllabus deadline.,neutral,Commitment & Transparency
+982,Standard grading scales from 1.0 to 5.0 are applied in this course.,neutral,Commitment & Transparency
+983,The instructor holds consultation hours in the faculty lounge as scheduled.,neutral,Commitment & Transparency
+984,Course policies are outlined in the orientation document.,neutral,Commitment & Transparency
+985,Deadlines are announced during regular class hours.,neutral,Commitment & Transparency
+986,Karaniwang proseso sa pagpasa ng requirements at pagkuha ng scores.,neutral,Commitment & Transparency
+987,The instructor complies with university attendance documentation rules.,neutral,Commitment & Transparency
+988,Standard scoring rubrics are used for written reports.,neutral,Commitment & Transparency
+989,The teacher follows standard protocol for handling grade inquiries.,neutral,Commitment & Transparency
+990,Midterm grades are posted according to the university calendar.,neutral,Commitment & Transparency
+991,Course deliverables follow the timeline set by the department.,neutral,Commitment & Transparency
+992,Standard consultation hours are observed during weekdays.,neutral,Commitment & Transparency
+993,The instructor adheres to university guidelines regarding late submissions.,neutral,Commitment & Transparency
+994,Scores are recorded in the official university grading sheet.,neutral,Commitment & Transparency
+995,Sumusunod sa tamang proseso ng pagkuha ng special exam ayon sa college.,neutral,Commitment & Transparency
+996,The instructor enforces the standard dress code and ID policy.,neutral,Commitment & Transparency
+997,Rubric criteria correspond to standard collegiate criteria.,neutral,Commitment & Transparency
+998,The teacher submits student evaluations to the dean as required.,neutral,Commitment & Transparency
+999,Class notices are posted on the official bulletin board.,neutral,Commitment & Transparency
+1000,Standard departmental percentage weights are used for quizzes and exams.,neutral,Commitment & Transparency
+1001,The instructor adheres to official campus consultation guidelines.,neutral,Commitment & Transparency
+1002,Grades are calculated using the approved grading sheet template.,neutral,Commitment & Transparency
+1003,Follows institutional procedures for student consultation requests.,neutral,Commitment & Transparency
+1004,Standard test proctoring rules are implemented during examinations.,neutral,Commitment & Transparency
+1005,"Sakto lang ang pagbibigay ng marka, base sa nakitang outputs.",neutral,Commitment & Transparency
+1006,The teacher announces course requirements within syllabus timelines.,neutral,Commitment & Transparency
+1007,Official grade consultation is scheduled before end of term.,neutral,Commitment & Transparency
+1008,The instructor complies with faculty attendance requirements.,neutral,Commitment & Transparency
+1009,Standard policy applies to excused laboratory absences.,neutral,Commitment & Transparency
+1010,The grading breakdown was presented during course orientation.,neutral,Commitment & Transparency
+1011,The instructor complies with student record confidentiality policies.,neutral,Commitment & Transparency
+1012,Standard departmental timeline followed for major submissions.,neutral,Commitment & Transparency
+1013,Grade computation reflects the formula stated in the course guide.,neutral,Commitment & Transparency
+1014,Consultation is conducted according to the posted faculty timetable.,neutral,Commitment & Transparency
+1015,Sumusunod sa departmental protocol sa pag-encode ng final grades.,neutral,Commitment & Transparency
+1016,The teacher handles grade corrections through standard registrar forms.,neutral,Commitment & Transparency
+1017,Assignments are graded using standard point distributions.,neutral,Commitment & Transparency
+1018,The instructor follows standard guidelines for project submissions.,neutral,Commitment & Transparency
+1019,Class regulations are aligned with the student handbook.,neutral,Commitment & Transparency
+1020,The teacher maintains the required student attendance log.,neutral,Commitment & Transparency
+1021,Standard exam distribution and collection procedures observed.,neutral,Commitment & Transparency
+1022,Official syllabus guidelines are followed regarding missed quizzes.,neutral,Commitment & Transparency
+1023,The instructor provides score totals upon student inquiry.,neutral,Commitment & Transparency
+1024,Course evaluation criteria match the standard curriculum guidelines.,neutral,Commitment & Transparency
+1025,Karaniwang patakaran sa attendance at submission ng requirements.,neutral,Commitment & Transparency
+1026,The teacher observes official university office hours.,neutral,Commitment & Transparency
+1027,Standard departmental rubric used for laboratory reports.,neutral,Commitment & Transparency
+1028,Grades are released within the standard university timeline.,neutral,Commitment & Transparency
+1029,The instructor abides by the campus calendar for examinations.,neutral,Commitment & Transparency
+1030,Class records are maintained in standard digital spreadsheets.,neutral,Commitment & Transparency
+1031,The teacher enforces university policies on academic conduct.,neutral,Commitment & Transparency
+1032,Standard consultation periods are held in the designated faculty room.,neutral,Commitment & Transparency
+1033,Syllabus grading breakdown is followed throughout the term.,neutral,Commitment & Transparency
+1034,The instructor complies with institutional grade submission dates.,neutral,Commitment & Transparency
+1035,"Pwede na ang feedback, sinasabi naman kung ano ang score mo.",neutral,Commitment & Transparency
+1036,Standard policies observed regarding student make-up work.,neutral,Commitment & Transparency
+1037,The teacher follows institutional guidelines for syllabus distribution.,neutral,Commitment & Transparency
+1038,Official scoring keys are applied to objective test items.,neutral,Commitment & Transparency
+1039,The instructor adheres to standard university exam schedules.,neutral,Commitment & Transparency
+1040,Classroom administrative policies follow the university handbook.,neutral,Commitment & Transparency
+1041,Standard consultation rules apply during the examination period.,neutral,Commitment & Transparency
+1042,The teacher provides scores in accordance with university practice.,neutral,Commitment & Transparency
+1043,Grading scale is implemented in accordance with university rules.,neutral,Commitment & Transparency
+1044,Standard procedures followed for student attendance verification.,neutral,Commitment & Transparency
+1045,Sumusunod sa standard na patakaran ng unibersidad sa pagmarka.,neutral,Commitment & Transparency
+1046,The instructor follows official departmental grading weightings.,neutral,Commitment & Transparency
+1047,Consultation availability is posted on the departmental bulletin.,neutral,Commitment & Transparency
+1048,Standard departmental evaluation tools are implemented.,neutral,Commitment & Transparency
+1049,The teacher observes official deadlines for submitting grade sheets.,neutral,Commitment & Transparency
+1050,Student grades are computed according to official syllabus policies.,neutral,Commitment & Transparency
+1051,The instructor follows institutional guidelines on student evaluations.,neutral,Commitment & Transparency
+1052,Standard grading scales applied across all student submissions.,neutral,Commitment & Transparency
+1053,Follows university regulations regarding classroom conduct and testing.,neutral,Commitment & Transparency
+1054,"Sakto lang, sumusunod sa standard guidelines ng faculty manual.",neutral,Commitment & Transparency
+1055,"Sobrang bilis magbasa ng slides, hindi man lang kami makapag-notes.",negative,Teaching & Learning
+1056,Frequently enters 20 minutes late without extending or apologizing.,negative,Teaching & Learning
+1057,Monotonous lecturing voice that makes the entire block fall asleep.,negative,Teaching & Learning
+1058,Dismisses the class abruptly whenever students ask questions.,negative,Teaching & Learning
+1059,Rushes through five chapters in one two-hour session before finals.,negative,Teaching & Learning
+1060,"Hindi marunong mag-maintain ng classroom discipline, sobrang ingay palagi.",negative,Teaching & Learning
+1061,"Walang energy magturo, halatang napipilitan lang pumasok sa klase.",negative,Teaching & Learning
+1062,Never asks if the students understood the lesson before moving forward.,negative,Teaching & Learning
+1063,Skips fundamental explanations and expects students to already know everything.,negative,Teaching & Learning
+1064,Laging absent tapos magpapa-make up class ng weekend or gabi.,negative,Teaching & Learning
+1065,"The instructor speaks too softly, hindi marinig kahit sa second row.",negative,Teaching & Learning
+1066,"Never prepares before class, naghahanap pa lang ng slides pagdating.",negative,Teaching & Learning
+1067,"Classroom management is very poor, students just play mobile games.",negative,Teaching & Learning
+1068,Does not encourage questions and scolds students who ask for clarification.,negative,Teaching & Learning
+1069,Wastes thirty minutes of class time talking about personal problems.,negative,Teaching & Learning
+1070,"Sobrang gulo magturo, palipat-lipat ng topic nang walang transition.",negative,Teaching & Learning
+1071,Cancels classes at the last minute when students are already on campus.,negative,Teaching & Learning
+1072,"Very erratic pacing, one week super slow and then rushes five units.",negative,Teaching & Learning
+1073,"Walang kabuhay-buhay magturo, nakakawala ng gana pumasok.",negative,Teaching & Learning
+1074,Reads wall-of-text slides word for word without explaining.,negative,Teaching & Learning
+1075,The teacher arrives late consistently and cuts the discussion short.,negative,Teaching & Learning
+1076,Leaves the room for extended periods during laboratory hours.,negative,Teaching & Learning
+1077,Napapagalitan ang buong klase kapag may isang hindi nakasagot sa recitation.,negative,Teaching & Learning
+1078,Unresponsive to student questions during synchronous online lectures.,negative,Teaching & Learning
+1079,Never conducts a recap and just jumps straight to advance problems.,negative,Teaching & Learning
+1080,Sobrang bagal magturo sa simula tapos kumaripas noong malapit na ang finals.,negative,Teaching & Learning
+1081,The instructor displays open disinterest during student presentations.,negative,Teaching & Learning
+1082,"Fails to manage loud students in the back row, disrupting the lecture.",negative,Teaching & Learning
+1083,"Laging wala sa oras mag-dismiss, nag-o-overtime ng 30 minutes.",negative,Teaching & Learning
+1084,Extremely impatient when students struggle to follow the problem solving.,negative,Teaching & Learning
+1085,Does not use visual aids or write key formulas on the board.,negative,Teaching & Learning
+1086,Hindi pumapasok pero nagbibigay ng pagkarami-raming assignments.,negative,Teaching & Learning
+1087,Rushes through important mathematical derivations without giving steps.,negative,Teaching & Learning
+1088,Poor audio quality in online lectures that the instructor refused to fix.,negative,Teaching & Learning
+1089,Sobrang toxic ng environment sa klase dahil laging naninigaw.,negative,Teaching & Learning
+1090,The instructor skips multiple scheduled class meetings without reason.,negative,Teaching & Learning
+1091,Disorganized whiteboard notes that are impossible to decipher.,negative,Teaching & Learning
+1092,Does not give students enough time to write down problem statements.,negative,Teaching & Learning
+1093,Walang consideration sa internet disconnection ng mga estudyante.,negative,Teaching & Learning
+1094,Frequently cuts off students in mid-sentence during discussions.,negative,Teaching & Learning
+1095,The pacing is so fast that nobody in our block passed the quiz.,negative,Teaching & Learning
+1096,Puro kwento tungkol sa sarili ang lecture imbes na magturo ng subject.,negative,Teaching & Learning
+1097,Shows irritation whenever asked to repeat a complex concept.,negative,Teaching & Learning
+1098,Dismisses valid student inquiries as stupid or trivial.,negative,Teaching & Learning
+1099,"Sobrang dalas mag-absent, kalahati ng semester puro self-study.",negative,Teaching & Learning
+1100,"Fails to engage the class, entire room is disengaged and bored.",negative,Teaching & Learning
+1101,Unannounced quizzes given right after being absent for two weeks.,negative,Teaching & Learning
+1102,"Does not value students time, arrives 30 minutes late consistently.",negative,Teaching & Learning
+1103,Hindi maipaliwanag nang maayos ang pinagkaiba ng basic concepts.,negative,Teaching & Learning
+1104,Very dismissive teaching attitude that discourages learning.,negative,Teaching & Learning
+1105,Literal na binabasa lang ang buong text ng PowerPoint presentation.,negative,Content & Pedagogy
+1106,Unable to explain or fix code errors during laboratory demonstrations.,negative,Content & Pedagogy
+1107,Lacks deep mastery of the subject and refuses to clarify complex questions.,negative,Content & Pedagogy
+1108,Outdated lecture materials that no longer reflect modern tech standards.,negative,Content & Pedagogy
+1109,Gives exam questions that were never mentioned in lectures or modules.,negative,Content & Pedagogy
+1110,Purely theoretical teaching with zero hands-on applications or exercises.,negative,Content & Pedagogy
+1111,Cannot answer basic student inquiries regarding lecture slides.,negative,Content & Pedagogy
+1112,Copies slides from the internet without understanding the subject matter.,negative,Content & Pedagogy
+1113,Hindi marunong gumamit ng Google Classroom at nagugulo ang submissions.,negative,Content & Pedagogy
+1114,The teacher gives coding projects without teaching the required syntax.,negative,Content & Pedagogy
+1115,Provides conflicting formulas that confuse everyone during problem solving.,negative,Content & Pedagogy
+1116,Does not provide any study materials or references for the exam.,negative,Content & Pedagogy
+1117,"Sobrang labo ng handouts, puro scan ng lumang libro na tabingi.",negative,Content & Pedagogy
+1118,The instructor struggles to explain core algorithmic concepts.,negative,Content & Pedagogy
+1119,Gives laboratory exercises with incomplete and broken starter code.,negative,Content & Pedagogy
+1120,Never demonstrates how to apply theory to real-world scenarios.,negative,Content & Pedagogy
+1121,Hindi maayos ang pagkakasunod-sunod ng topics sa syllabus.,negative,Content & Pedagogy
+1122,Relies completely on student reporters to teach the entire syllabus.,negative,Content & Pedagogy
+1123,Provides erroneous sample calculations that lead students to fail quizzes.,negative,Content & Pedagogy
+1124,Fails to clarify ambiguity in exam questions during test proper.,negative,Content & Pedagogy
+1125,"Walang sariling presentation, download lang ng slides sa scribd.",negative,Content & Pedagogy
+1126,The instructor displays noticeable lack of expertise in this subject.,negative,Content & Pedagogy
+1127,Gives heavy programming assignments without any prior lecture.,negative,Content & Pedagogy
+1128,Pedagogical approach is obsolete and relies purely on rote memorization.,negative,Content & Pedagogy
+1129,Hindi masagot ang mga tanong sa thesis at capstone consultations.,negative,Content & Pedagogy
+1130,Laboratory equipment instructions were unclear resulting in damaged tools.,negative,Content & Pedagogy
+1131,The teacher confuses basic definitions and misled the whole class.,negative,Content & Pedagogy
+1132,Does not know how to operate the software required for the course.,negative,Content & Pedagogy
+1133,"Puro student reporting ang ginawa buong term, walang tinuro si sir.",negative,Content & Pedagogy
+1134,Exam coverage was completely different from the topics taught.,negative,Content & Pedagogy
+1135,The slides contain numerous typographical and technical errors.,negative,Content & Pedagogy
+1136,Unable to explain why an algorithm produces a particular output.,negative,Content & Pedagogy
+1137,"Sobrang gulo ng laboratory manual, walang tamang step-by-step guide.",negative,Content & Pedagogy
+1138,The instructor cannot answer questions outside of the slide bullet points.,negative,Content & Pedagogy
+1139,Does not explain difficult formulas and tells us to just Google it.,negative,Content & Pedagogy
+1140,Teaching methodology is totally unsuited for college-level learning.,negative,Content & Pedagogy
+1141,"Walang coherence ang topics, biglang lumilipat sa advanced lessons.",negative,Content & Pedagogy
+1142,Gives outdated programming libraries that do not work on modern OS.,negative,Content & Pedagogy
+1143,Failed to demonstrate laboratory techniques safely and accurately.,negative,Content & Pedagogy
+1144,The instructor refuses to admit obvious errors in textbook solutions.,negative,Content & Pedagogy
+1145,"Puro definition of terms lang ang exam, walang application of concepts.",negative,Content & Pedagogy
+1146,Does not know how to resolve simple software installation issues.,negative,Content & Pedagogy
+1147,No structured syllabus was followed throughout the semester.,negative,Content & Pedagogy
+1148,The teacher just reads paragraphs from the book without elaboration.,negative,Content & Pedagogy
+1149,Lacks fundamental knowledge of the technology stack being taught.,negative,Content & Pedagogy
+1150,Gives assignments on topics that were never discussed in class.,negative,Content & Pedagogy
+1151,Incompetent in guiding students through technical project roadblocks.,negative,Content & Pedagogy
+1152,Unclear problem specifications leading to wasted student effort.,negative,Content & Pedagogy
+1153,Hindi nagbibigay ng breakdown ng scores bago ipasa ang final grades.,negative,Commitment & Transparency
+1154,Obvious favoritism towards student leaders and officers during grading.,negative,Commitment & Transparency
+1155,Never responds to consultation requests or emails throughout the semester.,negative,Commitment & Transparency
+1156,Sudden deductions on project grades without any rubric or explanation.,negative,Commitment & Transparency
+1157,Returns midterm exam papers only after the final exam has concluded.,negative,Commitment & Transparency
+1158,Sarcastic and humiliating remarks when students ask for clarification.,negative,Commitment & Transparency
+1159,Ignores valid medical certificates for missed laboratory activities.,negative,Commitment & Transparency
+1160,Grades appear arbitrary with no transparent criteria provided.,negative,Commitment & Transparency
+1161,Sobrang sungit kapag nilalapitan sa faculty room para magtanong.,negative,Commitment & Transparency
+1162,"Does not return checked papers, we never know where we made mistakes.",negative,Commitment & Transparency
+1163,Refuses to show the grading sheet or explain how final marks were computed.,negative,Commitment & Transparency
+1164,Deducts unreasonable points for minor formatting mistakes on submissions.,negative,Commitment & Transparency
+1165,Never available during scheduled consultation hours in the faculty room.,negative,Commitment & Transparency
+1166,Pumapasok lang para magpa-attendance tapos aalis na agad.,negative,Commitment & Transparency
+1167,Humiliates students in front of the class when they get wrong answers.,negative,Commitment & Transparency
+1168,"Severe bias towards favorite students, gives them free high scores.",negative,Commitment & Transparency
+1169,Unresponsive to messages regarding urgent capstone advising concerns.,negative,Commitment & Transparency
+1170,Changes project requirements two days before the submission deadline.,negative,Commitment & Transparency
+1171,"Hindi patas magbigay ng grade sa group work, unfair sa gumawa.",negative,Commitment & Transparency
+1172,Refuses to accept excused absence slips endorsed by the college dean.,negative,Commitment & Transparency
+1173,Posted final grades without giving students a chance to verify their scores.,negative,Commitment & Transparency
+1174,Makes degrading and disrespectful remarks about student capabilities.,negative,Commitment & Transparency
+1175,"Walang transparency sa grading criteria, parang hula-hula lang ang marka.",negative,Commitment & Transparency
+1176,Loses submitted physical papers and blames students for missing work.,negative,Commitment & Transparency
+1177,"Never provides constructive feedback, only gives numeric failing scores.",negative,Commitment & Transparency
+1178,Rude and condescending tone whenever approached for academic guidance.,negative,Commitment & Transparency
+1179,Failed to return any quiz or exam paper for the entire semester.,negative,Commitment & Transparency
+1180,Nagbibigay ng surprise exam kahit walang pasok noong nakaraang meeting.,negative,Commitment & Transparency
+1181,Ignores emails asking for project requirements clarification.,negative,Commitment & Transparency
+1182,Blatant favoritism observed during oral project defenses.,negative,Commitment & Transparency
+1183,Demands unreasonable project requirements without providing budget or guide.,negative,Commitment & Transparency
+1184,Hindi sumusunod sa announced grading breakdown sa course syllabus.,negative,Commitment & Transparency
+1185,Shows total lack of empathy towards working students facing hardships.,negative,Commitment & Transparency
+1186,Refuses to explain deductions on midterm examination answers.,negative,Commitment & Transparency
+1187,Cancels project consultation meetings without informing the group.,negative,Commitment & Transparency
+1188,Sobrang taas mag-expect pero zero support naman ang binibigay.,negative,Commitment & Transparency
+1189,Never answers queries sent through official university email channels.,negative,Commitment & Transparency
+1190,Arbitrary grading based on personal mood rather than student output.,negative,Commitment & Transparency
+1191,Maling computation ng grades na ayaw ayusin kahit may proof na binigay.,negative,Commitment & Transparency
+1192,Violates university policy by administering unannounced major exams.,negative,Commitment & Transparency
+1193,Condescending behavior that creates intense fear and anxiety.,negative,Commitment & Transparency
+1194,Fails to upload midterm grades on the portal before drop deadlines.,negative,Commitment & Transparency
+1195,Walang malasakit sa kalagayan ng mga estudyanteng nagkakasakit.,negative,Commitment & Transparency
+1196,Refuses to provide rubrics before assigning complex course projects.,negative,Commitment & Transparency
+1197,Blames students for not understanding when the teacher was absent for weeks.,negative,Commitment & Transparency
+1198,Disrespectful treatment of students asking legitimate grading questions.,negative,Commitment & Transparency
+1199,"Never honors scheduled office hours, always absent from faculty lounge.",negative,Commitment & Transparency
+1200,Unfair deductions applied without prior warning or rubric reference.,negative,Commitment & Transparency
