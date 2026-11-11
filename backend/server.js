@@ -13,6 +13,7 @@ const academicPeriodRoutes = require('./routes/academicPeriodRoutes');
 const evaluationQuestionRoutes = require('./routes/evaluationQuestionRoutes');
 const auditLogRoutes = require('./routes/auditLogRoutes');
 const recommendationRuleRoutes = require('./routes/recommendationRuleRoutes');
+const dataArchiveRoutes = require('./routes/dataArchiveRoutes');
 const securityHeaders = require('./middleware/securityHeaders');
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/academic-periods', academicPeriodRoutes);
+app.use('/api/archive', dataArchiveRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
