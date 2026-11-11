@@ -2,6 +2,7 @@ const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 const Evaluation = require('../models/Evaluation');
 const EvaluationSubmission = require('../models/EvaluationSubmission');
+const AcademicPeriod = require('../models/AcademicPeriod');
 const { pool } = require('../config/db');
 
 /**
@@ -11,6 +12,8 @@ const { pool } = require('../config/db');
 const getStats = async (req, res) => {
   try {
     const { role, id } = req.user;
+    const activePeriod = await AcademicPeriod.getActive();
+    const activePeriodId = activePeriod ? activePeriod.id : null;
 
     if (role === 'student') {
       const myEvaluations  = await EvaluationSubmission.findByStudentId(id);
@@ -26,6 +29,7 @@ const getStats = async (req, res) => {
 
       res.json({
         role: 'student',
+        activePeriod: activePeriod || null,
         totalSubmitted,
         totalFaculty,
         averageGiven:      avgGiven,
@@ -35,12 +39,12 @@ const getStats = async (req, res) => {
     } else {
       const totalStudents     = await Student.count();
       const totalFaculty      = await Faculty.count();
-      const totalEvaluations  = await Evaluation.count();
-      const sentimentOverview = await Evaluation.getSentimentOverview();
-      const departmentStats   = await Evaluation.getStatsByDepartment();
+      const totalEvaluations  = await Evaluation.count(activePeriodId);
+      const sentimentOverview = await Evaluation.getSentimentOverview(activePeriodId);
+      const departmentStats   = await Evaluation.getStatsByDepartment(activePeriodId);
 
-      // Use Student model for population — queries students table directly
-      const populationStats   = await Student.getPopulationByDepartment();
+      // Use Student model for population — queries students table directly scoped to active period
+      const populationStats   = await Student.getPopulationByDepartment(activePeriodId);
 
       // Faculty count per department
       const allFaculty = await Faculty.findAll();
@@ -125,8 +129,11 @@ const getFacultyDashboard = async (req, res) => {
       return res.status(404).json({ message: 'Faculty record not found.' });
     }
 
-    const evaluations = await Evaluation.findByFacultyId(facultyId);
-    const avgRating   = await Evaluation.getAverageRating(facultyId);
+    const activePeriod = await AcademicPeriod.getActive();
+    const activePeriodId = activePeriod ? activePeriod.id : null;
+
+    const evaluations = await Evaluation.findByFacultyId(facultyId, activePeriodId);
+    const avgRating   = await Evaluation.getAverageRating(facultyId, activePeriodId);
 
     // Minimum response threshold to protect student anonymity
     const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
@@ -160,16 +167,20 @@ const getFacultyDashboard = async (req, res) => {
 
     for (let i = 0; i < subjectIds.length; i++) {
       const sid = subjectIds[i];
+      let esJoin = 'ON es.student_id = st.id AND es.faculty_id = ?';
+      const queryParams = [sid, facultyId];
+      if (activePeriodId) {
+        esJoin += ' AND es.academic_period_id = ?';
+        queryParams.push(activePeriodId);
+      }
       const [enrollmentRows] = await pool.execute(
         `SELECT
            COUNT(DISTINCT st.id) as total_students,
            COUNT(DISTINCT es.student_id) as evaluated_students
          FROM students st
          INNER JOIN student_subjects ss ON ss.student_id = st.id AND ss.subject_id = ?
-         LEFT JOIN evaluation_submissions es
-           ON es.student_id = st.id
-          AND es.faculty_id = ?`,
-        [sid, facultyId]
+         LEFT JOIN evaluation_submissions es ${esJoin}`,
+        queryParams
       );
 
       const totals = enrollmentRows[0] || { total_students: 0, evaluated_students: 0 };

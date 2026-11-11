@@ -45,28 +45,40 @@ const Evaluation = {
     throw new Error('Evaluation.findByStudentId is removed. Use EvaluationSubmission.findByStudentId() instead.');
   },
 
-  // Count total evaluations
-  count: async () => {
-    const [rows] = await pool.execute('SELECT COUNT(*) as count FROM evaluations');
+  // Count total evaluations (optionally scoped to an academic period)
+  count: async (academic_period_id = null) => {
+    let sql = 'SELECT COUNT(*) as count FROM evaluations';
+    const params = [];
+    if (academic_period_id) {
+      sql += ' WHERE academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    const [rows] = await pool.execute(sql, params);
     return rows[0].count;
   },
 
-  // Get sentiment overview counts
-  getSentimentOverview: async () => {
-    const [rows] = await pool.execute(
-      `SELECT sentiment, COUNT(*) as count
-       FROM evaluations
-       GROUP BY sentiment`
-    );
+  // Get sentiment overview counts (optionally scoped to an academic period)
+  getSentimentOverview: async (academic_period_id = null) => {
+    let sql = 'SELECT sentiment, COUNT(*) as count FROM evaluations';
+    const params = [];
+    if (academic_period_id) {
+      sql += ' WHERE academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    sql += ' GROUP BY sentiment';
+    const [rows] = await pool.execute(sql, params);
     return rows;
   },
 
-  // Get average rating for a faculty member
-  getAverageRating: async (faculty_id) => {
-    const [rows] = await pool.execute(
-      'SELECT AVG(rating) as avg_rating FROM evaluations WHERE faculty_id = ?',
-      [faculty_id]
-    );
+  // Get average rating for a faculty member (optionally scoped to an academic period)
+  getAverageRating: async (faculty_id, academic_period_id = null) => {
+    let sql = 'SELECT AVG(rating) as avg_rating FROM evaluations WHERE faculty_id = ?';
+    const params = [faculty_id];
+    if (academic_period_id) {
+      sql += ' AND academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    const [rows] = await pool.execute(sql, params);
     return rows[0].avg_rating;
   },
 
@@ -157,20 +169,24 @@ const Evaluation = {
     return rows;
   },
 
-  // Get stats grouped by department
-  getStatsByDepartment: async () => {
-    const [rows] = await pool.execute(
-      `SELECT f.department,
+  // Get stats grouped by department (optionally scoped to an academic period)
+  getStatsByDepartment: async (academic_period_id = null) => {
+    let sql = `SELECT f.department,
               COUNT(e.id) as total_evaluations,
               ROUND(AVG(e.rating), 1) as avg_rating,
               SUM(CASE WHEN e.sentiment = 'positive' THEN 1 ELSE 0 END) as positive,
               SUM(CASE WHEN e.sentiment = 'neutral'  THEN 1 ELSE 0 END) as neutral,
               SUM(CASE WHEN e.sentiment = 'negative' THEN 1 ELSE 0 END) as negative
        FROM evaluations e
-       JOIN faculty f ON e.faculty_id = f.id
-       GROUP BY f.department
-       ORDER BY total_evaluations DESC`
-    );
+       JOIN faculty f ON e.faculty_id = f.id`;
+    const params = [];
+    if (academic_period_id) {
+      sql += ' WHERE e.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    sql += ` GROUP BY f.department
+       ORDER BY total_evaluations DESC`;
+    const [rows] = await pool.execute(sql, params);
     return rows;
   },
 

@@ -65,6 +65,7 @@ const FacultyReport = () => {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [locked,   setLocked]   = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState('');
 
   const [selectedAssignment, setSelectedAssignment] = useState('');
   const [generating, setGenerating] = useState(false);
@@ -578,16 +579,21 @@ const FacultyReport = () => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
+        const params = {};
+        if (selectedPeriod) {
+          params.period = selectedPeriod;
+        }
+
         if (isSelfMode) {
           // Faculty viewing their own report
-          const res = await evaluationService.getMyFacultyReport();
+          const res = await evaluationService.getMyFacultyReport(params);
           setFaculty(res.data.faculty);
           setReport(res.data);
         } else {
           // Admin viewing a specific faculty member's report
           const [facultyRes, reportRes] = await Promise.all([
             facultyService.getById(id),
-            evaluationService.getFacultyEvaluations(id),
+            evaluationService.getFacultyEvaluations(id, params),
           ]);
           setFaculty(facultyRes.data.faculty);
           setReport(reportRes.data);
@@ -603,7 +609,7 @@ const FacultyReport = () => {
       }
     };
     fetchReport();
-  }, [id, isSelfMode]);
+  }, [id, isSelfMode, selectedPeriod]);
 
   if (loading) {
     return (
@@ -726,6 +732,34 @@ const FacultyReport = () => {
             </p>
             <h1 className="text-2xl font-semibold text-psu-text tracking-tight">{faculty?.name}</h1>
             <p className="text-[13px] text-psu-muted mt-0.5">{faculty?.department}</p>
+            {report.academicPeriod && (
+              <p className="text-[12px] font-medium text-psu-primary mt-1.5 inline-flex items-center gap-1.5 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                {report.academicPeriod.academic_year} · {report.academicPeriod.semester} Semester
+                {report.academicPeriod.is_active ? ' (Active)' : ''}
+              </p>
+            )}
+            {report.availablePeriods && report.availablePeriods.length > 0 && (
+              <div className="mt-2.5 flex items-center gap-2 no-print">
+                <label htmlFor="period-selector" className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Semester:
+                </label>
+                <select
+                  id="period-selector"
+                  value={selectedPeriod}
+                  onChange={e => setSelectedPeriod(e.target.value)}
+                  className="text-[12px] border border-slate-300 rounded-md px-2.5 py-1 bg-white text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-psu-primary shadow-sm"
+                >
+                  <option value="">Current Active Semester</option>
+                  <option value="all">All Semesters (Historical Combined)</option>
+                  {report.availablePeriods.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1179,9 +1213,16 @@ const FacultyReport = () => {
 
       {/* Recent feedback */}
       <div className="border border-psu-border bg-white rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-psu-border flex items-center gap-2">
-          <HiOutlineChat className="h-4 w-4 text-psu-muted" />
-          <h2 className="text-[13px] font-semibold text-psu-text">Recent Feedback</h2>
+        <div className="px-6 py-4 border-b border-psu-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <HiOutlineChat className="h-4 w-4 text-psu-muted" />
+            <h2 className="text-[13px] font-semibold text-psu-text">Student Feedback Comments</h2>
+          </div>
+          {report.totalEvaluations > 0 && (
+            <span className="text-[12px] text-psu-muted">
+              {report.writtenFeedbackCount !== undefined ? report.writtenFeedbackCount : report.recentFeedback?.length || 0} of {report.totalEvaluations} respondents provided written feedback
+            </span>
+          )}
         </div>
         {report.thresholdReached === false ? (
           <div className="p-8 text-center bg-slate-50/70">

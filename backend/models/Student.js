@@ -100,8 +100,14 @@ const Student = {
     return rows[0].count;
   },
 
-  // Get student population grouped by department and year level
-  getPopulationByDepartment: async () => {
+  // Get student population grouped by department and year level (optionally scoped to an academic period)
+  getPopulationByDepartment: async (academic_period_id = null) => {
+    let joinCondition = 'ON es.student_id = st.id';
+    const params = [];
+    if (academic_period_id) {
+      joinCondition += ' AND es.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
     const [rows] = await pool.execute(
       `SELECT
          st.department,
@@ -113,11 +119,12 @@ const Student = {
        FROM students st
        LEFT JOIN student_subjects ss ON ss.student_id = st.id
        LEFT JOIN subjects s ON s.id = ss.subject_id
-       LEFT JOIN evaluation_submissions es ON es.student_id = st.id
+       LEFT JOIN evaluation_submissions es ${joinCondition}
        WHERE st.department IS NOT NULL
          AND st.year_level IS NOT NULL
        GROUP BY st.department, st.year_level
-       ORDER BY st.department ASC, st.year_level ASC`
+       ORDER BY st.department ASC, st.year_level ASC`,
+      params
     );
     return rows;
   },

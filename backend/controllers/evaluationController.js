@@ -292,9 +292,27 @@ const getFacultyEvaluations = async (req, res) => {
       return res.status(404).json({ message: 'Faculty member not found.' });
     }
 
-    const evaluations     = await Evaluation.findByFacultyId(id);
-    const avgRating       = await Evaluation.getAverageRating(id);
-    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(id);
+    const { period } = req.query;
+    const activePeriod = await AcademicPeriod.getActive();
+    const allPeriods = await AcademicPeriod.findAll().catch(() => []);
+
+    // Determine target period:
+    // 1. If explicit query param provided:
+    //    - period === 'all' -> targetPeriodId = null
+    //    - numeric period -> targetPeriodId = parseInt(period, 10)
+    // 2. If NO query param provided:
+    //    - if activePeriod exists -> targetPeriodId = activePeriod.id
+    //    - if no activePeriod exists -> targetPeriodId = null
+    let targetPeriodId = null;
+    if (period && period !== 'all') {
+      targetPeriodId = parseInt(period, 10) || null;
+    } else if (!period && activePeriod) {
+      targetPeriodId = activePeriod.id;
+    }
+
+    const evaluations     = await Evaluation.findByFacultyId(id, targetPeriodId);
+    const avgRating       = await Evaluation.getAverageRating(id, targetPeriodId);
+    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(id, targetPeriodId);
 
     // Minimum response threshold to protect student anonymity
     const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
@@ -318,8 +336,14 @@ const getFacultyEvaluations = async (req, res) => {
         sentiment:  e.sentiment,
         date:       e.created_at,
       }));
-      recentFeedback = allFeedback.slice(0, 10);
+      recentFeedback = allFeedback;
     }
+
+    const writtenFeedbackCount = evaluations.filter(e =>
+      (e.strengths && e.strengths.trim()) ||
+      (e.weaknesses && e.weaknesses.trim()) ||
+      (e.comment && e.comment.trim())
+    ).length;
 
     const thresholdMessage = thresholdReached
       ? null
@@ -350,7 +374,6 @@ const getFacultyEvaluations = async (req, res) => {
 
     const subjectAssignments = await Faculty.getSubjectAssignments(id);
     const enrolledStudents = await Faculty.getEnrolledStudentCount(id);
-    const activePeriod = await AcademicPeriod.getActive();
     const { rate: responseRate, formatted: responseRateFormatted, enrolled: safeEnrolled } = calculateResponseRate(
       evaluations.length,
       enrolledStudents
@@ -377,6 +400,10 @@ const getFacultyEvaluations = async (req, res) => {
       minThreshold,
     });
 
+    const selectedPeriodObj = targetPeriodId
+      ? (allPeriods.find(p => p.id === targetPeriodId) || activePeriod || null)
+      : (activePeriod || null);
+
     res.json({
       faculty,
       averageRating:       computedAvgRating,
@@ -384,10 +411,19 @@ const getFacultyEvaluations = async (req, res) => {
       ratingScale:         RATING_SCALE,
       totalEvaluations:    evaluations.length,
       evaluationsReceived: evaluations.length,
+      writtenFeedbackCount,
       enrolledStudents:    safeEnrolled,
       responseRate,
       responseRateFormatted,
-      academicPeriod:      activePeriod || null,
+      selectedPeriodId:    targetPeriodId,
+      academicPeriod:      selectedPeriodObj,
+      availablePeriods:    allPeriods.map(p => ({
+        id: p.id,
+        academic_year: p.academic_year,
+        semester: p.semester,
+        label: `${p.academic_year} · ${p.semester} Semester${p.is_active ? ' (Active)' : ''}`,
+        is_active: p.is_active,
+      })),
       comparisons,
       thresholdReached,
       minThreshold,
@@ -480,8 +516,9 @@ const getEnrolledInstructors = async (req, res) => {
       facultyList = await Faculty.findAll();
     }
 
-    // Mark which faculty have already been evaluated by this student
-    const mySubmissions = await EvaluationSubmission.findByStudentId(student_id);
+    // Mark which faculty have already been evaluated by this student in the active period
+    const activePeriodId = activePeriod ? activePeriod.id : null;
+    const mySubmissions = await EvaluationSubmission.findByStudentId(student_id, activePeriodId);
     const evaluatedIds  = new Set(mySubmissions.map(e => String(e.faculty_id)));
 
     const instructors = facultyList.map(f => ({
@@ -720,9 +757,20 @@ const getMyFacultyReport = async (req, res) => {
       return res.status(404).json({ message: 'Faculty record not found.' });
     }
 
-    const evaluations     = await Evaluation.findByFacultyId(facultyId);
-    const avgRating       = await Evaluation.getAverageRating(facultyId);
-    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(facultyId);
+    const { period } = req.query;
+    const activePeriod = await AcademicPeriod.getActive();
+    const allPeriods = await AcademicPeriod.findAll().catch(() => []);
+
+    let targetPeriodId = null;
+    if (period && period !== 'all') {
+      targetPeriodId = parseInt(period, 10) || null;
+    } else if (!period && activePeriod) {
+      targetPeriodId = activePeriod.id;
+    }
+
+    const evaluations     = await Evaluation.findByFacultyId(facultyId, targetPeriodId);
+    const avgRating       = await Evaluation.getAverageRating(facultyId, targetPeriodId);
+    const questionAvgs    = await EvaluationResponse.getAveragesByFaculty(facultyId, targetPeriodId);
 
     // Minimum response threshold to protect student anonymity
     const minThreshold = parseInt(process.env.MIN_EVALUATION_THRESHOLD, 10) || 5;
@@ -746,8 +794,14 @@ const getMyFacultyReport = async (req, res) => {
         sentiment:  e.sentiment,
         date:       e.created_at,
       }));
-      recentFeedback = allFeedback.slice(0, 10);
+      recentFeedback = allFeedback;
     }
+
+    const writtenFeedbackCount = evaluations.filter(e =>
+      (e.strengths && e.strengths.trim()) ||
+      (e.weaknesses && e.weaknesses.trim()) ||
+      (e.comment && e.comment.trim())
+    ).length;
 
     const thresholdMessage = thresholdReached
       ? null
@@ -778,7 +832,6 @@ const getMyFacultyReport = async (req, res) => {
 
     const subjectAssignments = await Faculty.getSubjectAssignments(facultyId);
     const enrolledStudents = await Faculty.getEnrolledStudentCount(facultyId);
-    const activePeriod = await AcademicPeriod.getActive();
     const { rate: responseRate, formatted: responseRateFormatted, enrolled: safeEnrolled } = calculateResponseRate(
       evaluations.length,
       enrolledStudents
@@ -794,6 +847,10 @@ const getMyFacultyReport = async (req, res) => {
       minThreshold,
     });
 
+    const selectedPeriodObj = targetPeriodId
+      ? (allPeriods.find(p => p.id === targetPeriodId) || activePeriod || null)
+      : (activePeriod || null);
+
     res.json({
       faculty,
       averageRating:       computedAvgRating,
@@ -801,10 +858,19 @@ const getMyFacultyReport = async (req, res) => {
       ratingScale:         RATING_SCALE,
       totalEvaluations:    evaluations.length,
       evaluationsReceived: evaluations.length,
+      writtenFeedbackCount,
       enrolledStudents:    safeEnrolled,
       responseRate,
       responseRateFormatted,
-      academicPeriod:      activePeriod || null,
+      selectedPeriodId:    targetPeriodId,
+      academicPeriod:      selectedPeriodObj,
+      availablePeriods:    allPeriods.map(p => ({
+        id: p.id,
+        academic_year: p.academic_year,
+        semester: p.semester,
+        label: `${p.academic_year} · ${p.semester} Semester${p.is_active ? ' (Active)' : ''}`,
+        is_active: p.is_active,
+      })),
       comparisons,
       thresholdReached,
       minThreshold,
@@ -922,7 +988,7 @@ const getFacultySubjectSectionReport = async (req, res) => {
 
     // 4. Comments (Strengths/Weaknesses) — via identity ledger
     const [commentsRows] = await pool.execute(
-      `SELECT e.strengths, e.weaknesses
+      `SELECT DISTINCT e.id, e.strengths, e.weaknesses
        FROM evaluations e
        INNER JOIN evaluation_submissions es ON es.evaluation_id = e.id
        INNER JOIN students st ON es.student_id = st.id
@@ -931,7 +997,10 @@ const getFacultySubjectSectionReport = async (req, res) => {
          AND e.academic_period_id = ?
          AND st.section = ?
          AND ss.subject_id = ?
-         AND (e.strengths IS NOT NULL OR e.weaknesses IS NOT NULL)`,
+         AND (
+           (e.strengths IS NOT NULL AND TRIM(e.strengths) != '') OR
+           (e.weaknesses IS NOT NULL AND TRIM(e.weaknesses) != '')
+         )`,
       [facultyId, activePeriod.id, section, subject_id]
     );
 
@@ -960,6 +1029,7 @@ const getFacultySubjectSectionReport = async (req, res) => {
       activePeriod,
       enrolledCount,
       respondentCount,
+      totalComments: comments.length,
       responseRate,
       responseRateFormatted,
       thresholdReached,

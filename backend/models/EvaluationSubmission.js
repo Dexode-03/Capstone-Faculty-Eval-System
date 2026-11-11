@@ -51,11 +51,11 @@ const EvaluationSubmission = {
    * Joins evaluation content so the student can see their own history.
    *
    * @param {string} student_id
+   * @param {number|null} academic_period_id
    * @returns {Promise<Array>}
    */
-  findByStudentId: async (student_id) => {
-    const [rows] = await pool.execute(
-      `SELECT es.id as submission_id,
+  findByStudentId: async (student_id, academic_period_id = null) => {
+    let sql = `SELECT es.id as submission_id,
               es.faculty_id,
               es.academic_period_id,
               es.evaluation_id,
@@ -72,10 +72,14 @@ const EvaluationSubmission = {
        FROM evaluation_submissions es
        INNER JOIN evaluations e ON e.id = es.evaluation_id
        INNER JOIN faculty    f ON f.id = es.faculty_id
-       WHERE es.student_id = ?
-       ORDER BY es.submitted_at DESC`,
-      [String(student_id)]
-    );
+       WHERE es.student_id = ?`;
+    const params = [String(student_id)];
+    if (academic_period_id) {
+      sql += ' AND es.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    sql += ' ORDER BY es.submitted_at DESC';
+    const [rows] = await pool.execute(sql, params);
     return rows;
   },
 
@@ -83,9 +87,16 @@ const EvaluationSubmission = {
    * Get student population vs submitted count, grouped by department and year level.
    * Replaces the version in Evaluation that joined evaluations.student_id.
    *
+   * @param {number|null} academic_period_id
    * @returns {Promise<Array>}
    */
-  getStudentPopulationByDepartment: async () => {
+  getStudentPopulationByDepartment: async (academic_period_id = null) => {
+    let joinCondition = 'ON es.student_id = s.id';
+    const params = [];
+    if (academic_period_id) {
+      joinCondition += ' AND es.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
     const [rows] = await pool.execute(
       `SELECT
          s.department,
@@ -93,9 +104,10 @@ const EvaluationSubmission = {
          COUNT(DISTINCT s.id)   as total_students,
          COUNT(DISTINCT es.student_id) as evaluated_students
        FROM students s
-       LEFT JOIN evaluation_submissions es ON es.student_id = s.id
+       LEFT JOIN evaluation_submissions es ${joinCondition}
        GROUP BY s.department, s.year_level
-       ORDER BY s.department ASC, s.year_level ASC`
+       ORDER BY s.department ASC, s.year_level ASC`,
+      params
     );
     return rows;
   },

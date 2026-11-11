@@ -38,20 +38,23 @@ const EvaluationResponse = {
     return rows;
   },
 
-  getAveragesByFaculty: async (faculty_id) => {
-    const [rows] = await pool.execute(
-      `SELECT eq.id, eq.question, eq.category, eq.question_type,
+  getAveragesByFaculty: async (faculty_id, academic_period_id = null) => {
+    let sql = `SELECT eq.id, eq.question, eq.category, eq.question_type,
               AVG(er.rating) as avg_rating, COUNT(er.id) as total
        FROM evaluation_responses er
        JOIN evaluations e ON er.evaluation_id = e.id
        JOIN evaluation_questions eq ON er.question_id = eq.id
        WHERE e.faculty_id = ?
          AND eq.question_type = 'rating'
-         AND er.rating IS NOT NULL
-       GROUP BY eq.id, eq.question, eq.category, eq.question_type
-       ORDER BY eq.sort_order ASC`,
-      [faculty_id]
-    );
+         AND er.rating IS NOT NULL`;
+    const params = [faculty_id];
+    if (academic_period_id) {
+      sql += ' AND e.academic_period_id = ?';
+      params.push(academic_period_id);
+    }
+    sql += ` GROUP BY eq.id, eq.question, eq.category, eq.question_type
+       ORDER BY eq.sort_order ASC`;
+    const [rows] = await pool.execute(sql, params);
     return rows;
   },
   // Delete all evaluation responses (admin reset)

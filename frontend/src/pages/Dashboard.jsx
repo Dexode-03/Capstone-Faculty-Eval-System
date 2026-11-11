@@ -511,6 +511,11 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
               <div>
                 <p className="text-[12px] font-medium text-slate-500 uppercase tracking-wider">{item.label}</p>
                 <p className="text-4xl font-bold text-slate-900 mt-1 tabular-nums tracking-tight">{item.value}</p>
+                {item.label === 'Evaluations' && (
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {stats.activePeriod ? 'Current semester' : 'All semesters'}
+                  </p>
+                )}
               </div>
             </div>
           </div>
