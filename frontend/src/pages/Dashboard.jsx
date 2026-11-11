@@ -12,11 +12,13 @@ import {
   HiOutlineExclamation,
   HiOutlineLockClosed,
   HiOutlineLockOpen,
+  HiOutlineDatabase,
 } from 'react-icons/hi';
 import useAuth from '../hooks/useAuth';
 import dashboardService from '../services/dashboardService';
 import evaluationService from '../services/evaluationService';
 import academicPeriodService from '../services/academicPeriodService';
+import DataArchiveManagement from '../components/admin/DataArchiveManagement';
 
 
 // ── Student view ──────────────────────────────────────────────────
@@ -340,7 +342,7 @@ const FacultyDashboard = ({ user }) => {
 
 // ── Admin view ────────────────────────────────────────────────────
 const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
-
+  const [adminTab, setAdminTab]             = useState('overview');
   const [showResetModal, setShowResetModal] = useState(false);
   const [confirmText, setConfirmText]       = useState('');
   const [adminPassword, setAdminPassword]   = useState('');
@@ -424,6 +426,39 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
         </div>
       </div>
 
+      {/* Admin Navigation Tabs */}
+      <div className="flex items-center space-x-2 border-b border-slate-200 mb-8 pb-1">
+        <button
+          type="button"
+          onClick={() => setAdminTab('overview')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${
+            adminTab === 'overview'
+              ? 'bg-psu-primary text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <HiOutlineChartBar className="h-4 w-4" />
+          <span>Overview & Controls</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAdminTab('archive')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-semibold transition-all ${
+            adminTab === 'archive'
+              ? 'bg-psu-primary text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <HiOutlineDatabase className="h-4 w-4" />
+          <span>Data Archive & Migration</span>
+        </button>
+      </div>
+
+      {adminTab === 'archive' ? (
+        <DataArchiveManagement onArchived={onStatsRefresh} />
+      ) : (
+        <>
       {/* Evaluation Control */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-10">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -708,6 +743,8 @@ const AdminDashboard = ({ user, stats, onStatsRefresh }) => {
             )}
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

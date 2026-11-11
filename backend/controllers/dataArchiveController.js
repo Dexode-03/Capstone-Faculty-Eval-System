@@ -73,7 +73,8 @@ const DataArchiveController = {
   wipePeriod: async (req, res) => {
     try {
       const periodId = parseInt(req.params.periodId, 10);
-      const { password, phrase } = req.body;
+      const { password, phrase, confirmation } = req.body;
+      const confirmText = phrase || confirmation;
 
       if (!periodId) {
         return res.status(400).json({ message: 'Invalid academic period ID.' });
@@ -83,7 +84,7 @@ const DataArchiveController = {
         return res.status(400).json({ message: 'Administrator password is required to wipe archive data.' });
       }
 
-      if (phrase !== 'DELETE ARCHIVE EVALUATIONS') {
+      if (confirmText !== 'DELETE ARCHIVE EVALUATIONS') {
         return res.status(400).json({ message: 'Confirmation phrase "DELETE ARCHIVE EVALUATIONS" is required.' });
       }
 
@@ -102,7 +103,7 @@ const DataArchiveController = {
    */
   restoreArchive: async (req, res) => {
     try {
-      const archivePayload = req.body;
+      const archivePayload = req.body.archiveData || req.body;
       if (!archivePayload) {
         return res.status(400).json({ message: 'No archive snapshot payload provided.' });
       }

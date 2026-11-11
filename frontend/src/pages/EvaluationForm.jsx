@@ -51,15 +51,15 @@ const QuestionRow = ({ number, question, value, onChange, isUnanswered }) => (
         </span>
       )}
     </p>
-    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+    <div className="flex gap-2.5 sm:gap-3 flex-wrap sm:flex-nowrap py-1">
       {RATING_SCALE.map(r => {
         const isSelected = value === r.value;
         return (
           <label
             key={r.value}
-            className={`inline-flex items-center justify-center cursor-pointer w-9 h-9 sm:w-10 sm:h-10 rounded-full border-2 text-[12px] sm:text-[13px] font-semibold transition-all ${
+            className={`inline-flex items-center justify-center cursor-pointer w-11 h-11 min-w-[44px] min-h-[44px] rounded-full border-2 text-[14px] font-semibold transition-all touch-manipulation ${
               isSelected
-                ? 'border-psu-primary bg-psu-primary text-white'
+                ? 'border-psu-primary bg-psu-primary text-white shadow-sm'
                 : isUnanswered
                   ? 'border-red-300 bg-white text-psu-muted hover:border-red-400'
                   : 'border-gray-200 bg-white text-psu-muted hover:border-gray-300 hover:text-psu-text'
