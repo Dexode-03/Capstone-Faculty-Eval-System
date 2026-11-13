@@ -551,6 +551,164 @@ const FacultyReport = () => {
         });
       }
 
+      // ── Prescriptive Recommendations Section ──────────────────────
+      children.push(new Paragraph({ spacing: { before: 300, after: 100 } }));
+
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'PRESCRIPTIVE RECOMMENDATIONS',
+              bold: true,
+              size: 24,
+              font: 'Calibri',
+              color: '000000',
+            }),
+          ],
+          spacing: { before: 100, after: 200 },
+        })
+      );
+
+      if (data.thresholdReached === false) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `• Prescriptive recommendations are withheld to protect student anonymity (threshold of ${data.minThreshold || 5} respondents not yet reached; ${respondentCount} submitted).`,
+                italic: true,
+                size: 20,
+                font: 'Calibri',
+                color: '6B7280',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      } else if (!data.recommendations || data.recommendations.length === 0) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: '• No prescriptive recommendations generated for this evaluation period.',
+                italic: true,
+                size: 20,
+                font: 'Calibri',
+                color: '6B7280',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      } else {
+        // Group recommendations by type (strengths vs weaknesses/action items)
+        const strengths = data.recommendations.filter(r => r.type === 'strength');
+        const actionItems = data.recommendations.filter(r => r.type !== 'strength');
+
+        if (actionItems.length > 0) {
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Areas for Improvement:',
+                  bold: true,
+                  size: 20,
+                  font: 'Calibri',
+                  color: '000000',
+                }),
+              ],
+              spacing: { before: 80, after: 100 },
+            })
+          );
+
+          // Build recommendation table
+          const recTableRows = [];
+          recTableRows.push(
+            new TableRow({
+              children: [
+                createCell('#', 6, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'FEE2E2' }),
+                createCell('Priority', 12, { bold: true, align: AlignmentType.CENTER, borders: headerCellBorders, shading: 'FEE2E2' }),
+                createCell('Category', 20, { bold: true, borders: headerCellBorders, shading: 'FEE2E2' }),
+                createCell('Recommendation', 62, { bold: true, borders: headerCellBorders, shading: 'FEE2E2' }),
+              ],
+            })
+          );
+
+          actionItems.forEach((rec, idx) => {
+            const rowShading = idx % 2 === 0 ? 'FFF5F5' : undefined;
+            recTableRows.push(
+              new TableRow({
+                children: [
+                  createCell(idx + 1, 6, { align: AlignmentType.CENTER, borders: thinAllBorders, shading: rowShading }),
+                  createCell((rec.severity || 'normal').toUpperCase(), 12, {
+                    align: AlignmentType.CENTER,
+                    borders: thinAllBorders,
+                    shading: rowShading,
+                    bold: rec.severity === 'high',
+                    color: rec.severity === 'high' ? 'DC2626' : rec.severity === 'medium' ? 'D97706' : '374151',
+                  }),
+                  createCell(rec.category || 'General', 20, { borders: thinAllBorders, shading: rowShading }),
+                  createCell(rec.text || rec.action || String(rec), 62, { borders: thinAllBorders, shading: rowShading }),
+                ],
+              })
+            );
+          });
+
+          children.push(
+            new Table({
+              rows: recTableRows,
+              width: { size: 100, type: WidthType.PERCENTAGE },
+            })
+          );
+        }
+
+        if (strengths.length > 0) {
+          children.push(new Paragraph({ spacing: { before: 200, after: 80 } }));
+          children.push(
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: 'Recognized Strengths:',
+                  bold: true,
+                  size: 20,
+                  font: 'Calibri',
+                  color: '000000',
+                }),
+              ],
+              spacing: { before: 80, after: 100 },
+            })
+          );
+
+          strengths.forEach((rec, idx) => {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `${idx + 1}. `,
+                    bold: true,
+                    size: 20,
+                    font: 'Calibri',
+                    color: '1E40AF',
+                  }),
+                  new TextRun({
+                    text: `[${rec.category || 'General'}] `,
+                    bold: true,
+                    size: 20,
+                    font: 'Calibri',
+                    color: '374151',
+                  }),
+                  new TextRun({
+                    text: rec.text || rec.action || String(rec),
+                    size: 20,
+                    font: 'Calibri',
+                  }),
+                ],
+                spacing: { after: 80 },
+              })
+            );
+          });
+        }
+      }
+
       // ── Generate & Download ───────────────────────────────────────
       const doc = new Document({
         sections: [{

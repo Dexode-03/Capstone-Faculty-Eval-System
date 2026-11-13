@@ -1018,6 +1018,26 @@ const getFacultySubjectSectionReport = async (req, res) => {
         })).filter(c => c.strengths || c.weaknesses)
       : [];
 
+    // Generate prescriptive recommendations for this subject-section
+    let recommendations = [];
+    if (thresholdReached) {
+      // Fetch the full evaluations for this subject-section to feed into the prescriptive engine
+      const [sectionEvals] = await pool.execute(
+        `SELECT DISTINCT e.*
+         FROM evaluations e
+         INNER JOIN evaluation_submissions es ON es.evaluation_id = e.id
+         INNER JOIN students st ON es.student_id = st.id
+         INNER JOIN student_subjects ss ON ss.student_id = st.id
+         WHERE e.faculty_id = ?
+           AND e.academic_period_id = ?
+           AND st.section = ?
+           AND ss.subject_id = ?`,
+        [facultyId, activePeriod.id, section, subject_id]
+      );
+      const activeRules = await RecommendationRule.findAllActive().catch(() => null);
+      recommendations = generateRecommendations(sectionEvals, activeRules);
+    }
+
     const thresholdMessage = thresholdReached
       ? null
       : `Threshold not met. At least ${minThreshold} respondents are required to view comments (${respondentCount}/${minThreshold} submitted).`;
@@ -1047,6 +1067,7 @@ const getFacultySubjectSectionReport = async (req, res) => {
         response_count: parseInt(row.response_count),
       })),
       comments,
+      recommendations,
     });
   } catch (error) {
     console.error('Get faculty subject section report error:', error);

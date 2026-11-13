@@ -108,7 +108,25 @@ export const exportSystemExcel = ({
     XLSX.utils.book_append_sheet(wb, wsRec, 'Recommendations');
   }
 
-  // ── Sheet 5: Overview & Scope ──────────────────────────────────
+  // ── Sheet 5: Faculty Development Plan ──────────────────────────
+  if (analysis.facultyDevelopmentPlan && analysis.facultyDevelopmentPlan.length > 0) {
+    const devRows = analysis.facultyDevelopmentPlan.map((f, i) => ({
+      '#': i + 1,
+      'Faculty Name': f.name || 'N/A',
+      'Department': f.department || 'N/A',
+      'Average Rating': f.averageRating || 'N/A',
+      'Verbal Rating': f.verbalRating || getVerbalRating(f.averageRating) || 'N/A',
+      'Key Recommendations': Array.isArray(f.recommendations)
+        ? f.recommendations.map(r => typeof r === 'object' ? (r.text || r.action || String(r)) : String(r)).join('; ')
+        : (f.recommendations || 'N/A'),
+      'Priority': f.priority || f.flag || 'Normal',
+    }));
+    const wsDev = XLSX.utils.json_to_sheet(devRows);
+    wsDev['!cols'] = [{ wch: 4 }, { wch: 28 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 65 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, wsDev, 'Faculty Development Plan');
+  }
+
+  // ── Sheet: Overview & Scope ───────────────────────────────────
   const sentimentCounts = analysis.sentimentCounts || { positive: 0, neutral: 0, negative: 0 };
   const overviewRows = [
     { 'Metric': 'Institution', 'Value': 'Pangasinan State University - Asingan Campus' },
@@ -339,6 +357,29 @@ export const exportSubjectSectionExcel = ({ faculty = {}, subject = {}, section 
     );
     wsComments['!cols'] = [{ wch: 4 }, { wch: 50 }, { wch: 50 }];
     XLSX.utils.book_append_sheet(wb, wsComments, 'Qualitative Comments');
+  }
+
+  // ── Sheet: Recommendations (SAFEGUARD ENFORCED) ────────────────
+  if (!isThresholdMet) {
+    const wsRec = XLSX.utils.json_to_sheet([
+      {
+        'Notice': `Prescriptive recommendations are withheld pending completion of the minimum response threshold (${minThreshold} respondents).`,
+      },
+    ]);
+    wsRec['!cols'] = [{ wch: 100 }];
+    XLSX.utils.book_append_sheet(wb, wsRec, 'Recommendations (Withheld)');
+  } else if (data.recommendations && data.recommendations.length > 0) {
+    const recRows = data.recommendations.map((r, i) => ({
+      '#': i + 1,
+      'Type': r.type === 'strength' ? 'Strength' : 'Action Item',
+      'Priority / Severity': r.severity || r.priority || 'Normal',
+      'Category': r.category || 'General',
+      'Recommendation': r.text || r.action || String(r),
+      'Theme': r.theme || 'N/A',
+    }));
+    const wsRec = XLSX.utils.json_to_sheet(recRows);
+    wsRec['!cols'] = [{ wch: 4 }, { wch: 14 }, { wch: 18 }, { wch: 25 }, { wch: 60 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsRec, 'Recommendations');
   }
 
   const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
