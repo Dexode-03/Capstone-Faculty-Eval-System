@@ -245,7 +245,11 @@ export default function AcademicPeriods() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {periods.map((period) => (
+                {periods.map((period) => {
+                  const isPastScheduled = Boolean(
+                    period.end_date && new Date(period.end_date).setHours(23, 59, 59, 999) < Date.now()
+                  );
+                  return (
                   <tr key={period.id} className={`hover:bg-gray-50 ${period.is_active ? 'bg-green-50/50' : ''}`}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{period.academic_year}</td>
                     <td className="px-6 py-4 text-sm text-gray-700">{period.semester} Semester</td>
@@ -253,6 +257,11 @@ export default function AcademicPeriods() {
                       {period.start_date && period.end_date
                         ? `${new Date(period.start_date).toLocaleDateString()} — ${new Date(period.end_date).toLocaleDateString()}`
                         : '—'}
+                      {isPastScheduled && (
+                        <span className="block text-[11px] text-amber-600 font-medium mt-0.5">
+                          Schedule concluded
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       {period.is_active ? (
@@ -268,7 +277,13 @@ export default function AcademicPeriods() {
                         {!period.is_active && (
                           <button
                             onClick={() => handleActivate(period.id)}
-                            className="text-green-600 hover:text-green-800 font-medium text-sm"
+                            disabled={isPastScheduled}
+                            title={isPastScheduled ? 'Cannot activate a period past its scheduled end date. Update schedule first.' : 'Set as active period'}
+                            className={`font-medium text-sm ${
+                              isPastScheduled
+                                ? 'text-gray-300 cursor-not-allowed line-through'
+                                : 'text-green-600 hover:text-green-800'
+                            }`}
                           >
                             Activate
                           </button>
@@ -290,7 +305,8 @@ export default function AcademicPeriods() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

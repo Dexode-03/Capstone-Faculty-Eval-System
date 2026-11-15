@@ -158,6 +158,19 @@ const activate = async (req, res) => {
       return res.status(404).json({ message: 'Academic period not found.' });
     }
 
+    // Guard: Prevent activating an academic period whose scheduled duration has passed
+    if (existing.end_date) {
+      const periodEndDate = new Date(existing.end_date);
+      // End-of-day comparison in local/standard time so the entire scheduled end date is honored
+      periodEndDate.setHours(23, 59, 59, 999);
+      const now = new Date();
+      if (now > periodEndDate) {
+        return res.status(400).json({
+          message: `Cannot activate this academic period because its scheduled period ended on ${periodEndDate.toLocaleDateString()}. Please update its schedule first if extension is needed.`,
+        });
+      }
+    }
+
     await AcademicPeriod.setActive(id);
 
     await AuditLog.log({
