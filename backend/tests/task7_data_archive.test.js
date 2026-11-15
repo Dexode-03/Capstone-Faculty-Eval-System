@@ -4,11 +4,11 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');
 const DataArchiveService = require('../services/dataArchiveService');
-const AcademicPeriod = require('../models/academicPeriod');
-const Evaluation = require('../models/evaluation');
-const EvaluationResponse = require('../models/evaluationResponse');
-const EvaluationSubmission = require('../models/evaluationSubmission');
-const User = require('../models/user');
+const AcademicPeriod = require('../models/AcademicPeriod');
+const Evaluation = require('../models/Evaluation');
+const EvaluationResponse = require('../models/EvaluationResponse');
+const EvaluationSubmission = require('../models/EvaluationSubmission');
+const User = require('../models/User');
 const { pool } = require('../config/db');
 
 describe('Task 7: Data Migration & Archiving Engine', () => {

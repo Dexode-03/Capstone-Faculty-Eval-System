@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 const { pool } = require('../config/db');
 const AcademicPeriod = require('../models/AcademicPeriod');
-const AuditLog = require('../models/auditLog');
+const AuditLog = require('../models/AuditLog');
 const bcrypt = require('bcryptjs');
 
 /**
