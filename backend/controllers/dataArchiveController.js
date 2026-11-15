@@ -1,7 +1,7 @@
 'use strict';
 
 const DataArchiveService = require('../services/dataArchiveService');
-const AcademicPeriod = require('../models/academicPeriod');
+const AcademicPeriod = require('../models/AcademicPeriod');
 const { pool } = require('../config/db');
 
 const DataArchiveController = {
