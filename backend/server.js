@@ -59,14 +59,24 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'FEFAS API is running.' });
 });
 
-// ── Serve frontend build (for production / ngrok) ───────────────
+// ── Serve frontend build (if built locally or bundled) ───────────────
 const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-app.use(express.static(frontendDist));
-app.get('*', (req, res, next) => {
-  // Only serve index.html for non-API routes
-  if (req.path.startsWith('/api')) return next();
-  res.sendFile(path.join(frontendDist, 'index.html'));
-});
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+} else {
+  // When running API-only (e.g. Render backend with separate Vercel frontend)
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'OK',
+      service: 'FEFAS API',
+      message: 'Faculty Evaluation and Feedback Analysis System API is running live.'
+    });
+  });
+}
 
 // Global error handler
 app.use((err, req, res, next) => {
