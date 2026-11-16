@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const { testConnection } = require('./config/db');
@@ -32,10 +33,24 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests (no origin) or origins in allowed list
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Blocked by CORS policy: Origin not allowed.'));
+      return callback(null, true);
     }
+
+    // Automatically allow Vercel, Render, Railway production subdomains and localhost
+    try {
+      const parsed = new URL(origin);
+      if (
+        parsed.hostname.endsWith('.vercel.app') ||
+        parsed.hostname.endsWith('.onrender.com') ||
+        parsed.hostname.endsWith('.railway.app') ||
+        parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1'
+      ) {
+        return callback(null, true);
+      }
+    } catch (_) {}
+
+    callback(new Error(`Blocked by CORS policy: Origin ${origin} not allowed.`));
   },
   credentials: true,
 }));

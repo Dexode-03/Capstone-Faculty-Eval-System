@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// For split deployments (e.g. frontend on Vercel, backend on Railway),
-// set VITE_API_URL to the backend URL like "https://fefas-backend.up.railway.app/api"
-// For same-origin deployments (frontend served by Express), '/api' works as-is.
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Normalize API base URL for split deployments (Vercel frontend + Render backend)
+let rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
+if (rawBaseUrl.startsWith('http') && !rawBaseUrl.endsWith('/api') && !rawBaseUrl.endsWith('/api/')) {
+  rawBaseUrl = rawBaseUrl.replace(/\/+$/, '') + '/api';
+}
+const API_BASE_URL = rawBaseUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -25,7 +27,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isAuthRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+    if (error.response?.status === 401 && !isAuthRequest) {
       console.error('🔴 401 Unauthorized - Token invalid or expired');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
