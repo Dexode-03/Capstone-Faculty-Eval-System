@@ -81,7 +81,12 @@ const isSpam = (text) => {
 const submitEvaluation = async (req, res) => {
   try {
     const { faculty_id, responses } = req.body;
-    const student_id = req.user.id;
+    let student_id = req.user.id;
+    let student = await Student.findById(student_id);
+    if (!student && req.user.email) {
+      student = await Student.findByEmail(req.user.email);
+      if (student) student_id = student.id;
+    }
 
     if (!faculty_id) {
       return res.status(400).json({ message: 'Faculty is required.' });
@@ -463,12 +468,14 @@ const getMyEvaluations = async (req, res) => {
  */
 const getEnrolledInstructors = async (req, res) => {
   try {
-    const student_id = req.user.id;
-
-    const student = await Student.findById(student_id);
+    let student = await Student.findById(req.user.id);
+    if (!student && req.user.email) {
+      student = await Student.findByEmail(req.user.email);
+    }
     if (!student) {
       return res.status(404).json({ message: 'Student record not found.' });
     }
+    const student_id = student.id;
 
     const { pool } = require('../config/db');
     const activePeriod = await AcademicPeriod.getActive();
