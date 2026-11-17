@@ -106,7 +106,7 @@ const submitEvaluation = async (req, res) => {
 
     // 2. Check there is exactly one active period with evaluation_open = 1
     const activePeriods = await AcademicPeriod.findActivePeriods();
-    if (!activePeriods || activePeriods.length !== 1 || activePeriods[0].evaluation_open !== 1) {
+    if (!activePeriods || activePeriods.length !== 1 || !activePeriods[0].evaluation_open || Number(activePeriods[0].evaluation_open) !== 1) {
       return res.status(403).json({
         message: 'Evaluation is currently closed. Please wait for the admin to open the evaluation period.',
       });
@@ -470,6 +470,10 @@ const getEnrolledInstructors = async (req, res) => {
       return res.status(404).json({ message: 'Student record not found.' });
     }
 
+    const { pool } = require('../config/db');
+    const activePeriod = await AcademicPeriod.getActive();
+    const activeSemester = activePeriod ? activePeriod.semester : null;
+
     // Parse student's subject_ids (comes as comma-separated string from GROUP_CONCAT)
     const studentSubjectIds = student.subject_ids
       ? student.subject_ids.split(',').map(s => s.trim()).filter(Boolean)
@@ -481,12 +485,8 @@ const getEnrolledInstructors = async (req, res) => {
       // The student_subjects table is the source of truth for enrollment,
       // so we do NOT filter by year_level (a 4th-year student can retake
       // or cross-enrol in subjects designated for other year levels).
-      const { pool } = require('../config/db');
-      const activePeriod = await AcademicPeriod.getActive();
-      const activeSemester = activePeriod ? activePeriod.semester : null;
-
       const placeholders = studentSubjectIds.map(() => '?').join(',');
-      const queryParams = [...studentSubjectIds, student.section || ''];
+      const queryParams = [...studentSubjectIds, student.section || '', student.section || ''];
 
       let semesterClause = '';
       if (activeSemester) {
@@ -504,13 +504,62 @@ const getEnrolledInstructors = async (req, res) => {
          INNER JOIN faculty_subjects fs ON fs.faculty_id = f.id
          INNER JOIN subjects s ON s.id = fs.subject_id
          WHERE fs.subject_id IN (${placeholders})
-           AND (fs.section IS NULL OR fs.section = ?)
+           AND (fs.section IS NULL OR fs.section = ? OR fs.section = '' OR fs.section LIKE CONCAT('%', ?))
            ${semesterClause}
          GROUP BY f.id
          ORDER BY f.name ASC`,
         queryParams
       );
       facultyList = rows;
+
+      // Fallback 1: if section-specific matching returned 0, relax section constraint
+      if (facultyList.length === 0) {
+        const fallbackParams = [...studentSubjectIds];
+        if (activeSemester) fallbackParams.push(activeSemester);
+        const [fallbackRows] = await pool.execute(
+          `SELECT DISTINCT f.id, f.name, f.email, f.department,
+                  GROUP_CONCAT(DISTINCT s.id ORDER BY s.id) as subject_ids,
+                  GROUP_CONCAT(DISTINCT s.code ORDER BY s.id) as subject_codes,
+                  GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+                  GROUP_CONCAT(DISTINCT fs.section ORDER BY s.id) as assigned_sections
+           FROM faculty f
+           INNER JOIN faculty_subjects fs ON fs.faculty_id = f.id
+           INNER JOIN subjects s ON s.id = fs.subject_id
+           WHERE fs.subject_id IN (${placeholders})
+             ${semesterClause}
+           GROUP BY f.id
+           ORDER BY f.name ASC`,
+          fallbackParams
+        );
+        facultyList = fallbackRows;
+      }
+
+      // Fallback 2: include direct student_subjects.faculty_id links (used in TiDB datasets)
+      try {
+        const [directRows] = await pool.execute(
+          `SELECT DISTINCT f.id, f.name, f.email, f.department,
+                  GROUP_CONCAT(DISTINCT s.id ORDER BY s.id) as subject_ids,
+                  GROUP_CONCAT(DISTINCT s.code ORDER BY s.id) as subject_codes,
+                  GROUP_CONCAT(DISTINCT s.name ORDER BY s.id SEPARATOR ', ') as subject_names,
+                  NULL as assigned_sections
+           FROM student_subjects ss
+           INNER JOIN faculty f ON f.id = ss.faculty_id
+           LEFT JOIN subjects s ON s.id = ss.subject_id
+           WHERE ss.student_id = ? AND ss.faculty_id IS NOT NULL
+           GROUP BY f.id
+           ORDER BY f.name ASC`,
+          [student_id]
+        );
+        if (directRows.length > 0) {
+          const existingIds = new Set(facultyList.map(f => String(f.id)));
+          for (const dr of directRows) {
+            if (!existingIds.has(String(dr.id))) {
+              facultyList.push(dr);
+              existingIds.add(String(dr.id));
+            }
+          }
+        }
+      } catch (_) {}
     } else {
       // Fallback: no subjects assigned — show all faculty
       facultyList = await Faculty.findAll();

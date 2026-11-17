@@ -80,9 +80,9 @@ function createRateLimiter({
 
 // Pre-configured rate limiters for sensitive endpoints
 const loginLimiter = createRateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,                  // 10 failed/repeated login attempts
-  message: 'Too many login attempts. Please wait 15 minutes before trying again.',
+  windowMs: 1 * 60 * 1000,  // 1 minute window
+  max: 60,                  // 60 login attempts per minute (relaxed for demos and presentations)
+  message: 'Too many login attempts. Please wait 1 minute before trying again.',
   keyPrefix: 'login',
 });
 

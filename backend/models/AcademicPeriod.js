@@ -145,7 +145,7 @@ const AcademicPeriod = {
     const [rows] = await pool.execute(
       'SELECT evaluation_open FROM academic_periods WHERE is_active = 1 LIMIT 1'
     );
-    return rows.length > 0 && rows[0].evaluation_open === 1;
+    return rows.length > 0 && Number(rows[0].evaluation_open) === 1;
   },
 
   // Get all active academic periods

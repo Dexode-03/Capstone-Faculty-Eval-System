@@ -31,15 +31,24 @@ const StudentDashboard = ({ user }) => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const [instrRes, periodRes] = await Promise.all([
+        const [instrRes, periodRes] = await Promise.allSettled([
           evaluationService.getEnrolledInstructors(),
           academicPeriodService.getActive(),
         ]);
-        setInstructors(instrRes.data.instructors);
-        const active = periodRes.data.active || null;
-        setActivePeriod(active);
-        setEvaluationOpen(!!active?.evaluation_open);
-      } catch {
+
+        if (periodRes.status === 'fulfilled') {
+          const active = periodRes.value.data?.active || null;
+          setActivePeriod(active);
+          setEvaluationOpen(!!active?.evaluation_open);
+        }
+
+        if (instrRes.status === 'fulfilled') {
+          setInstructors(instrRes.value.data?.instructors || []);
+        } else {
+          setInstructors([]);
+        }
+      } catch (err) {
+        console.error('Student dashboard fetch error:', err);
         setInstructors([]);
       } finally {
         setLoading(false);
